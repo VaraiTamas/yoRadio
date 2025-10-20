@@ -104,6 +104,8 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
    - Beállítható az eredeti hét szegmenses óra betűtípus a myoptions.h -ban. #define CLOCKFONT VT_DIGI_OLD
    - A területi beállításokhoz tartozó fájlok glcdfont, displayL10n, namedays egységesen a local mappába kerültek.
    - Lengyel nyelv és névnapok javítása. (by Andrzej Jaroszuk)
+   - [Új WEB kereső hozzáadva 2.0 (by Mirosław Bubka)](images/MB_2.0/MB_search.md)
+
 ### v7.2
    - IR hangerő túlfutott a 0-100 tartományon, ez lett javítva. 
    - Új beállítási lehtőség a myoptions.h fájlban
