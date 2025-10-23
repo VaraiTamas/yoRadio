@@ -3,11 +3,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
-/*************************************************************************************
-    HOWTO:
-    Copy this file to yoRadio/locale/displayL10n_custom.h
-    and modify it
-*************************************************************************************/
+
 const char mon[] PROGMEM = "hé";
 const char tue[] PROGMEM = "ke";
 const char wed[] PROGMEM = "sz";

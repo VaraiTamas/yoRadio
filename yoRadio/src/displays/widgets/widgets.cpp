@@ -926,7 +926,9 @@ void ClockWidget::_printClock(bool force){
         #elif L10N_LANGUAGE == GR
                   sprintf(_tmp, "%2d %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
         #elif L10N_LANGUAGE == SK
-                  sprintf(_tmp, "%2d. %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);      
+                  sprintf(_tmp, "%2d. %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
+        #elif L10N_LANGUAGE == UA
+                  sprintf(_tmp, "%s, %d %s %2d року", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);          
         #endif
         #ifndef HIDE_DATE
             // Sor törlése teljes szélességben
@@ -989,6 +991,8 @@ void ClockWidget::_printClock(bool force){
     static uint32_t lastRotation = 0;
     if (millis() - lastRotation >= 4000) {
         getNamedayUpper(_namedayBuf, sizeof(_namedayBuf));
+         Serial.printf("Widget.cpp->_namedayBuf: %s \n", _namedayBuf);
+         Serial.printf("Widget.cpp->_oldNamedayBuf: %s \n", _oldNamedayBuf);
         if (!config.isScreensaver && strcmp(_oldNamedayBuf, _namedayBuf) != 0) {
           strlcpy(_oldNamedayBuf, _namedayBuf, sizeof(_oldNamedayBuf));
           _namedaywidth = strlen(_namedayBuf) * CHARWIDTH * namedayConf.textsize; // csak változáskor számoljuk újra
@@ -1033,6 +1037,8 @@ void ClockWidget::_printNameday() {
       dsp.setTextSize(namedayConf.textsize);
     #endif
     if (!config.isScreensaver){
+      Serial.printf("Widget.cpp->nameday_label: %s \n", nameday_label);
+      Serial.printf("Widget.cpp->utf8To(nameday_label, false): %s \n", utf8To(nameday_label, false));
       dsp.print(utf8To(nameday_label, false)); // <<< Itt már a headerből jön "nameday"
       // Csak a neveket rajzolja arany színnel
       dsp.setTextColor(config.theme.nameday, config.theme.background); // szürke 0x8410

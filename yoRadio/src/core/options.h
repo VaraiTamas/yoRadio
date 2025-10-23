@@ -495,6 +495,7 @@ The connection tables are located here https://github.com/e2002/yoradio#connecti
 #define GR  6  // Módosítás plussz sor Görög "multi_language"
 #define CZ  7  // Módosítás plussz sor "multi_language"
 #define SK  8  // Módosítás plussz sor "multi_language"
+#define UA  9
 #ifndef L10N_LANGUAGE
   #define L10N_LANGUAGE EN
 #endif

@@ -10,7 +10,9 @@
 #elif NAMEDAYS_FILE == GR
   #include "../../locale/namedays/namedays_GR.h"
 #elif NAMEDAYS_FILE == NL
-  #include "../../locale/namedays/namedays_NL.h"  
+  #include "../../locale/namedays/namedays_NL.h"
+#elif NAMEDAYS_FILE == UA
+  #include "../../locale/namedays/namedays_UA.h"  
 #else
   #error "Unsupported NAMEDAYS_FILE"
 #endif

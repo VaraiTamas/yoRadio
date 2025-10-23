@@ -12,10 +12,10 @@
 /* Itt tudod beállítani a program nyelvét 
    You can set the program language here. 
    Supported languages: HU NL PL RU EN GR SK . */
-#define L10N_LANGUAGE HU
+#define L10N_LANGUAGE UA
 
 /* -- Névnapok megjelenítése -- Display name days -- */
-#define NAMEDAYS_FILE HU  // HU, PL, NL, GR
+#define NAMEDAYS_FILE UA  // HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not filled in.)
 
 #define USE_BUILTIN_LED false /* The RGB LED does not turn on.. */
 
@@ -28,8 +28,8 @@
 // #define HTTP_PASS ""           /* HTTP basic authentication password */
 
 /* LCD */
-//#define DSP_MODEL DSP_ILI9488
-#define DSP_MODEL DSP_ILI9341
+#define DSP_MODEL DSP_ILI9488
+//#define DSP_MODEL DSP_ILI9341
 //#define DSP_MODEL DSP_ST7796
 #define TFT_DC         9
 #define TFT_CS         10
