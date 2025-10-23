@@ -223,17 +223,18 @@ class ClockWidget: public Widget {
   #endif
   protected:
     char  _timebuffer[20]="00:00";
-    char _tmp[38], _datebuf[38]; // Módosítva 38-ra
+    char _tmp[38], _datebuf[38]; // Módosítva 38-ra v7.4
     uint8_t _superfont;
     uint16_t _clockleft, _clockwidth, _timewidth, _dotsleft, _linesleft;
     uint8_t  _clockheight, _timeheight, _dateheight, _space;
     char     _namedayBuf[30], _oldNamedayBuf[30];       // Módosítás "nameday"
-    //uint16_t _namedaywidth, _namedayleft, _oldnamedayleft, _oldnamedaywidth; //Módosítás
     uint16_t _namedaywidth, _oldnamedayleft, _oldnamedaywidth; //Módosítás "nameday"
     uint16_t _forceflag = 0;
     bool dots = true;
     bool _fullclock;
     psFrameBuffer* _fb=nullptr;
+    WidgetConfig _namedayConf;    //"nameday"
+    WidgetConfig _dateConf;    // Módosítás új sor.
     void _draw();
     void _clear();
     void _reset();

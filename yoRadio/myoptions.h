@@ -12,10 +12,10 @@
 /* Itt tudod beállítani a program nyelvét 
    You can set the program language here. 
    Supported languages: HU NL PL RU EN GR SK . */
-#define L10N_LANGUAGE UA
+#define L10N_LANGUAGE HU
 
 /* -- Névnapok megjelenítése -- Display name days -- */
-#define NAMEDAYS_FILE UA  // HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not filled in.)
+#define NAMEDAYS_FILE HU  // HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not filled in.)
 
 #define USE_BUILTIN_LED false /* The RGB LED does not turn on.. */
 
@@ -31,7 +31,7 @@
 #define DSP_MODEL DSP_ILI9488
 //#define DSP_MODEL DSP_ILI9341
 //#define DSP_MODEL DSP_ST7796
-#define TFT_DC         9
+#define TFT_DC          9
 #define TFT_CS         10
 #define TFT_RST        -1
 #define BRIGHTNESS_PIN 14
@@ -63,7 +63,7 @@
 #define ENC2_BTNR 47  // S2
 #define ENC2_BTNL 48  // S1
 #define ENC2_BTNB 21  // KEY
-// #define ENC2_INTERNALPULLUP		true
+// #define ENC2_INTERNALPULLUP	true
 
 /* CLOCK MODUL RTC DS3132 */
 // #define RTC_SCL			     7
@@ -84,7 +84,7 @@
 
 /* Bekapcsolja az eredeti hétszegmenses óra betűtípust.
    Turn on the original seven-segment font. */
- #define CLOCKFONT  VT_DIGI_OLD
+ //#define CLOCKFONT  VT_DIGI_OLD
 
 /* Google TTS hanggal mondja be az ídőt megadott nyelven és megadott percenként.
    Speaks the time using Google TTS voice in the specified language and every specified minute.
@@ -96,7 +96,7 @@
 /* Ezzel a beállítással nincs görgetés az időjárás sávon.
    With this setting there is no scrolling on the weather bar.
 */
-//#define WEATHER_FMT_SHORT
+#define WEATHER_FMT_SHORT
 
 /* A VU méter két fajta kijelzési módot támogat.
 BOOMBOX_STYLE stílusa, amikor középről két oldalra leng ki a kijelző. Azt itt tudod beállítani.
@@ -105,7 +105,7 @@ Ha a sor elején ott van // jel akkor az alap VU méter működik ami balról jo
 BOOMBOX_STYLE is the style when the display swings out from the center to two sides. You can set it here.
 If there is a // sign at the beginning of the line, the basic VU meter is working, swinging out from left to right. 
 */
-#define BOOMBOX_STYLE
+//#define BOOMBOX_STYLE
 
 /* A VU méter végén megjelenik egy fehér csík a csúcsértékeknél, ha ezt bekapcsolod. A sor elején a // jel letíltja.
  A white bar will appear at the end of the VU meter at the peak values ​​if you enable this. The // at the beginning of the line will disable it.

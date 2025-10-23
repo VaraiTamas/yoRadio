@@ -910,7 +910,7 @@ void ClockWidget::_printClock(bool force){
       #else                                    // DSP_MODEL DSP_ILI9341
         gfx.drawFastHLine(_linesleft, _top()-(_timeheight)/2 + 25, CHARWIDTH * _superfont * 2 + _space, config.theme.div);
       #endif
-       
+    
       if (!config.isScreensaver) {
         // "multi_language"
         #if L10N_LANGUAGE == RU
@@ -931,15 +931,16 @@ void ClockWidget::_printClock(bool force){
                   sprintf(_tmp, "%s, %d %s %2d року", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);          
         #endif
         #ifndef HIDE_DATE
+            memcpy_P(&_dateConf, &dateConf, sizeof(WidgetConfig));
             // Sor törlése teljes szélességben
             int lineHeight = _dateheight * 8;   // kb. 8 pixel per TextSize
-            dsp.fillRect(0, dateConf.top, dsp.width(), lineHeight, config.theme.background); //szürke 0x8410 
+            dsp.fillRect(0, _dateConf.top, dsp.width(), lineHeight, config.theme.background); //szürke 0x8410 
             strlcpy(_datebuf, utf8To(_tmp, false), sizeof(_datebuf));
             uint16_t _datewidth = strlen(_datebuf) * CHARWIDTH*_dateheight;
             dsp.setFont();
             dsp.setTextSize(_dateheight);
-            uint16_t _dateleft = dsp.width() - _datewidth - dateConf.left;
-            dsp.setCursor(_dateleft, dateConf.top);       // Módosítás saját beállítás változó "dateConf"
+            uint16_t _dateleft = dsp.width() - _datewidth - _dateConf.left;
+            dsp.setCursor(_dateleft, _dateConf.top);       // Módosítás saját beállítás változó "_dateConf"
             dsp.setTextColor(config.theme.date, config.theme.background);
            // Serial.printf("widget.cpp -> _left() %d \n", _left());
             dsp.print(_datebuf);
@@ -1022,19 +1023,20 @@ void ClockWidget::getNamedayUpper(char *dest, size_t len) { // commongfx.h - ban
 
 void ClockWidget::_printNameday() {
   uint16_t nameday_top;
+  memcpy_P(&_namedayConf, &namedayConf, sizeof(WidgetConfig));
   #if DSP_MODEL==DSP_ILI9341
-    nameday_top = namedayConf.top + 14;
+    nameday_top = _namedayConf.top + 14;
   #else
-    nameday_top = namedayConf.top + 22;
+    nameday_top = _namedayConf.top + 22;
   #endif
   if(config.store.nameday){
     // Rajzold le a nyelvfüggő "Névnap:" szót fehér színnel.
     dsp.setTextColor(config.theme.date, config.theme.background);
-    dsp.setCursor(namedayConf.left, namedayConf.top); // egy sorral feljebb
+    dsp.setCursor(_namedayConf.left, _namedayConf.top); // egy sorral feljebb
     #if NAMEDAYS_FILE == GR // Görög nyevnél túl hosszú, ezért 1- es méret.
       dsp.setTextSize(1);
     #else
-      dsp.setTextSize(namedayConf.textsize);
+      dsp.setTextSize(_namedayConf.textsize);
     #endif
     if (!config.isScreensaver){
       Serial.printf("Widget.cpp->nameday_label: %s \n", nameday_label);
@@ -1044,9 +1046,9 @@ void ClockWidget::_printNameday() {
       dsp.setTextColor(config.theme.nameday, config.theme.background); // szürke 0x8410
       // Névnap nevének területének törlése a kijelzőről.
       int clearWidth = max(_oldnamedaywidth, _namedaywidth); // A régi és az új név közül a szélesebb szélessége.
-      dsp.fillRect(namedayConf.left, nameday_top, clearWidth, CHARHEIGHT * namedayConf.textsize, config.theme.background);
-      dsp.setCursor(namedayConf.left, nameday_top);
-      dsp.setTextSize(namedayConf.textsize);
+      dsp.fillRect(_namedayConf.left, nameday_top, clearWidth, CHARHEIGHT * _namedayConf.textsize, config.theme.background);
+      dsp.setCursor(_namedayConf.left, nameday_top);
+      dsp.setTextSize(_namedayConf.textsize);
       dsp.print(_namedayBuf);
       strlcpy(_oldNamedayBuf, _namedayBuf, sizeof(_namedayBuf));
       _oldnamedaywidth = _namedaywidth;
