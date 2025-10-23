@@ -49,7 +49,7 @@ Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd 
 
 ### Nyelvek, teruleti beallitasok:
 
-Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK nyelveken.   
+Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA nyelveken.   
 A myoptions.h fájlban az alábbi paranccsal állíthatod be.   
 #define L10N_LANGUAGE HU
 
@@ -66,6 +66,7 @@ Ezek itt találhatóak a programban:
       yoRadio/locale/glcdfont/HU/glcdfont.c
       yoRadio/locale/glcdfont/PL, SK/glcdfont.c
       yoRadio/locale/glcdfont/RU/glcdfont.c
+      yoRadio/locale/glcdfont/UA/glcdfont.c
 
 
 
@@ -98,7 +99,10 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 
 ### Version history:
-
+### v7.4
+   - Ukrán(UA) nyelv hozzáadva (by Vadim Poljakovszkij)
+   - A dátum kifejezés meghosszabítva 38 karakterre
+   
 ### v7.3
    - Elérhetővé váltak a görög névnapok és görög nyelv. (by Antreas Mpokas)
    - Beállítható az eredeti hét szegmenses óra betűtípus a myoptions.h -ban. #define CLOCKFONT VT_DIGI_OLD
