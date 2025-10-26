@@ -942,9 +942,7 @@ void ClockWidget::_printClock(bool force){
             uint16_t _dateleft = dsp.width() - _datewidth - _dateConf.left;
             dsp.setCursor(_dateleft, _dateConf.top);       // Módosítás saját beállítás változó "_dateConf"
             dsp.setTextColor(config.theme.date, config.theme.background);
-           // Serial.printf("widget.cpp -> _left() %d \n", _left());
             dsp.print(_datebuf);
-           // Serial.printf("widget.cpp -> _datebuf %s \n", _datebuf);
         #endif // HIDE_DATE
       }
     }
@@ -992,8 +990,6 @@ void ClockWidget::_printClock(bool force){
     static uint32_t lastRotation = 0;
     if (millis() - lastRotation >= 4000) {
         getNamedayUpper(_namedayBuf, sizeof(_namedayBuf));
-         Serial.printf("Widget.cpp->_namedayBuf: %s \n", _namedayBuf);
-         Serial.printf("Widget.cpp->_oldNamedayBuf: %s \n", _oldNamedayBuf);
         if (!config.isScreensaver && strcmp(_oldNamedayBuf, _namedayBuf) != 0) {
           strlcpy(_oldNamedayBuf, _namedayBuf, sizeof(_oldNamedayBuf));
           _namedaywidth = strlen(_namedayBuf) * CHARWIDTH * namedayConf.textsize; // csak változáskor számoljuk újra
@@ -1001,12 +997,8 @@ void ClockWidget::_printClock(bool force){
         }
         lastRotation = millis();
     }
-  }else{
-     // Névnapi terület törlése letiltás esetén
-    //  _clearNameday();
   }
 #endif // NAMEDAYS_FILE
-
 }
 
 /*********************  A névnapok kiírása. *****************************/
@@ -1039,8 +1031,8 @@ void ClockWidget::_printNameday() {
       dsp.setTextSize(_namedayConf.textsize);
     #endif
     if (!config.isScreensaver){
-      Serial.printf("Widget.cpp->nameday_label: %s \n", nameday_label);
-      Serial.printf("Widget.cpp->utf8To(nameday_label, false): %s \n", utf8To(nameday_label, false));
+      //Serial.printf("Widget.cpp->nameday_label: %s \n", nameday_label);
+      //Serial.printf("Widget.cpp->utf8To(nameday_label, false): %s \n", utf8To(nameday_label, false));
       dsp.print(utf8To(nameday_label, false)); // <<< Itt már a headerből jön "nameday"
       // Csak a neveket rajzolja arany színnel
       dsp.setTextColor(config.theme.nameday, config.theme.background); // szürke 0x8410

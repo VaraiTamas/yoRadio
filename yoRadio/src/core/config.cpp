@@ -234,6 +234,7 @@ char * Config::ipToStr(IPAddress ip){
   snprintf(ipBuf, 16, "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
   return ipBuf;
 }
+
 bool Config::prepareForPlaying(uint16_t stationId){
   setDspOn(1);
   vuThreshold = 0;
@@ -268,6 +269,7 @@ void Config::configPostPlaying(uint16_t stationId){
   //display.putRequest(NEWMODE, PLAYER);
   display.putRequest(PSTART);
 }
+
 void Config::initPlaylistMode(){
   uint16_t _lastStation = 0;
   uint16_t cs = playlistLength();
