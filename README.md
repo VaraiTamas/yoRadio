@@ -10,6 +10,7 @@ https://github.com/e2002/yoradio
 - [Telepítési tanácsok](#telepitesi-tanacsok)
 - [Nyelvek, területi beállítások](#nyelvek-teruleti-beallitasok)
 - [Névnapok megjelenítése](#nevnapok-megjelenitese)
+- [PCB nyomtatott áramkör](#pcb-nyomtatott-aramkor)
 - [Version history](#version-history)
 
 ---
@@ -35,8 +36,6 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
 - A memória szerkezete és a vele való munka teljesen megváltozott, az összes puffer és sok változó átkerült a PSRAM-ba. 
 - Megnövelt audio adatpuffer 655 KB-ra. Az I2S hangmintavételezéssel rendelkezik 48 kHz-ig.  
 - Nagyon fontos, hogy a data mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!
-
-- A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, egyéb információ a [PCB](PCB) mappában található.
 
 
 
@@ -96,6 +95,12 @@ Ha más nyelven szeretnéd használni vedd fel velem a kapcsolatot.
 Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort,    
 // #define NAMEDAYS_FILE HU   
 vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
+
+
+### PCB nyomtatott aramkor:
+- A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, és egyéb információ a [PCB](PCB) mappában található. 
+- Építési javaslatok [PCB_2025.06.14. oldalon láthatóak.](PCB/BCP_2025_06_14/PCB.md) 
+---
 
 
 ### Version history:

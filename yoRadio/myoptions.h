@@ -42,8 +42,8 @@
 */
 
 /* Touch */
-#define TS_MODEL TS_MODEL_XPT2046
-#define TS_CS    3
+//#define TS_MODEL TS_MODEL_XPT2046
+//#define TS_CS    3
 
 // #define NEXTION_RX			15
 // #define NEXTION_TX			16
