@@ -68,7 +68,7 @@ static void clock_tts_announcement(char *buf, size_t buflen, int hour, int min, 
   } else if (strncmp(lang, "FR", 2) == 0) {
     snprintf(buf, buflen, "Il est %d:%02d.", hour, min);
   } else if (strncmp(lang, "GR", 2) == 0) {
-    snprintf(buf, buflen, "Η ώρα είναι %d:%02d.", hour, min);
+    snprintf(buf, buflen, "I ora einai %d:%02d.", hour, min);
   } else if (strncmp(lang, "RO", 2) == 0) {
     snprintf(buf, buflen, "Este ora %d:%02d.", hour, min);
   } else if (strncmp(lang, "NL", 2) == 0) {

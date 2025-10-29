@@ -104,6 +104,12 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 
 ### Version history:
+### v7.5
+   - AM/PM 12 órás időformátum hozzáadva. myoptions.h -> #define AM_PM_STYLE
+   - Szlovák dátum kiegészítése a nap nevével
+   - Clock TTS lengyel nyelvi javítás (by Mirosław Bubka)
+   - Görög nyev karakterek javítása (by Antreas Mpokas)
+
 ### v7.4
    - Ukrán(UA) nyelv hozzáadva (by Vadim Poljakovszkij)
    - A dátum kifejezés meghosszabítva 38 karakterre
