@@ -1,4 +1,4 @@
-const uint8_t VT_DIGI_34x19Bitmaps[] PROGMEM = {
+const uint8_t VT_DIGI_34x19sBitmaps[] PROGMEM = {
   0x3F, 0xFF, 0xFF, 0xFF, 0xFF, 0x07, 0xFF, 0xFF, 0xFF, 0xFF, 0x88, 0xFF, 
   0xFF, 0xFF, 0xFF, 0xC7, 0x1F, 0xFF, 0xFF, 0xFF, 0xE3, 0xE3, 0xFF, 0xFF, 
   0xFF, 0xF1, 0xFC, 0x7F, 0xFF, 0xFF, 0xF8, 0xFF, 0x8F, 0xFF, 0xFF, 0xFC, 
@@ -102,7 +102,7 @@ const uint8_t VT_DIGI_34x19Bitmaps[] PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-const GFXglyph VT_DIGI_34x19Glyphs[] PROGMEM = {
+const GFXglyph VT_DIGI_34x19sGlyphs[] PROGMEM = {
   {     0,   0,   0,  27,    0,    1 },   // 0x20 ' '
   {     0,   0,   0,   0,    0,    0 },   // 0x21 '!'
   {     0,   0,   0,   0,    0,    0 },   // 0x22 '"'
@@ -133,5 +133,5 @@ const GFXglyph VT_DIGI_34x19Glyphs[] PROGMEM = {
 };
 
 const GFXfont Clock_GFXfont_sec PROGMEM = {
-  (uint8_t  *)VT_DIGI_34x19Bitmaps,  
-  (GFXglyph *)VT_DIGI_34x19Glyphs, 0x20, 0x3A,   110 };
+  (uint8_t  *)VT_DIGI_34x19sBitmaps,  
+  (GFXglyph *)VT_DIGI_34x19sGlyphs, 0x20, 0x3A,   110 };

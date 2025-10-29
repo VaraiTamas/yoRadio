@@ -241,6 +241,8 @@ class ClockWidget: public Widget {
     void _getTimeBounds();
     void _printClock(bool force=false);
     void _clearClock();
+    void _formatDate();
+
     #ifdef NAMEDAYS_FILE
      void  _printNameday();        // Módosítás új sor. "nameday"
      void getNamedayUpper(char* dest, size_t len); // Módosítás "nameday"

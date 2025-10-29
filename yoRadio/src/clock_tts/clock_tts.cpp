@@ -8,18 +8,18 @@
 #include <Arduino.h>
 #include <time.h>
 
-static int           clock_tts_prev_volume = 0;
-static bool          clock_tts_fading_down = false;
-static bool          clock_tts_fading_up = false;
+static int clock_tts_prev_volume = 0;
+static bool clock_tts_fading_down = false;
+static bool clock_tts_fading_up = false;
 static unsigned long clock_tts_fade_timer = 0;
-static int           clock_tts_fade_volume = -1;
+static int clock_tts_fade_volume = -1;
 static unsigned long clock_lastTTSMillis = 0;
-static bool          clock_ttsActive = false;
-static int           clock_lastMinute = -1;
+static bool clock_ttsActive = false;
+static int clock_lastMinute = -1;
 
 // Konfigurációs változók
 static bool clock_tts_enabled = CLOCK_TTS_ENABLED;
-static int  clock_tts_interval = CLOCK_TTS_INTERVAL_MINUTES;
+static int clock_tts_interval = CLOCK_TTS_INTERVAL_MINUTES;
 static char clock_tts_language[32] = CLOCK_TTS_LANGUAGE;
 
 void clock_tts_set_language(const char *lang) {
@@ -29,8 +29,9 @@ void clock_tts_set_language(const char *lang) {
 }
 
 void clock_tts_set_interval(int minutes) {
-  if (minutes > 0)
+  if (minutes > 0) {
     clock_tts_interval = minutes;
+  }
 }
 
 void clock_tts_enable(bool enable) {
@@ -56,34 +57,38 @@ void clock_tts_force(const char *text, const char *lang) {
 }
 
 static void clock_tts_announcement(char *buf, size_t buflen, int hour, int min, const char *lang) {
-  if (strncmp(lang, "EN", 2) == 0) {
-    snprintf(buf, buflen, "The time is %d:%02d.", hour, min);
-  } else if (strncmp(lang, "DE", 2) == 0) {
-    snprintf(buf, buflen, "Es ist %d:%02d Uhr.", hour, min);
+  if (strncmp(lang, "PL", 2) == 0) {
+    snprintf(buf, buflen, "Jest godzina %d:%02d.", hour, min);
+  } else if (strncmp(lang, "HU", 2) == 0) {
+    snprintf(buf, buflen, "Az idő %d:%02d.", hour, min);
   } else if (strncmp(lang, "RU", 2) == 0) {
     snprintf(buf, buflen, "Сейчас %d:%02d.", hour, min);
+  } else if (strncmp(lang, "DE", 2) == 0) {
+    snprintf(buf, buflen, "Es ist %d:%02d Uhr.", hour, min);
+  } else if (strncmp(lang, "FR", 2) == 0) {
+    snprintf(buf, buflen, "Il est %d:%02d.", hour, min);
+  } else if (strncmp(lang, "GR", 2) == 0) {
+    snprintf(buf, buflen, "Η ώρα είναι %d:%02d.", hour, min);
   } else if (strncmp(lang, "RO", 2) == 0) {
     snprintf(buf, buflen, "Este ora %d:%02d.", hour, min);
   } else if (strncmp(lang, "NL", 2) == 0) {
     snprintf(buf, buflen, "De tijd %d:%02d.", hour, min);
-  } else if (strncmp(lang, "HU", 2) == 0) {
-    snprintf(buf, buflen, "Az idő %d:%02d.", hour, min);
-  } else if (strncmp(lang, "FR", 2) == 0) {
-    snprintf(buf, buflen, "Le temps %d:%02d.", hour, min);
   } else {
     snprintf(buf, buflen, "The time is %d:%02d.", hour, min);
   }
 }
 
 void clock_tts_loop() {
-  if (!clock_tts_enabled)
+  if (!clock_tts_enabled) {
     return;
-  if (config.getMode() == PM_SDCARD)
+  }
+  if (config.getMode() == PM_SDCARD) {
     return;
-//Serial.printf("player.isRuning %d \n", player.isRunning());
+  }
+  //Serial.printf("player.isRuning %d \n", player.isRunning());
   unsigned long nowMillis = millis();
-  time_t        now = time(nullptr);
-  struct tm    *tm_struct = localtime(&now);
+  time_t now = time(nullptr);
+  struct tm *tm_struct = localtime(&now);
 
   // --- Fokozatos elhalkulás a TTS előtt ---
   if (clock_tts_fading_down) {
@@ -93,8 +98,9 @@ void clock_tts_loop() {
     }
     if (nowMillis - clock_tts_fade_timer > 50 && clock_tts_fade_volume > 0) {
       clock_tts_fade_volume -= 1;
-      if (clock_tts_fade_volume < 0)
+      if (clock_tts_fade_volume < 0) {
         clock_tts_fade_volume = 0;
+      }
       player.setVolume(clock_tts_fade_volume);
       clock_tts_fade_timer = nowMillis;
     }
@@ -115,8 +121,9 @@ void clock_tts_loop() {
 
   // --- Fokozatos hangerőnövekedés a TTS után ---
   if (clock_tts_fading_up) {
-    if (clock_tts_fade_volume == -1)
+    if (clock_tts_fade_volume == -1) {
       clock_tts_fade_volume = 0;
+    }
     if (nowMillis - clock_tts_fade_timer > 80 && clock_tts_fade_volume < clock_tts_prev_volume) {
       clock_tts_fade_volume += 1;
       player.setVolume(clock_tts_fade_volume);
@@ -131,20 +138,19 @@ void clock_tts_loop() {
   }
 
   if (tm_struct) {
-    if (tm_struct->tm_year + 1900 < 2020)
+    if (tm_struct->tm_year + 1900 < 2020) {
       return;
-    if (
-        tm_struct->tm_min % clock_tts_interval == 0 &&
-        tm_struct->tm_min != clock_lastMinute &&
-        tm_struct->tm_sec < 2 && !clock_ttsActive && player.isRunning()) {
-      clock_tts_fading_down = true; // Engedélyezi a halkítást.
+    }
+    if (tm_struct->tm_min % clock_tts_interval == 0 && tm_struct->tm_min != clock_lastMinute && tm_struct->tm_sec < 2 && !clock_ttsActive
+        && player.isRunning()) {
+      clock_tts_fading_down = true;  // Engedélyezi a halkítást.
       clock_tts_fade_timer = nowMillis;
       return;
     }
     if (clock_ttsActive && (nowMillis - clock_lastTTSMillis > 4500)) {
-      
+
       player.sendCommand({PR_PLAY, config.lastStation()});
-      
+
       clock_tts_fading_up = true;
       clock_tts_fade_timer = nowMillis;
       clock_ttsActive = false;

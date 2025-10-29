@@ -1,12 +1,14 @@
-/* https://trip5.github.io/ehRadio_myoptions/generator.html */
-/* https://github.com/e2002/yoradio */
-/* Használat előtt olvasd el a readme.txt fájlt !!! */
-/* Read the readme.txt file before use !!! */
+/* https://trip5.github.io/ehRadio_myoptions/generator.html
+   https://github.com/e2002/yoradio
+   Használat előtt olvasd el!!! - Read the before use !!!
+   https://github.com/VaraiTamas/yoRadio/blob/main/README.md !!! 
+*/
+
 #ifndef myoptions_h
 #define myoptions_h
 
 #ifndef ARDUINO_ESP32S3_DEV
-#define ARDUINO_ESP32S3_DEV
+  #define ARDUINO_ESP32S3_DEV
 #endif
 
 /* Itt tudod beállítani a program nyelvét 
@@ -14,8 +16,9 @@
    Supported languages: HU NL PL RU EN GR SK . */
 #define L10N_LANGUAGE HU
 
-/* -- Névnapok megjelenítése -- Display name days -- */
-#define NAMEDAYS_FILE HU  // HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not filled in.)
+/* -- Névnapok megjelenítése -- Display name days -- 
+Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not filled in.) */
+#define NAMEDAYS_FILE HU
 
 #define USE_BUILTIN_LED false /* The RGB LED does not turn on.. */
 
@@ -25,13 +28,13 @@
 
 /* HTTP Authentication */
 // #define HTTP_USER ""               /* HTTP basic authentication username */
-// #define HTTP_PASS ""           /* HTTP basic authentication password */
+// #define HTTP_PASS ""               /* HTTP basic authentication password */
 
 /* LCD */
 #define DSP_MODEL DSP_ILI9488
 //#define DSP_MODEL DSP_ILI9341
 //#define DSP_MODEL DSP_ST7796
-#define TFT_DC          9
+#define TFT_DC         9
 #define TFT_CS         10
 #define TFT_RST        -1
 #define BRIGHTNESS_PIN 14
@@ -42,8 +45,8 @@
 */
 
 /* Touch */
-//#define TS_MODEL TS_MODEL_XPT2046
-//#define TS_CS    3
+#define TS_MODEL TS_MODEL_XPT2046
+#define TS_CS    3
 
 // #define NEXTION_RX			15
 // #define NEXTION_TX			16
@@ -82,16 +85,20 @@
    Inactive segments of the clock, true or false. */
 #define CLOCKFONT_MONO true
 
+/* 12 órás időformátum definiálása. 
+   Define 12-hour time format.*/
+//#define AM_PM_STYLE
+
 /* Bekapcsolja az eredeti hétszegmenses óra betűtípust.
    Turn on the original seven-segment font. */
- //#define CLOCKFONT  VT_DIGI_OLD
+//#define CLOCKFONT VT_DIGI_OLD
 
 /* Google TTS hanggal mondja be az ídőt megadott nyelven és megadott percenként.
    Speaks the time using Google TTS voice in the specified language and every specified minute.
 */
 #define CLOCK_TTS_ENABLED          true  // Enabled (true) or disabled (false)
-#define CLOCK_TTS_LANGUAGE         "HU"  // Language ( EN, HU, PL, NL, DE, RU ,FR, GR)
-#define CLOCK_TTS_INTERVAL_MINUTES 30    // Hány percenként mondja be. - How many times a minute does it say.
+#define CLOCK_TTS_LANGUAGE         "GR"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
+#define CLOCK_TTS_INTERVAL_MINUTES 5     // Hány percenként mondja be. - How many times a minute does it say.
 
 /* Ezzel a beállítással nincs görgetés az időjárás sávon.
    With this setting there is no scrolling on the weather bar.

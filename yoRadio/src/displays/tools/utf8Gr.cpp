@@ -3,808 +3,173 @@
 #if L10N_LANGUAGE == GR
 #include "../dspcore.h"
 #include "utf8To.h"
-// Polish chars: ąćęłńóśźż ĄĆĘŁŃÓŚŹŻ
+/*
+ * This code is to show Greek characters on screens that use Yoradio and not only. 
+ * It is for the adafruit GFX library.
+ * Created by Arkas and corrected by Gregory Smiaris
+ * utf8RusGFX.h — UTF-8 → Windows-1253 Greek converter for 5x7 GLCD font
+ * Corrected: handles uppercase/lowercase and accented/diaeresis Greek properly by Gregory Smiaris SV2RR 28 Oct 2025.
+ */
 
-char* utf8To(const char* str, bool uppercase) {
-	int index = 0;
-	static char strn[BUFLEN];
-	strlcpy(strn, str, BUFLEN); 
+#include <string.h>
+#include <ctype.h>
 
-	if (uppercase) { // Εναλλαγή κεφαλαίων και πεζών γραμμάτων
-		for (char *iter = strn; *iter != '\0'; ++iter)
-		*iter = toupper(*iter); 
-	}
-
-	if(L10N_LANGUAGE == EN) return strn;
-	
-	while (strn[index])
-	{ 
-		// Εάν το πρώτο byte χαρακτήρων UTF-8 είναι C5, βάλτε τους όλους σε αυτήν την ομάδα!
-		// https://www.utf8-chartable.de/unicode-utf8-table.pl?start=256&names=-&utf8=0x
-		if (strn[index] == 0xC5) 
-		{
-			switch (strn[index + 1]) {
-			case 0x82: {    
-					if (!uppercase){ 
-						strn[index] = 0xCf;} // *ł
-					else {
-						strn[index] = 0xD0;} // *Ł
-					break;
-				}
-			case 0x81: { 
-					strn[index] = 0xD0; // *Ł
-					break;
-				} 
-			case 0x84: {
-					if (!uppercase){ 
-						strn[index] = 0xC0;} // *ń
-					else {
-						strn[index] = 0xC1;} // *Ń
-					break;
-				}
-			case 0x83: { 
-					strn[index] = 0xC1; // *Ń
-					break;
-				} 			
-			case 0x9B: { 
-					if (!uppercase){ 
-						strn[index] = 0xCB;} // *ś
-					else {
-						strn[index] = 0xCC;} // *Ś
-					break;
-				}
-			case 0x9A: { 
-					strn[index] = 0xCC; // *Ś
-					break;
-				} 				
-			case 0xBA: { 
-					if (!uppercase){ 
-						strn[index] = 0xBB;} // *ź
-					else {
-						strn[index] = 0xBC;} // *Ź
-					break;
-				}
-			case 0xB9: { 
-					strn[index] = 0xBC; // *Ź
-					break;
-				} 
-			case 0xBC: { 
-					if (!uppercase){ 
-						strn[index] = 0xB9;} // *ż
-					else {
-						strn[index] = 0xBA;} // *Ż
-					break;
-				}
-			case 0xBB: { 
-					strn[index] = 0xBA; // *Ż
-					break;
-				} 
-			//slovakia
-			case 0x88: {    
-					if (!uppercase){ 
-						strn[index] = 0xB4;} // *ň
-					else {
-						strn[index] = 0xB3;} // *Ň
-					break;
-				}
-			case 0x87: { 
-					strn[index] = 0xB3; // *Ň
-					break;
-				} 
-			case 0x95: {
-					if (!uppercase){ 
-						strn[index] = 0xB6;} // *ř
-					else {
-						strn[index] = 0xB5;} // *Ŕ
-					break;
-				}
-			case 0x94: { 
-					strn[index] = 0xB5; // *Ŕ
-					break;
-				} 				
-			case 0xA1: { 
-					if (!uppercase){ 
-						strn[index] = 0xC3;} // *š
-					else {
-						strn[index] = 0xC2;} // *Š
-					break;
-				}
-			case 0xA0: { 
-					strn[index] = 0xC2; // *Š
-					break;
-				} 				
-			case 0xA5: { 
-					if (!uppercase){ 
-						strn[index] = 0xC6;} // *ť
-					else {
-						strn[index] = 0xC5;} // *Ť
-					break;
-				}
-			case 0xA4: { 
-					strn[index] = 0xC5; // *Ť
-					break;
-				} 
-			case 0xBE: { 
-					if (!uppercase){ 
-						strn[index] = 0xC8;} // *ž
-					else {
-						strn[index] = 0xC7;} // *Ž
-					break;
-				}
-			case 0xBD: { 
-					strn[index] = 0xC7; // *Ž
-					break;
-				} 
-			case 0xAE: { 
-					if (!uppercase){ 
-						strn[index] = 0xE8;} // *ů
-					else {
-						strn[index] = 0x9D;} // *Ů
-					break;
-				}
-			case 0xAF: { 
-					strn[index] = 0x9D; // *Ů
-					break;
-				} 				
-			}
-			
-			int sind = index + 2;
-			while (strn[sind]) {
-				strn[sind - 1] = strn[sind];
-				sind++;
-			}
-			strn[sind - 1] = 0;
-		}
-
-		// Εάν το πρώτο byte χαρακτήρων UTF-8 είναι C4, βάλτε τους όλους σε αυτήν την ομάδα!
-		// https://www.utf8-chartable.de/unicode-utf8-table.pl?start=256&names=-&utf8=0x
-		if (strn[index] == 0xC4)  
-		{
-			switch (strn[index + 1]) {
-
-			case 0x85: {
-					if (!uppercase){ 
-						strn[index] = 0xB8;} // *ą
-					else {
-						strn[index] = 0xB7;} // *Ą
-					break;
-				}
-			case 0x84	: { 
-					strn[index] = 0xB7; // *Ą
-					break;
-				} 				
-			case 0x87: {
-					if (!uppercase){ 
-						strn[index] = 0xBD;} // *ć
-					else {
-						strn[index] = 0xC4;} // *Ć
-					break;
-				}
-			case 0x86: { 
-					strn[index] = 0xC4; // *Ć
-					break;
-				} 
-			case 0x99: {
-					if (!uppercase){ 
-						strn[index] = 0xD6;} // *ę
-					else {
-						strn[index] = 0xD7;} // *Ę
-					break;
-				}
-			case 0x98: { 
-					strn[index] = 0xD7; // *Ę
-					break;
-				} 
-			// Slovakia chars:
-			case 0x8D: {
-					if (!uppercase){ 
-						strn[index] = 0xCA;} // *č
-					else {
-						strn[index] = 0xC9;} // *Č
-					break;
-				}
-			case 0x8C: { 
-					strn[index] = 0xC9; // *Č
-					break;
-				} 
-			case 0x8E: {
-					if (!uppercase){ 
-						strn[index] = 0xD1;} // *ď
-					else {
-						strn[index] = 0xCE;} // *Ď
-					break;
-				}
-			case 0x8F: { 
-					strn[index] = 0xCE; // *Ď
-					break;
-				} 	
-			case 0xBA: {
-					if (!uppercase){ 
-						strn[index] = 0xD3;} // *ĺ
-					else {
-						strn[index] = 0xD2;} // *Ĺ 
-					break;
-				}
-			case 0xB9: { 
-					strn[index] = 0xD2; // *Ĺ 
-					break;
-				} 
-			case 0xBE: {
-					if (!uppercase){ 
-						strn[index] = 0xD5;} // *ľ
-					else {
-						strn[index] = 0xD4;} // *Ľ 
-					break;
-				}
-			case 0xBD: { 
-					strn[index] = 0xD4; // *Ľ
-					break;
-				}
-			} 
-
-			int sind = index + 2;
-			while (strn[sind]) {
-				strn[sind - 1] = strn[sind];
-				sind++;
-			}
-			strn[sind - 1] = 0;			
-		}
-
-		// Εάν το πρώτο byte χαρακτήρων UTF-8 είναι C3, βάλτε τους όλους σε αυτήν την ομάδα!
-		// https://www.utf8-chartable.de/unicode-utf8-table.pl?start=128&number=128&names=-&utf8=0x
-		if (strn[index] == 0xC3)  
-		{
-			switch (strn[index + 1]) {
-
-			case 0xB3: {
-					if (!uppercase){ 
-						strn[index] = 0xBE;} // *ó
-					else {
-						strn[index] = 0xBF;} // *Ó
-					break;
-				}
-			case 0x93: { 
-					strn[index] = 0xBF; // *Ó
-					break;
-				} 
-				// deutschland chars: äöü ÄÖÜ ß é				
-			case 0xA4: {
-					if (!uppercase){					// ä 
-						strn[index] = 0x84;}
-					else {
-						strn[index] = 0x8E;}			// Ä 
-					break;
-				}
-			case 0xB6: { 
-					if (!uppercase){					// ö 
-						strn[index] = 0x94;}
-					else {
-						strn[index] = 0x99;}			// Ö 
-					break;
-				}
-			case 0xBC: {  
-					if (!uppercase){					// ü 
-						strn[index] = 0x81;}
-					else {
-						strn[index] = 0x9A;}			// Ü 
-					break;
-				}			
-			case 0x84: {  						// Ä
-					strn[index] = 0x8E;
-					break;
-				}
-			case 0x96: {  						// Ö
-					strn[index] = 0x99;
-					break;
-				}
-			case 0x9C: {  						// Ü
-					strn[index] = 0x9A;
-					break;
-				}
-			case 0x9F: {  						// ß
-					strn[index] = 0xE1;
-					break;
-				}		       				
-			// Slovakia
-			case 0xA1: {
-					if (!uppercase){ 
-						strn[index] = 0xD9;} // *á
-					else {
-						strn[index] = 0xD8;} // *Á
-					break;
-				}
-			case 0x81: { 
-					strn[index] = 0xD8; // *Á
-					break;
-				} 
-			case 0xA9: {
-					if (!uppercase){ 
-						strn[index] = 0x82;} // *é
-					else {
-						strn[index] = 0x90;} // *É
-					break;
-				}
-			case 0x89: { 
-					strn[index] = 0x90; // *É
-					break;
-				} 
-			case 0xAD: {
-					if (!uppercase){ 
-						strn[index] = 0xDB;} // *í
-					else {
-						strn[index] = 0xDA;} // *Í
-					break;
-				}
-			case 0x8D: { 
-					strn[index] = 0xDA; // *Í
-					break;
-				} 	
-			case 0xB4: {
-					if (!uppercase){ 
-						strn[index] = 0xDD;} // *ô
-					else {
-						strn[index] = 0xDC;} // *Ô
-					break;
-				}
-			case 0x94: { 
-					strn[index] = 0xDC; // *Ô
-					break;
-				} 	
-			case 0xBA: {
-					if (!uppercase){ 
-						strn[index] = 0xDF;} // *ú
-					else {
-						strn[index] = 0xDE;} // *Ú
-					break;
-				}
-			case 0x9A: { 
-					strn[index] = 0xDE; // *Ú
-					break;
-				} 
-			case 0xBD: {
-					if (!uppercase){ 
-						strn[index] = 0xE3;} // *ý
-					else {
-						strn[index] = 0xE2;} // *Ý
-					break;
-				}
-			case 0x9D: { 
-					strn[index] = 0xE2; // *Ý
-					break;
-				} 
-			} 
-
-			int sind = index + 2;
-			while (strn[sind]) {
-				strn[sind - 1] = strn[sind];
-				sind++;
-			}
-			strn[sind - 1] = 0;			
-		}
-
-		// Εισαγάγετε τη διόρθωση εδώ για περαιτέρω γραμματοσειρές...
-
-		// ****************************** Ελληνικά ******************************
-		// Εάν το πρώτο byte χαρακτήρων UTF-8 είναι CE, βάλτε τους όλους σε αυτήν την ομάδα!
-		// https://www.utf8-chartable.de/unicode-utf8-table.pl?start=768&utf8=0x
-		if (strn[index] == 0xCE)  
-		{
-			switch (strn[index + 1]) {
-
-			case 0x86: { //Ά
-					strn[index] = 0xA2; // Ά
-					break;
-				}
-			case 0x88: { //Έ
-					strn[index] = 0xB8;
-					break;
-				}
-			case 0x89: { //Ή
-					strn[index] = 0xB9;
-					break;
-				}
-			case 0x8A: { //Ί
-					strn[index] = 0xBA;
-					break;
-				}
-			case 0x8C: { //Ό
-					strn[index] = 0xBC;
-					break;
-				}
-			case 0x8E: { //Ύ
-					strn[index] = 0xBE;
-					break;
-				}
-			case 0x8f: { //Ώ
-					strn[index] = 0xBF;
-					break;
-				}
-			case 0x90: { //ΐ
-					if (uppercase){ 
-						strn[index] = 0xDA;} // Ϊ
-					else {
-						strn[index] = 0xC0;} // ΐ
-					break;				
-				}
-			case 0x91: { //Α
-					strn[index] = 0xC1;
-					break;
-				}		
-			case 0x92: { //Β
-					strn[index] = 0xC2;
-					break;
-				}		
-			case 0x93: { //Γ
-					strn[index] = 0xC3;
-					break;
-				}			
-			case 0x94: { //Δ
-					strn[index] = 0xC4;
-					break;
-				}			
-			case 0x95: { //Ε
-					strn[index] = 0xC5;
-					break;
-				}			
-			case 0x96: { //Ζ
-					strn[index] = 0xC6;
-					break;
-				}			
-			case 0x97: { //Η
-					strn[index] = 0xC7;
-					break;
-				}			
-			case 0x98: { //Θ
-					strn[index] = 0xC8;
-					break;
-				}			
-			case 0x99: { //Ι
-					strn[index] = 0xC9;
-					break;
-				}			
-			case 0x9A: { //Κ
-					strn[index] = 0xCA;
-					break;
-				}			
-			case 0x9B: { //Λ
-					strn[index] = 0xCB;
-					break;
-				}			
-			case 0x9C: { //Μ
-					strn[index] = 0xCC;
-					break;
-				}			
-			case 0x9D: { //Ν
-					strn[index] = 0xCD;
-					break;
-				}			
-			case 0x9E: { //Ξ
-					strn[index] = 0xCE;
-					break;
-				}			
-			case 0x9F: { //Ο
-					strn[index] = 0xCF;
-					break;
-				}			
-			case 0xA0: { //Π
-					strn[index] = 0xD0;
-					break;
-				}			
-			case 0xA1: { //Ρ
-					strn[index] = 0xD1;
-					break;
-				}			
-			case 0xA3: { //Σ
-					strn[index] = 0xD3;
-					break;
-				}			
-			case 0xA4: { //Τ
-					strn[index] = 0xD4;
-					break;
-				}			
-			case 0xA5: { //Υ
-					strn[index] = 0xD5;
-					break;
-				}			
-			case 0xA6: { //Φ
-					strn[index] = 0xD6;
-					break;
-				}			
-			case 0xA7: { //Χ
-					strn[index] = 0xD7;
-					break;
-				}			
-			case 0xA8: { //Ψ
-					strn[index] = 0xD8;
-					break;
-				}			
-			case 0xA9: { //Ω
-					strn[index] = 0xD9;
-					break;
-				}		
-			case 0xAA: { //Ϊ
-					strn[index] = 0xDA;
-					break;
-				}			
-			case 0xAB: { //Ϋ
-					strn[index] = 0xDB;
-					break;
-				}			
-			case 0xAC: { //ά
-					if (uppercase){ 
-						strn[index] = 0xA2;} // Ά
-					else {
-						strn[index] = 0xDC;} // ά
-					break;
-				}				
-			case 0xAD: { //έ
-					if (uppercase){ 
-						strn[index] = 0xB8;} // Έ
-					else {
-						strn[index] = 0xDD;} // έ
-					break;
-				}			
-			case 0xAE: { //ή
-					if (uppercase){ 
-						strn[index] = 0xB9;} // 
-					else {
-						strn[index] = 0xDE;} // 
-					break;
-				}	
-			case 0xAF: { //ί
-					if (uppercase){ 
-						strn[index] = 0xBA;} // 
-					else {
-						strn[index] = 0xDF;} // 
-					break;
-				}			
-			case 0xB0: { //ΰ
-					if (uppercase){ 
-						strn[index] = 0xDB;} // 
-					else {
-						strn[index] = 0xE0;} // 
-					break;
-				}			
-			case 0xB1: { //α
-					if (uppercase){ 
-						strn[index] = 0xC1;} // 
-					else {
-						strn[index] = 0xE1;} // 
-					break;
-				}			
-			case 0xB2: { //β
-					if (uppercase){ 
-						strn[index] = 0xC2;} // 
-					else {
-						strn[index] = 0xE2;} // 
-					break;
-				}			
-			case 0xB3: { //γ
-					if (uppercase){ 
-						strn[index] = 0xC3;} // 
-					else {
-						strn[index] = 0xE3;} // 
-					break;
-				}	
-			case 0xB4: { //δ
-					if (uppercase){ 
-						strn[index] = 0xC4;} // 
-					else {
-						strn[index] = 0xE4;} // 
-					break;
-				}			
-			case 0xB5: { //ε
-					if (uppercase){ 
-						strn[index] = 0xC5;} // 
-					else {
-						strn[index] = 0xE5;} // 
-					break;
-				}			
-			case 0xB6: { //ζ
-					if (uppercase){ 
-						strn[index] = 0xC6;} // 
-					else {
-						strn[index] = 0xE6;} // 
-					break;
-				}	
-			case 0xB7: { //η
-					if (uppercase){ 
-						strn[index] = 0xC7;} // 
-					else {
-						strn[index] = 0xE7;} // 
-					break;
-				}			
-			case 0xB8: { //θ
-					if (uppercase){ 
-						strn[index] = 0xC8;} // 
-					else {
-						strn[index] = 0xE8;} // 
-					break;
-				}					
-			case 0xB9: { //ι
-					if (uppercase){ 
-						strn[index] = 0xC9;} // 
-					else {
-						strn[index] = 0xE9;} // 
-					break;
-				}	
-			case 0xBA: { //κ
-					if (uppercase){ 
-						strn[index] = 0xCA;} // 
-					else {
-						strn[index] = 0xEA;} // 
-					break;
-				}			
-			case 0xBB: { //λ
-					if (uppercase){ 
-						strn[index] = 0xCB;} // 
-					else {
-						strn[index] = 0xEB;} // 
-					break;
-				}			
-			case 0xBC: { //μ
-					if (uppercase){ 
-						strn[index] = 0xCC;} // 
-					else {
-						strn[index] = 0xEC;} // 
-					break;
-				}	
-			case 0xBD: { //ν
-					if (uppercase){ 
-						strn[index] = 0xCD;} // 
-					else {
-						strn[index] = 0xED;} // 
-					break;
-				}			
-			case 0xBE: { //ξ
-					if (uppercase){ 
-						strn[index] = 0xCE;} // 
-					else {
-						strn[index] = 0xEE;} // 
-					break;
-				}			
-			case 0xBF: { //ο
-					if (uppercase){ 
-						strn[index] = 0xCF;} // 
-					else {
-						strn[index] = 0xEF;} // 
-					break;
-				}				
-			} 
-
-			int sind = index + 2;
-			while (strn[sind]) {
-				strn[sind - 1] = strn[sind];
-				sind++;
-			}
-			strn[sind - 1] = 0;			
-		}
-		
-		// ****************************** Ελληνικά ******************************
-		// Εάν το πρώτο byte χαρακτήρων UTF-8 είναι CF, βάλτε τους όλους σε αυτήν την ομάδα!
-		// https://www.utf8-chartable.de/unicode-utf8-table.pl?start=768&utf8=0x
-		if (strn[index] == 0xCF)  
-		{
-			switch (strn[index + 1]) {
-		
-			case 0x80: { //π
-					if (uppercase){ 
-						strn[index] = 0xD0;} // 
-					else {
-						strn[index] = 0xF0;} // 
-					break;				
-				}			
-			case 0x81: { //ρ
-					if (uppercase){ 
-						strn[index] = 0xD1;} // 
-					else {
-						strn[index] = 0xF1;} // 
-					break;				
-				}			
-			case 0x82: { //ς
-					if (uppercase){ 
-						strn[index] = 0xD3;} // 
-					else {
-						strn[index] = 0xF2;} // 
-					break;				
-				}	
-			case 0x83: { //σ
-					if (uppercase){ 
-						strn[index] = 0xD3;} // 
-					else {
-						strn[index] = 0xF3;} // 
-					break;				
-				}			
-			case 0x84: { //τ
-					if (uppercase){ 
-						strn[index] = 0xD4;} // 
-					else {
-						strn[index] = 0xF4;} // 
-					break;				
-				}			
-			case 0x85: { //υ
-					if (uppercase){ 
-						strn[index] = 0xD5;} // 
-					else {
-						strn[index] = 0xF5;} // 
-					break;				
-				}	
-			case 0x86: { //φ
-					if (uppercase){ 
-						strn[index] = 0xD6;} // 
-					else {
-						strn[index] = 0xF6;} // 
-					break;				
-				}			
-			case 0x87: { //χ
-					if (uppercase){ 
-						strn[index] = 0xD7;} // 
-					else {
-						strn[index] = 0xF7;} // 
-					break;				
-				}			
-			case 0x88: { //ψ
-					if (uppercase){ 
-						strn[index] = 0xD8;} // 
-					else {
-						strn[index] = 0xF8;} // 
-					break;				
-				}
-			case 0x89: { //ω
-					if (uppercase){ 
-						strn[index] = 0xD9;} // 
-					else {
-						strn[index] = 0xF9;} // 
-					break;				
-				}			
-			case 0x8A: { //ϊ
-					if (uppercase){ 
-						strn[index] = 0xDA;} // 
-					else {
-						strn[index] = 0xFA;} // 
-					break;				
-				}			
-			case 0x8B: { //ϋ
-					if (uppercase){ 
-						strn[index] = 0xDB;} // 
-					else {
-						strn[index] = 0xFB;} // 
-					break;				
-				}	
-			case 0x8C: { //ό
-					if (uppercase){ 
-						strn[index] = 0xBC;} // 
-					else {
-						strn[index] = 0xFC;} // 
-					break;				
-				}			
-			case 0x8D: { //ύ
-					if (uppercase){ 
-						strn[index] = 0xBE;} // 
-					else {
-						strn[index] = 0xFD;} // 
-					break;				
-				}			
-			case 0x8E: { //ώ
-					if (uppercase){ 
-						strn[index] = 0xBF;} // 
-					else {
-						strn[index] = 0xFE;} // 
-					break;				
-				}			 
-			}
-			
-			int sind = index + 2;
-			while (strn[sind]) {
-				strn[sind - 1] = strn[sind];
-				sind++;
-			}
-			strn[sind - 1] = 0;			
-		}
-		
-		index++;
-	}
-	
-	return strn;
-}
+#ifndef BUFLEN
+#define BUFLEN 256
 #endif
+
+// Ensure this matches your class signature. The original used DspCore::utf8Rus.
+// If you don't compile inside that class, remove 'DspCore::' and use plain function.
+char* utf8To(const char* str, bool uppercase)
+{
+    static char outbuf[BUFLEN];
+    if (!str) {
+        outbuf[0] = '\0';
+        return outbuf;
+    }
+
+    size_t in_len = strlen(str);
+    if (in_len >= BUFLEN) in_len = BUFLEN - 1;
+
+    size_t i = 0;    // input index
+    size_t o = 0;    // output index
+
+    while (i < in_len && o < BUFLEN - 1) {
+        unsigned char c1 = (unsigned char)str[i];
+
+        // ASCII (including punctuation) — copy through
+        if (c1 < 0xC0) {
+            outbuf[o++] = (char)c1;
+            i++;
+            continue;
+        }
+
+        // Need at least one continuation byte for the 2-byte sequences we handle
+        if (i + 1 >= in_len) {
+            // Broken UTF-8 at end: copy byte as-is
+            outbuf[o++] = (char)c1;
+            i++;
+            continue;
+        }
+
+        unsigned char c2 = (unsigned char)str[i + 1];
+        unsigned char mapped = 0;
+        
+// Inside CE group mapping:
+if (c1 == 0xCE) {
+    switch (c2) {
+        // Accented uppercase letters mapped to unaccented uppercase
+        case 0x86: mapped = 0xC1; break; // Ά -> Α
+        case 0x88: mapped = 0xC5; break; // Έ -> Ε
+        case 0x89: mapped = 0xC7; break; // Ή -> Η
+        case 0x8A: mapped = 0xC9; break; // Ί -> Ι
+        case 0x8C: mapped = 0xCF; break; // Ό -> Ο
+        case 0x8E: mapped = 0xD5; break; // Ύ -> Υ
+        case 0x8F: mapped = 0xD9; break; // Ώ -> Ω
+
+        // Uppercase Α..Ο
+        case 0x91: mapped = 0xC1; break; // Α
+        case 0x92: mapped = 0xC2; break; // Β
+        case 0x93: mapped = 0xC3; break; // Γ
+        case 0x94: mapped = 0xC4; break; // Δ
+        case 0x95: mapped = 0xC5; break; // Ε
+        case 0x96: mapped = 0xC6; break; // Ζ
+        case 0x97: mapped = 0xC7; break; // Η
+        case 0x98: mapped = 0xC8; break; // Θ
+        case 0x99: mapped = 0xC9; break; // Ι
+        case 0x9A: mapped = 0xCA; break; // Κ
+        case 0x9B: mapped = 0xCB; break; // Λ
+        case 0x9C: mapped = 0xCC; break; // Μ
+        case 0x9D: mapped = 0xCD; break; // Ν
+        case 0x9E: mapped = 0xCE; break; // Ξ
+        case 0x9F: mapped = 0xCF; break; // Ο
+       
+        
+        // Uppercase Π..Φ..Ω
+        case 0xA0: mapped = 0xD0; break; // Π
+        case 0xA1: mapped = 0xD1; break; // Ρ
+        case 0xA3: mapped = 0xD3; break; // Σ
+        case 0xA4: mapped = 0xD4; break; // Τ
+        case 0xA5: mapped = 0xD5; break; // Υ
+        case 0xA6: mapped = 0xD6; break; // Φ
+        case 0xA7: mapped = 0xD7; break; // Χ
+        case 0xA8: mapped = 0xD8; break; // Ψ
+        case 0xA9: mapped = 0xD9; break; // Ω
+
+        // Lowercase accented letters mapped to unaccented uppercase
+        case 0xAC: mapped = 0xC1; break; // ά -> Α
+        case 0xAD: mapped = 0xC5; break; // έ -> Ε
+        case 0xAE: mapped = 0xC7; break; // ή -> Η
+        case 0xAF: mapped = 0xC9; break; // ί -> Ι
+        case 0xB1: mapped = 0xC1; break; // α -> Α
+        case 0x85: mapped = 0xD5; break; // υ -> Υ
+        case 0xBF: mapped = 0xCF; break; // ο -> Ο
+        case 0xB5: mapped = 0xC5; break; // ε (force uppercase)
+
+        // Other lowercase letters mapped to uppercase equivalents
+        case 0xB2: mapped = 0xC2; break; // β
+        case 0xB3: mapped = 0xC3; break; // γ
+        case 0xB4: mapped = 0xC4; break; // δ
+        case 0xB6: mapped = 0xC6; break; // ζ
+        case 0xB7: mapped = 0xC7; break; // η
+        case 0xB8: mapped = 0xC8; break; // θ
+        case 0xB9: mapped = 0xC9; break; // ι
+        case 0xBA: mapped = 0xCA; break; // κ
+        case 0xBB: mapped = 0xCB; break; // λ
+        case 0xBC: mapped = 0xCC; break; // μ
+        case 0xBD: mapped = 0xCD; break; // ν
+        case 0xBE: mapped = 0xCE; break; // ξ
+                default: mapped = 0; break;
+    }
+}
+// Add missing accented uppercase letters mapped to uppercase unaccented
+//case 0xAA: mapped = 0xC9; break; // Ϊ -> Ι
+//case 0xAB: mapped = 0xD5; break; // Ϋ -> Υ
+
+// Add CF group Greek letter mappings here (including final sigma and accented versions)
+if (c1 == 0xCF) {
+    switch (c2) {
+        case 0x80: mapped = 0xD0; break; // π
+        case 0x81: mapped = 0xD1; break; // ρ
+        case 0x82: mapped = 0xD3; break; // ς (final sigma)
+        case 0x83: mapped = 0xD3; break; // σ
+        case 0x84: mapped = 0xD4; break; // τ
+        case 0x85: mapped = 0xD5; break; // υ
+        case 0x86: mapped = 0xD6; break; // φ
+        case 0x87: mapped = 0xD7; break; // χ
+        case 0x88: mapped = 0xD8; break; // ψ
+        case 0x89: mapped = 0xD9; break; // ω
+        case 0x8A: mapped = 0xC9; break; // ϊ -> Ι
+        case 0x8B: mapped = 0xD5; break; // ϋ -> Υ
+        case 0x8C: mapped = 0xCF; break; // ό -> Ο
+        case 0x8D: mapped = 0xD5; break; // ύ -> Υ
+        case 0x8E: mapped = 0xD9; break; // ώ -> Ω
+        default: mapped = 0; break;
+    }
+}
+  // If we've found a mapping, consume two input bytes and write one output byte
+        if (mapped) {
+            outbuf[o++] = (char)mapped;
+            i += 2;
+            continue;
+        }
+
+        // If no mapping, copy first byte (this keeps punctuation/unknown bytes)
+        outbuf[o++] = (char)c1;
+        i++;
+    }
+
+    // Null-terminate
+    outbuf[o] = '\0';
+
+    // Optional uppercase transform AFTER mapping (so we uppercase mapped 8-bit codes)
+    if (uppercase) {
+        for (size_t k = 0; k < o; ++k) {
+            outbuf[k] = (char)toupper((unsigned char)outbuf[k]);
+        }
+    }
+
+    return outbuf;
+}
+
+#endif // UTF8RUSGFX_H
