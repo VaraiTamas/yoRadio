@@ -104,6 +104,12 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 
 ### Version history:
+### v7.6
+   - Visszakerült a programba az audioI2S régebbi verziója mely stabilabb lejátszást biztosít.  
+      Version 3.1.   
+      Updated on: Feb 01.2025, Feb 09.2025 (Maleksm)  
+      Author: Wolle (schreibfaul1)  
+      https://github.com/schreibfaul1/ESP32-audioI2S.git
 ### v7.5
    - AM/PM 12 órás időformátum hozzáadva. myoptions.h -> #define AM_PM_STYLE
    - Szlovák dátum kiegészítése a nap nevével
