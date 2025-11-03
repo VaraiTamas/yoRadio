@@ -2,12 +2,12 @@
  * flac_decoder.h
  *
  * Created on: Jul 03,2020
- * Updated on: Mar 29,2025
+ * Updated on: Nov 23,2024
  *
  *      Author: wolle
  *
  *  Restrictions:
- *  blocksize must not exceed 24576 bytes
+ *  blocksize must not exceed 16342 bytes
  *  bits per sample must be 8 or 16
  *  num Channels must be 1 or 2
  *
@@ -18,23 +18,34 @@
 
 #include "Arduino.h"
 #include <vector>
-#include "../psram_unique_ptr.hpp"
 using namespace std;
 
-#define FLAC_MAX_CHANNELS 2
-#define FLAC_MAX_BLOCKSIZE 24576  // 24 * 1024
-#define FLAC_MAX_OUTBUFFSIZE 4096 * 2
+#define MAX_CHANNELS 2
+#define MAX_BLOCKSIZE 16384
+#define MAX_OUTBUFFSIZE 4096 * 2
 
 enum : uint8_t {FLACDECODER_INIT, FLACDECODER_READ_IN, FLACDECODER_WRITE_OUT};
 enum : uint8_t {DECODE_FRAME, DECODE_SUBFRAMES, OUT_SAMPLES};
 enum : int8_t  {FLAC_PARSE_OGG_DONE = 100,
                 FLAC_DECODE_FRAMES_LOOP = 100,
-                FLAC_OGG_SYNC_FOUND = +2,
+                OGG_SYNC_FOUND = +2,
                 GIVE_NEXT_LOOP = +1,
-                FLAC_NONE = 0,
-                FLAC_ERR = -1,
-                FLAC_STOP = -100,
-};
+                ERR_FLAC_NONE = 0,
+                ERR_FLAC_BLOCKSIZE_TOO_BIG = -1,
+                ERR_FLAC_RESERVED_BLOCKSIZE_UNSUPPORTED = -2,
+                ERR_FLAC_SYNC_CODE_NOT_FOUND = -3,
+                ERR_FLAC_UNKNOWN_CHANNEL_ASSIGNMENT = -4,
+                ERR_FLAC_RESERVED_CHANNEL_ASSIGNMENT = -5,
+                ERR_FLAC_RESERVED_SUB_TYPE = -6,
+                ERR_FLAC_PREORDER_TOO_BIG = -7,
+                ERR_FLAC_RESERVED_RESIDUAL_CODING = -8,
+                ERR_FLAC_WRONG_RICE_PARTITION_NR = -9,
+                ERR_FLAC_BITS_PER_SAMPLE_TOO_BIG = -10,
+                ERR_FLAC_BITS_PER_SAMPLE_UNKNOWN = -11,
+                ERR_FLAC_DECODER_ASYNC = -12,
+                ERR_FLAC_UNIMPLEMENTED = -13,
+                ERR_FLAC_BITREADER_UNDERFLOW = -14,
+                ERR_FLAC_OUTBUFFER_TOO_SMALL = -15};
 
 typedef struct FLACMetadataBlock_t{
                               // METADATA_BLOCK_STREAMINFO
@@ -153,7 +164,7 @@ void             FLACDecoderReset();
 int8_t           FLACDecode(uint8_t* inbuf, int32_t* bytesLeft, int16_t* outbuf);
 int8_t           FLACDecodeNative(uint8_t* inbuf, int32_t* bytesLeft, int16_t* outbuf);
 int8_t           flacDecodeFrame(uint8_t* inbuf, int32_t* bytesLeft);
-uint32_t         FLACGetOutputSamps();
+uint16_t         FLACGetOutputSamps();
 uint64_t         FLACGetTotoalSamplesInStream();
 uint8_t          FLACGetBitsPerSample();
 uint8_t          FLACGetChannels();
@@ -172,73 +183,7 @@ int8_t           decodeLinearPredictiveCodingSubframe(int32_t lpcOrder, int32_t 
 int8_t           decodeResiduals(uint8_t warmup, uint8_t ch, int32_t* bytesLeft);
 void             restoreLinearPrediction(uint8_t ch, uint8_t shift);
 int32_t          FLAC_specialIndexOf(uint8_t* base, const char* str, int32_t baselen, bool exact = false);
-
-// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
-    // 📌📌📌  L O G G I N G   📌📌📌
-extern __attribute__((weak)) void audio_info(const char*);
-
-template <typename... Args>
-void FLAC_LOG_IMPL(uint8_t level, const char* path, int line, const char* fmt, Args&&... args) {
-    #define ANSI_ESC_RESET          "\033[0m"
-    #define ANSI_ESC_BLACK          "\033[30m"
-    #define ANSI_ESC_RED            "\033[31m"
-    #define ANSI_ESC_GREEN          "\033[32m"
-    #define ANSI_ESC_YELLOW         "\033[33m"
-    #define ANSI_ESC_BLUE           "\033[34m"
-    #define ANSI_ESC_MAGENTA        "\033[35m"
-    #define ANSI_ESC_CYAN           "\033[36m"
-    #define ANSI_ESC_WHITE          "\033[37m"
-
-    ps_ptr<char> result;
-    ps_ptr<char> file;
-
-    file.copy_from(path);
-    while(file.contains("/")){
-        file.remove_before('/', false);
-    }
-
-    // First run: determine size
-    int len = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
-    if (len <= 0) return;
-
-    result.alloc(len + 1, "result");
-    char* dst = result.get();
-    if (!dst) return;
-    std::snprintf(dst, len + 1, fmt, std::forward<Args>(args)...);
-
-    // build a final string with file/line prefix
-    ps_ptr<char> final;
-    int total_len = std::snprintf(nullptr, 0, "%s:%d:" ANSI_ESC_RED " %s" ANSI_ESC_RESET, file.c_get(), line, dst);
-    if (total_len <= 0) return;
-    final.calloc(total_len + 1, "final");
-    final.clear();
-    char* dest = final.get();
-    if (!dest) return;  // Or error treatment
-    if(audio_info){
-        if     (level == 1 && CORE_DEBUG_LEVEL >= 1) snprintf(dest, total_len + 1, "%s:%d:" ANSI_ESC_RED " %s" ANSI_ESC_RESET, file.c_get(), line, dst);
-        else if(level == 2 && CORE_DEBUG_LEVEL >= 2) snprintf(dest, total_len + 1, "%s:%d:" ANSI_ESC_YELLOW " %s" ANSI_ESC_RESET, file.c_get(), line, dst);
-        else if(level == 3 && CORE_DEBUG_LEVEL >= 3) snprintf(dest, total_len + 1, "%s:%d:" ANSI_ESC_GREEN " %s" ANSI_ESC_RESET, file.c_get(), line, dst);
-        else if(level == 4 && CORE_DEBUG_LEVEL >= 4) snprintf(dest, total_len + 1, "%s:%d:" ANSI_ESC_CYAN " %s" ANSI_ESC_RESET, file.c_get(), line, dst);
-        else              if( CORE_DEBUG_LEVEL >= 5) snprintf(dest, total_len + 1, "%s:%d:" ANSI_ESC_WHITE" %s" ANSI_ESC_RESET, file.c_get(), line, dst);
-        if(final.strlen()) audio_info(final.get());
-    }
-    else{
-        std::snprintf(dest, total_len + 1, "%s:%d: %s", file.c_get(), line, dst);
-        if     (level == 1) log_e("%s", final.c_get());
-        else if(level == 2) log_w("%s", final.c_get());
-        else if(level == 3) log_i("%s", final.c_get());
-        else if(level == 4) log_d("%s", final.c_get());
-        else                log_v("%s", final.c_get());
-    }
-    final.reset();
-    result.reset();
-}
-
-// Macro for comfortable calls
-#define FLAC_LOG_ERROR(fmt, ...)   FLAC_LOG_IMPL(1, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define FLAC_LOG_WARN(fmt, ...)    FLAC_LOG_IMPL(2, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define FLAC_LOG_INFO(fmt, ...)    FLAC_LOG_IMPL(3, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define FLAC_LOG_DEBUG(fmt, ...)   FLAC_LOG_IMPL(4, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define FLAC_LOG_VERBOSE(fmt, ...) FLAC_LOG_IMPL(5, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
-
+char*            flac_x_ps_malloc(uint16_t len);
+char*            flac_x_ps_calloc(uint16_t len, uint8_t size);
+char*            flac_x_ps_strdup(const char* str);
+char*            flac_x_ps_strndup(const char* str, uint16_t n);

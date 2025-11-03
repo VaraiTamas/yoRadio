@@ -3,7 +3,7 @@
  * libhelix_HMP3DECODER
  *
  *  Created on: 26.10.2018
- *  Updated on: 09.07.2025
+ *  Updated on: 09.09.2024
  */
 #include "mp3_decoder.h"
 /* clip to range [-2^n, 2^n - 1] */
@@ -1181,283 +1181,53 @@ int32_t UnpackScaleFactors( uint8_t *buf, int32_t *bitOffset, int32_t bitsAvail,
  ****************************************************************************************************************************************************/
 int32_t MP3FindSyncWord(uint8_t *buf, int32_t nBytes) {
 
-    // Auxiliary function for extracting bits, byte 'value', 'start_bit' is that bit from the left (0-7), 'num_bits' is the number of bits
-    // auto extract_bits = [&](uint8_t byte, uint8_t start_bit, uint8_t num_bits) {
-    //   return (byte >> (8 - start_bit - num_bits)) & ((1 << num_bits) - 1);
-    // };
-    const uint8_t  SYNCWORDH = 0xff;
-    const uint8_t  SYNCWORDL = 0xe0;
-
-    typedef struct {
-        uint8_t  mpeg_version; // 0=MPEG2.5, 1=reserved, 2=MPEG2, 3=MPEG1
-        uint8_t  layer;        // 0=reserved, 1=Layer III, 2=Layer II, 3=Layer I
-        bool     crc_protected;
-        uint8_t  bitrate_idx;
-        uint8_t  sample_rate_idx;
-        bool     padding;
-        uint8_t  channel_mode;
-        uint32_t frame_length; // In Bytes
-        uint16_t sample_rate_hz; // Die tatsächliche Abtastrate in Hz
-        uint16_t bitrate_kbps;   // Die tatsächliche Bitrate in kbps
-        uint16_t samples_per_frame;
-    } Mp3FrameHeader;
-
-    // SamplingFrequenz-Lookup tables(Beispiel für MPEG1, MPEG2, MPEG2.5)
-    const uint16_t sampling_rates[3][4] = {
-        {44100, 48000, 32000, 0}, // MPEG1
-        {22050, 24000, 16000, 0}, // MPEG2
-        {11025, 12000, 8000, 0}   // MPEG2.5
-    };
-
-    typedef enum {          /* map to 0,1,2 to make table indexing easier */
-        MPEG1 =  0,
-        MPEG2 =  1,
-        MPEG25 = 2
-    } MPEGVersion_t;
-
-    const uint16_t mpeg1_layer1_bitrates[16] = {
-        0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 0
-    };
-
-    const uint16_t mpeg1_layer3_bitrates[16] = {                              // Bitraten-Lookup tables (example for MPEG1 Layer III)
-        0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0   // Attention: These tables must be complete and correct!
-    };
-    // Define bitrate tables for MPEG1 Layer II and MPEG2/2.5 Layer II
-    // These tables are examples and need to be complete based on the MPEG standard
-    const uint16_t mpeg1_layer2_bitrates[] = {
-        0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 0
-    };
-    const uint16_t mpeg2_layer2_bitrates[] = {
-        0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0
-    };
-    const uint16_t mpeg2_layer3_bitrates[] = {
-        0, // "Free format" oder ungültig
-        8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160,
-        0 // Ungültig
-    };
-
-    // Funktion zum Parsen des Headers und Überprüfen der Gültigkeit
-    auto parseMp3Header = [&](const uint8_t* header_data, Mp3FrameHeader* header_info) {
-        // Byte 0: Syncword H (bereits geprüft)
-        // Byte 1: Syncword L, MPEG Version, Layer
-        // Byte 2: Bitrate, Sampling Frequency, Padding, Private
-        // Byte 3: Channel Mode, Mode Extension, Copyright, Original, Emphasis
-
-        // Syncword has already been checked, here we start with the other bits
-        header_info->mpeg_version = (header_data[1] >> 3) & 0b11; // Bits 12, 13 (A, B)
-        header_info->layer        = (header_data[1] >> 1) & 0b11; // Bits 14, 15 (C, D)
-        header_info->crc_protected = !((header_data[1] >> 0) & 0b1); // Bit 16 (Schutzbit)
-
-        header_info->bitrate_idx   = (header_data[2] >> 4) & 0b1111; // Bits 17-20
-        header_info->sample_rate_idx = (header_data[2] >> 2) & 0b11; // Bits 21-22
-        header_info->padding       = (header_data[2] >> 1) & 0b1;    // Bit 23
-
-        header_info->channel_mode  = (header_data[3] >> 6) & 0b11; // Bits 24-25
-
-        // Gültigkeitsprüfungen
-        if (header_info->mpeg_version == 1) { // Reserved
-            MP3_LOG_DEBUG("Reserved MPEG version\n");
-            return false;
-        }
-        if (header_info->layer == 0) { // Reserved
-            MP3_LOG_DEBUG("Reserved Layer\n");
-            return false;
-        }
-        // Modified part: Support for Layer II and Layer III
-        if (header_info->layer != 1 && header_info->layer != 2 && header_info->layer != 3 ) { // Allow Layer I (3) Layer II (2) and Layer III (1)
-            printf("\n"); for(int i = 0; i<10; i++) printf("0x%02x ", header_data[i]); printf("\n"); // Use header_data instead of buf
-            MP3_LOG_DEBUG("Not Layer I or II or III\n");
-            return false;
-        }
-
-        if (header_info->bitrate_idx == 0 || header_info->bitrate_idx == 15) { // Invalid bit rate
-            MP3_LOG_DEBUG("Invalid bitrate index\n");
-            return false;
-        }
-        if (header_info->sample_rate_idx == 3) { // Invalid sampling frequency
-            MP3_LOG_DEBUG("Invalid sampling rate index\n");
-            return false;
-        }
-
-        // Determine the actual bit rate and sampling frequency
-        uint16_t bitrate_kbps = 0;
-        uint16_t sample_rate_hz = 0;
-
-        // Mapping from MPEG version to sampling rate table
-        uint8_t sr_table_idx;
-        if (header_info->mpeg_version == 3) sr_table_idx = 0; // MPEG 1 (0b11)
-        else if (header_info->mpeg_version == 2) sr_table_idx = 1; // MPEG 2 (0b10)
-        else sr_table_idx = 2; // MPEG 2.5 (da mpeg_version == 0) - Although Google TTS is likely MPEG 2.0
-
-        sample_rate_hz = sampling_rates[sr_table_idx][header_info->sample_rate_idx];
-
-        // Bitraten-Mapping für verschiedene MPEG-Versionen und Layer
-        if (header_info->mpeg_version == 3) { // MPEG 1
-            if (header_info->layer == 1) { // Layer III
-                bitrate_kbps = mpeg1_layer3_bitrates[header_info->bitrate_idx];
-            } else if (header_info->layer == 2) { // Layer II
-                bitrate_kbps = mpeg1_layer2_bitrates[header_info->bitrate_idx];
-            } else if (header_info->layer == 3) { // Layer I
-                bitrate_kbps = mpeg1_layer1_bitrates[header_info->bitrate_idx];
-            }
-        } else if (header_info->mpeg_version == 2 || header_info->mpeg_version == 0) { // MPEG 2 or MPEG 2.5
-            if (header_info->layer == 1) { // Layer III
-                bitrate_kbps = mpeg2_layer3_bitrates[header_info->bitrate_idx];
-            } else if (header_info->layer == 2) { // Layer II
-                bitrate_kbps = mpeg2_layer2_bitrates[header_info->bitrate_idx];
-            }
-            // If you also want to support MPEG 2/2.5 Layer I, you'd add another else if here
-            // e.g., else if (header_info->layer == 3) { bitrate_kbps = mpeg2_layer1_bitrates[header_info->bitrate_idx]; }
-        }
-
-        if (bitrate_kbps == 0 || sample_rate_hz == 0) {
-            MP3_LOG_DEBUG("Could not determine valid bitrate or sample rate\n");
-            return false;
-        }
-
-        // Calculate frame length based on layer
-        // FrameSize = (1152 * BitRate / SampleRate) + Padding (for Layer III)
-        // FrameSize = (144 * BitRate / SampleRate) + Padding (for Layer I)
-        // FrameSize = (576 * BitRate / SampleRate) + Padding (for Layer II, MPEG 2.0/2.5)
-        // Note: For MPEG 1 Layer II, it's (1152 * BitRate / SampleRate) + Padding
-        // Need to be careful with the constant depending on MPEG version and layer
-        if (header_info->layer == 1) { // Layer III
-            header_info->frame_length = (144 * bitrate_kbps * 1000) / sample_rate_hz; // Assuming MPEG1 Layer III
-            if (header_info->mpeg_version == 2 || header_info->mpeg_version == 0) { // MPEG2/2.5 Layer III
-                header_info->frame_length = (72 * bitrate_kbps * 1000) / sample_rate_hz; // Correct constant for MPEG2/2.5 Layer III
-            }
-        } else if (header_info->layer == 2) { // Layer II
-            if (header_info->mpeg_version == 3) { // MPEG 1 Layer II
-                header_info->frame_length = (144 * bitrate_kbps * 1000) / sample_rate_hz;
-            } else if (header_info->mpeg_version == 2 || header_info->mpeg_version == 0) { // MPEG 2/2.5 Layer II
-                header_info->frame_length = (144 * bitrate_kbps * 1000) / sample_rate_hz;
-            }
-        } else if (header_info->layer == 3) { // Layer I
-            // For Layer I, the formula is (Bitrate * 12 / SampleRate) + Padding (in Bytes)
-            // Note: Bitrate is in kbps, so multiply by 1000 to get bps
-            if (header_info->mpeg_version == 3) { // MPEG 1 Layer I
-                header_info->frame_length = (bitrate_kbps * 1000 / 8 * 12) / sample_rate_hz; // Correct
-            } else if (header_info->mpeg_version == 2 || header_info->mpeg_version == 0) { // MPEG 2/2.5 Layer I (if supported)
-                // You'd add the specific calculation for MPEG2/2.5 Layer I here
-                // For MPEG 2/2.5 Layer I, samples per frame is 576, so the constant is 6
-                header_info->frame_length = (bitrate_kbps * 1000 / 8 * 6) / sample_rate_hz; // Hypothetical, verify constant
-            }
-        }
-
-        if (header_info->padding) {
-            header_info->frame_length += 1; // Füge 1 Byte für Padding hinzu
-        }
-
-        if (header_info->frame_length == 0) {
-            MP3_LOG_DEBUG("Calculated frame length is zero\n");
-            return false;
-        }
-        header_info->sample_rate_hz = sample_rate_hz;
-        header_info->bitrate_kbps = bitrate_kbps;
-
-        // Determine samples_per_frame based on the version and layer
-        if (header_info->mpeg_version == 3) {                         // MPEG-1
-            if (header_info->layer == 1 || header_info->layer == 2) { // Layer III oder Layer II
-                header_info->samples_per_frame = 1152;
-            } else if (header_info->layer == 3) { // Layer I
-                header_info->samples_per_frame = 384;
-            } else {
-                header_info->samples_per_frame = 0; // Should be caught by previous checks
-                return false;
-            }
-        } else if (header_info->mpeg_version == 2 || header_info->mpeg_version == 0) { // MPEG-2 oder MPEG-2.5
-            if (header_info->layer == 1) {                                             // Layer III
-                header_info->samples_per_frame = 576;
-            } else if (header_info->layer == 2) {      // Layer II
-                header_info->samples_per_frame = 1152;
-            } else if (header_info->layer == 3) {      // Layer I
-                header_info->samples_per_frame = 576; // Correct for MPEG-2/2.5 Layer I
-            } else {
-                header_info->samples_per_frame = 0; // Should be caught by previous checks
-                return false;
-            }
-        } else { // header_info->mpeg_version == 1 (Reserved)
-            header_info->samples_per_frame = 0;
-            return false;
-        }
-        return true; // Header ist gültig
-    };
-
     const uint8_t mp3FHsize = 4; // frame header size
+    uint8_t firstFH[4];
 
-    // Lambda for the fast syncword search
-    auto findSync = [&](uint8_t* search_buf, uint16_t offset, uint16_t len) {
-        for (int32_t i = 0; i < len - 1; i++) {
-            // Prüfe auf die 11 oder 12 Sync-Bits
-            if ((search_buf[i + offset] == SYNCWORDH) &&
-                ((search_buf[i + offset + 1] & SYNCWORDL) == SYNCWORDL)) {
+    //————————————————————————————————————————————————————————————————————————————————————————————————————————
+    auto findSync = [&](uint8_t* buf, uint16_t offset, uint16_t len) { // lambda, inner function
+        for (int32_t i = 0; i < nBytes - 1; i++) {
+            if ((buf[i + offset] & m_SYNCWORDH) == m_SYNCWORDH && (buf[i + offset + 1] & m_SYNCWORDL) == m_SYNCWORDL){
                 return i;
             }
         }
         return (int32_t)-1;
     };
+    //————————————————————————————————————————————————————————————————————————————————————————————————————————
+    /* find byte-aligned syncword - need 12 (MPEG 1,2) or 11 (MPEG 2.5) matching bits */
+   int32_t pos = findSync(buf, 0, nBytes);
+    if(pos == -1) return pos; // syncword not found
+    nBytes -= pos;
 
-    int32_t current_pos = 0;
+    while(nBytes > 0){
+        firstFH[0] = buf[pos + 0];
+        firstFH[1] = buf[pos + 1];
+        firstFH[2] = buf[pos + 2];
+        firstFH[3] = buf[pos + 2];
 
-    while (nBytes >= mp3FHsize) { // Make sure that there are enough bytes for a header
-        int32_t sync_offset = findSync(buf, current_pos, nBytes);
-
-        if (sync_offset == -1) {
-            MP3_LOG_DEBUG("No syncword found in remaining buffer\n");
-            return -1; // No more syncword found
+        if((firstFH[2] & 0b11110000) == 0b11110000){ // wrong bitrate index
+            log_d("wrong bitrate index");
+            pos += mp3FHsize;
+            nBytes -= mp3FHsize;
+           int32_t i = findSync(buf, pos, nBytes);
+            pos += i;
+            nBytes -= i;
+            continue;
         }
 
-        current_pos += sync_offset;
-        nBytes      -= sync_offset;
-
-        if (nBytes < mp3FHsize) {
-            MP3_LOG_DEBUG("Not enough bytes for a full header after syncword\n");
-            return -1; // Not enough data for a full header
+        if((firstFH[2] & 0b00001100) == 0b00001100){ // wrong sampling rate frequency index
+            log_d("wrong sampling rate");
+            pos += mp3FHsize;
+            nBytes -= mp3FHsize;
+           int32_t i = findSync(buf, pos, nBytes);
+            pos += i;
+            nBytes -= i;
+            continue;
         }
-
-        Mp3FrameHeader header;
-        if (parseMp3Header(&buf[current_pos], &header)) {
-            // This is where the crucial step comes: Check the next frame
-            if (current_pos + header.frame_length + mp3FHsize <= current_pos + nBytes) {
-                // Check whether there is a syncword at the expected next frame start and a valid header is (optional but very robust)
-                Mp3FrameHeader next_header;
-                if (((buf[current_pos + header.frame_length] == SYNCWORDH) && ((buf[current_pos + header.frame_length + 1] & SYNCWORDL) == SYNCWORDL)) &&
-                                        parseMp3Header(&buf[current_pos + header.frame_length], &next_header)) {
-                    // MP3_LOG_DEBUG("Found reliable MP3 frame at pos: %d, length: %lu\n", current_pos, header.frame_length);
-
-                    // s_samplerate   = header.sample_rate_hz; // (suppose in the structure available)
-                    // s_bitRate      = header.bitrate_kbps;   // (suppose in the structure available)
-                    // s_mpeg_version = header.mpeg_version;
-                    // s_layer        = header.layer;
-                    // s_channel_mode = header.channel_mode;
-                    // s_samples_per_frame = header.samples_per_frame;
-
-                    // // s_channels (1 Mono, 2 Stereo)
-                    // if (header.channel_mode == 0b11) { // 0b11 ist Mono
-                    //     s_channels = 1;
-                    // } else { // 2 channels for all other (Stereo, Joint Stereo, Dual Channel)
-                    //     s_channels = 2;
-                    // }
-                    return current_pos;
-                } else {
-                    MP3_LOG_DEBUG("Header valid, but next frame does not validate. False positive. Moving on.");
-                }
-            } else {
-                MP3_LOG_DEBUG("Header valid, but not enough data for next frame check. Possibly end of stream or false positive.");
-                // If not enough data for the next frame, it could still be the right one.
-                // This is a compromise.If in doubt, continue to search or return the current one.
-                // For robustness: search.
-            }
-        } else {
-            MP3_LOG_DEBUG("Found syncword but header is invalid. Moving to next possible syncword.");
-        }
-
-        // If the current header was invalid or the next frame did not validate the current "SyncWord" and continue to search
-        current_pos += 1; // go a byte on and look for the Syncword again
-        nBytes      -= 1;
+        break;
     }
 
-    return -1; // no valid MP3 frame found
+    return pos;
 }
 /*****************************************************************************************************************************************************
  * Function:    MP3FindFreeSync
@@ -1540,7 +1310,8 @@ void MP3GetLastFrameInfo() {
         m_MP3FrameInfo->nChans=m_MP3DecInfo->nChans;
         m_MP3FrameInfo->samprate=m_MP3DecInfo->samprate;
         m_MP3FrameInfo->bitsPerSample=16;
-        m_MP3FrameInfo->outputSamps = (int32_t) samplesPerFrameTab[m_MPEGVersion][m_MP3DecInfo->layer-1];
+        m_MP3FrameInfo->outputSamps=m_MP3DecInfo->nChans
+                * (int32_t) samplesPerFrameTab[m_MPEGVersion][m_MP3DecInfo->layer-1];
         m_MP3FrameInfo->layer=m_MP3DecInfo->layer;
         m_MP3FrameInfo->version=m_MPEGVersion;
     }
@@ -1550,16 +1321,8 @@ int32_t MP3GetChannels(){return m_MP3FrameInfo->nChans;}
 int32_t MP3GetBitsPerSample(){return m_MP3FrameInfo->bitsPerSample;}
 int32_t MP3GetBitrate(){return m_MP3FrameInfo->bitrate;}
 int32_t MP3GetOutputSamps(){return m_MP3FrameInfo->outputSamps;}
-
-const char* MP3GetLayer(){
-    const char* layer_str = layer_table[m_MP3FrameInfo->layer];  // 0: Reserviert, 1: Layer III, 2: Layer II, 3: Layer I
-    return layer_str;
-}
-
-const char* MP3GetMPEGVersion(){
-    const char* mpeg_version_str = mpeg_version_table[m_MP3FrameInfo->version]; // 0: MPEG-2.5, 1: Reserviert, 2: MPEG-2 (ISO/IEC 13818-3), 3: MPEG-1 (ISO/IEC 11172-3)
-    return mpeg_version_str;
-}
+int32_t MP3GetLayer(){return m_MP3FrameInfo->layer;}     // 0: Reserviert, 1: Layer III, 2: Layer II, 3: Layer I
+int32_t MP3GetVersion(){return m_MP3FrameInfo->version;} // 0: MPEG-2.5, 1: Reserviert, 2: MPEG-2 (ISO/IEC 13818-3), 3: MPEG-1 (ISO/IEC 11172-3)
 /***********************************************************************************************************************
  * Function:    MP3GetNextFrameInfo
  *
@@ -1574,13 +1337,12 @@ const char* MP3GetMPEGVersion(){
  **********************************************************************************************************************/
 int32_t MP3GetNextFrameInfo(uint8_t *buf) {
 
-    if (UnpackFrameHeader( buf) == -1 || m_MP3DecInfo->layer != 3){
-        MP3_LOG_ERROR("MP3 invalid frameheader");
-        return MP3_ERR;
-    }
+    if (UnpackFrameHeader( buf) == -1 || m_MP3DecInfo->layer != 3)
+        return ERR_MP3_INVALID_FRAMEHEADER;
+
     MP3GetLastFrameInfo();
 
-    return MP3_NONE;
+    return ERR_MP3_NONE;
 }
 /***********************************************************************************************************************
  * Function:    MP3ClearBadFrame
@@ -1618,30 +1380,23 @@ void MP3ClearBadFrame(int16_t *outbuf) {
  * Notes:       switching useSize on and off between frames in the same stream
  *                is not supported (bit reservoir is not maintained if useSize on)
  **********************************************************************************************************************/
-int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
-
-    // int pos = MP3FindSyncWord(inbuf, *bytesLeft);
-    // if(pos > 0){*bytesLeft -= pos; MP3_INFO("skip %i bytes", pos); return MP3_NONE; }
-    // if(pos < 0){MP3_INFO("skip %i max bytes", *bytesLeft);  *bytesLeft = 0; return MP3_NONE; }
-
-    int32_t offset, bitOffset, mainBits, gr, ch, fhBytes, siBytes, freeFrameBytes;
-    int32_t prevBitOffset, sfBlockBits, huffBlockBits;
+int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf, int32_t useSize){
+   int32_t offset, bitOffset, mainBits, gr, ch, fhBytes, siBytes, freeFrameBytes;
+   int32_t prevBitOffset, sfBlockBits, huffBlockBits;
     uint8_t *mainPtr;
     static uint8_t underflowCounter = 0; // http://macslons-irish-pub-radio.stream.laut.fm/macslons-irish-pub-radio
 
     /* unpack frame header */
     fhBytes = UnpackFrameHeader(inbuf);
     if (fhBytes < 0){
-        MP3_LOG_ERROR("MP3 invalid frameheader"); /* don't clear outbuf since we don't know size (failed to parse header) */
-        return MP3_ERR;
+        return ERR_MP3_INVALID_FRAMEHEADER; /* don't clear outbuf since we don't know size (failed to parse header) */
     }
     inbuf += fhBytes;
     /* unpack side info */
     siBytes = UnpackSideInfo( inbuf);
     if (siBytes < 0) {
         MP3ClearBadFrame(outbuf);
-        MP3_LOG_ERROR("MP3 invalid sideinfo");
-        return MP3_ERR;
+        return ERR_MP3_INVALID_SIDEINFO;
     }
     inbuf += siBytes;
     *bytesLeft -= (fhBytes + siBytes);
@@ -1655,8 +1410,7 @@ int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
             if(m_MP3DecInfo->freeBitrateSlots < 0){
                 MP3ClearBadFrame(outbuf);
                 m_MP3DecInfo->freeBitrateFlag = 0;
-                MP3_LOG_ERROR("MP3, ca'nt find free bitrate slot");
-                return MP3_ERR;
+                return ERR_MP3_FREE_BITRATE_SYNC;
             }
             freeFrameBytes=m_MP3DecInfo->freeBitrateSlots + fhBytes + siBytes;
             m_MP3DecInfo->bitrate=(freeFrameBytes * m_MP3DecInfo->samprate * 8)
@@ -1671,26 +1425,24 @@ int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
      *  - calling function should set mainDataBegin to 0, and tell us exactly how large this
      *      frame is (in bytesLeft)
      */
-    // if (useSize) {
-    //     m_MP3DecInfo->nSlots = *bytesLeft;
-    //     if (m_MP3DecInfo->mainDataBegin != 0 || m_MP3DecInfo->nSlots <= 0) {
-    //         /* error - non self-contained frame, or missing frame (size <= 0), could do loss concealment here */
-    //         MP3ClearBadFrame(outbuf);
-    //         MP3_ERROR("MP3, invalid frameheader");
-    //         return MP3_ERR;
-    //     }
+    if (useSize) {
+        m_MP3DecInfo->nSlots = *bytesLeft;
+        if (m_MP3DecInfo->mainDataBegin != 0 || m_MP3DecInfo->nSlots <= 0) {
+            /* error - non self-contained frame, or missing frame (size <= 0), could do loss concealment here */
+            MP3ClearBadFrame(outbuf);
+            return ERR_MP3_INVALID_FRAMEHEADER;
+        }
 
-    //     /* can operate in-place on reformatted frames */
-    //     m_MP3DecInfo->mainDataBytes = m_MP3DecInfo->nSlots;
-    //     mainPtr = inbuf;
-    //     inbuf += m_MP3DecInfo->nSlots;
-    //     *bytesLeft -= (m_MP3DecInfo->nSlots);
-    // } else {
+        /* can operate in-place on reformatted frames */
+        m_MP3DecInfo->mainDataBytes = m_MP3DecInfo->nSlots;
+        mainPtr = inbuf;
+        inbuf += m_MP3DecInfo->nSlots;
+        *bytesLeft -= (m_MP3DecInfo->nSlots);
+    } else {
         /* out of data - assume last or truncated frame */
         if (m_MP3DecInfo->nSlots > *bytesLeft) {
             MP3ClearBadFrame(outbuf);
-            MP3_LOG_ERROR("MP3, indata underflow");
-            return MP3_ERR;
+            return ERR_MP3_INDATA_UNDERFLOW;
         }
         /* fill main data buffer with enough new data for this frame */
         if (m_MP3DecInfo->mainDataBytes >= m_MP3DecInfo->mainDataBegin) {
@@ -1714,13 +1466,12 @@ int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
             inbuf += m_MP3DecInfo->nSlots;
             *bytesLeft -= (m_MP3DecInfo->nSlots);
             if(underflowCounter < 4){
-                return MP3_NONE;
+                return ERR_MP3_NONE;
             }
             MP3ClearBadFrame( outbuf);
-            MP3_LOG_ERROR("MP3, maindata underflow");
-            return MP3_ERR;
+            return ERR_MP3_MAINDATA_UNDERFLOW;
         }
-//    }
+    }
     bitOffset = 0;
     mainBits = m_MP3DecInfo->mainDataBytes * 8;
 
@@ -1738,16 +1489,14 @@ int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
 
             if (offset < 0 || mainBits < huffBlockBits) {
                 MP3ClearBadFrame(outbuf);
-                MP3_LOG_ERROR("MP3, invalid scalefact");
-                return MP3_ERR;
+                return ERR_MP3_INVALID_SCALEFACT;
             }
             /* decode Huffman code words */
             prevBitOffset = bitOffset;
             offset = DecodeHuffman( mainPtr, &bitOffset, huffBlockBits, gr, ch);
             if (offset < 0) {
                 MP3ClearBadFrame( outbuf);
-                MP3_LOG_ERROR("MP3, invalid Huffman code words");
-                return MP3_ERR;
+                return ERR_MP3_INVALID_HUFFCODES;
             }
             mainPtr += offset;
             mainBits -= (8 * offset - prevBitOffset + bitOffset);
@@ -1755,16 +1504,14 @@ int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
         /* dequantize coefficients, decode stereo, reorder int16_t blocks */
         if (MP3Dequantize( gr) < 0) {
             MP3ClearBadFrame(outbuf);
-            MP3_LOG_ERROR("MP3, invalid dequantize coefficients");
-            return MP3_ERR;
+            return ERR_MP3_INVALID_DEQUANTIZE;
         }
 
         /* alias reduction, inverse MDCT, overlap-add, frequency inversion */
         for (ch = 0; ch < m_MP3DecInfo->nChans; ch++) {
             if (IMDCT( gr, ch) < 0) {
                 MP3ClearBadFrame(outbuf);
-                MP3_LOG_ERROR("MP3, invalid inverse MDCT");
-                return MP3_ERR;
+                return ERR_MP3_INVALID_IMDCT;
             }
         }
         /* subband transform - if stereo, interleaves pcm LRLRLR */
@@ -1772,12 +1519,11 @@ int32_t MP3Decode( uint8_t *inbuf, int32_t *bytesLeft, int16_t *outbuf){
                 outbuf + gr * m_MP3DecInfo->nGranSamps * m_MP3DecInfo->nChans)
                 < 0) {
             MP3ClearBadFrame(outbuf);
-            MP3_LOG_ERROR("MP3, invalid subband");
-            return MP3_ERR;
+            return ERR_MP3_INVALID_SUBBAND;
         }
     }
     MP3GetLastFrameInfo();
-    return MP3_NONE;
+    return ERR_MP3_NONE;
 }
 
 /***********************************************************************************************************************
@@ -1853,7 +1599,7 @@ bool MP3Decoder_AllocateBuffers(void) {
     if(!m_MP3DecInfo || !m_FrameHeader || !m_SideInfo || !m_ScaleFactorJS || !m_HuffmanInfo ||
        !m_DequantInfo || !m_IMDCTInfo || !m_SubbandInfo || !m_MP3FrameInfo) {
         MP3Decoder_FreeBuffers();
-        MP3_LOG_ERROR("not enough memory to allocate mp3decoder buffers");
+        log_e("not enough memory to allocate mp3decoder buffers");
         return false;
     }
     MP3Decoder_ClearBuffer();
@@ -1905,7 +1651,7 @@ void MP3Decoder_FreeBuffers()
     if(m_SubbandInfo)       {free(m_SubbandInfo);     m_SubbandInfo=NULL;}
     if(m_MP3FrameInfo)      {free(m_MP3FrameInfo);    m_MP3FrameInfo=NULL;}
 
-//    MP3_LOG_DEBUG("MP3Decoder: %lu bytes memory was freed", ESP.getFreeHeap() - i);
+//    log_i("MP3Decoder: %lu bytes memory was freed", ESP.getFreeHeap() - i);
 }
 
 /***********************************************************************************************************************
@@ -1933,7 +1679,6 @@ void MP3Decoder_FreeBuffers()
  *                necessarily all linBits outputs for x,y > 15)
  **********************************************************************************************************************/
 // no improvement with section=data
-
 int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t bitsLeft, uint8_t *buf, int32_t bitOffset){
    int32_t i, x, y;
    int32_t cachedBits, padBits, len, startBits, linBits, maxBits, minBits;
@@ -1957,10 +1702,10 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
 //    assert(tabIdx >= 0);
 //    assert(tabType != invalidTab);
 
-    if((nVals & 0x01)){MP3_LOG_DEBUG("assert(!(nVals & 0x01))"); return -1;}
-    if(!(tabIdx < m_HUFF_PAIRTABS)){MP3_LOG_DEBUG("assert(tabIdx < m_HUFF_PAIRTABS)"); return -1;}
-    if(!(tabIdx >= 0)){MP3_LOG_DEBUG("(tabIdx >= 0)"); return -1;}
-    if(!(tabType != invalidTab)){MP3_LOG_DEBUG("(tabType != invalidTab)"); return -1;}
+    if((nVals & 0x01)){log_d("assert(!(nVals & 0x01))"); return -1;}
+    if(!(tabIdx < m_HUFF_PAIRTABS)){log_d("assert(tabIdx < m_HUFF_PAIRTABS)"); return -1;}
+    if(!(tabIdx >= 0)){log_d("(tabIdx >= 0)"); return -1;}
+    if(!(tabType != invalidTab)){log_d("(tabType != invalidTab)"); return -1;}
 
 
     /* initially fill cache with any partial byte */
@@ -1993,9 +1738,8 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
                 bitsLeft -= 16;
             } else {
                 /* last time through, pad cache with zeros and drain cache */
-                if (cachedBits + bitsLeft <= 0){
+                if (cachedBits + bitsLeft <= 0)
                     return -1;
-                }
                 if (bitsLeft > 0)
                     cache |= (uint32_t) (*buf++) << (24 - cachedBits);
                 if (bitsLeft > 8)
@@ -2023,6 +1767,8 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
                     cachedBits--;
                 }
 
+
+
                 y=(int32_t)( (((uint16_t)(cw)) >>  8) & 0x000f);
                 if (y) {
                     (y) |= ((cache) & 0x80000000);
@@ -2031,10 +1777,8 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
                 }
 
                 /* ran out of bits - should never have consumed padBits */
-                if (cachedBits < padBits){
-                    break; // https://bestof80s.stream.laut.fm/best_of_80s (after advertising)
-                //    return -1;
-                }
+                if (cachedBits < padBits)
+                    return -1;
 
                 *xy++ = x;
                 *xy++ = y;
@@ -2056,9 +1800,8 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
                 bitsLeft -= 16;
             } else {
                 /* last time through, pad cache with zeros and drain cache */
-                if (cachedBits + bitsLeft <= 0){
+                if (cachedBits + bitsLeft <= 0)
                     return -1;
-                }
                 if (bitsLeft > 0)
                     cache |= (uint32_t) (*buf++) << (24 - cachedBits);
                 if (bitsLeft > 8)
@@ -2115,8 +1858,7 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
                 if (y == 15 && tabType == loopLinbits) {
                     minBits = linBits + 1;
                     if (cachedBits + bitsLeft < minBits)
-                        break; // https://bestof80s.stream.laut.fm/best_of_80s (after advertising)
-                        // return -1;
+                        return -1;
                     while (cachedBits < minBits) {
                         cache |= (uint32_t) (*buf++) << (24 - cachedBits);
                         cachedBits += 8;
@@ -2138,10 +1880,8 @@ int32_t DecodeHuffmanPairs(int32_t *xy, int32_t nVals, int32_t tabIdx, int32_t b
                 }
 
                 /* ran out of bits - should never have consumed padBits */
-                if (cachedBits < padBits){
-                    break; // https://bestof80s.stream.laut.fm/best_of_80s (after advertising)
-                    // return -1;
-                }
+                if (cachedBits < padBits)
+                    return -1;
 
                 *xy++ = x;
                 *xy++ = y;
@@ -2299,9 +2039,8 @@ int32_t DecodeHuffman(uint8_t *buf, int32_t *bitOffset, int32_t huffBlockBits, i
     sis = &m_SideInfoSub[gr][ch];
     //hi = (HuffmanInfo_t*) (m_MP3DecInfo->HuffmanInfoPS);
 
-    if (huffBlockBits < 0){
+    if (huffBlockBits < 0)
         return -1;
-    }
 
     /* figure out region boundaries (the first 2*bigVals coefficients divided into 3 regions) */
     if (sis->winSwitchFlag && sis->blockType == 2) {
@@ -2337,9 +2076,9 @@ int32_t DecodeHuffman(uint8_t *buf, int32_t *bitOffset, int32_t huffBlockBits, i
         bitsUsed = DecodeHuffmanPairs(m_HuffmanInfo->huffDecBuf[ch] + rEnd[i],
                 rEnd[i + 1] - rEnd[i], sis->tableSelect[i], bitsLeft, buf,
                 *bitOffset);
-        if (bitsUsed < 0 || bitsUsed > bitsLeft){ /* error - overran end of bitstream */
+        if (bitsUsed < 0 || bitsUsed > bitsLeft) /* error - overran end of bitstream */
             return -1;
-        }
+
         /* update bitstream position */
         buf += (bitsUsed + *bitOffset) >> 3;
         *bitOffset = (bitsUsed + *bitOffset) & 0x07;
@@ -4127,149 +3866,3 @@ void PolyphaseStereo(int16_t *pcm, int32_t *vbuf, const uint32_t *coefBase){
         pcm += 2;
     }
 }
-
-/***********************************************************************************************************************
- * Function:    AnalyzeFrame
- *
- * Description: filter one subband and produce 32 output PCM samples for each channel
- *
- * Inputs:      pointer to inpit buffer and length
- *
- * Outputs:     MPEG_VERSION
- *              LAYER
- *              CHANNEL_MODE
- *
- * Return:      main_data_begin
- *
- **********************************************************************************************************************/
-int MP3_AnalyzeFrame(const uint8_t *frame_data, size_t frame_len) {
-    if (frame_len < 4) {
-        MP3_LOG_ERROR("Error: Frame data too short for header (need 4 bytes, got %zu).\n", frame_len);
-        return -3; // Frame too short for header
-    }
-
-    // Define constants for better readability
-    const uint8_t MPEG_VERSION_2_5           = 0; // 00 - unofficial, but often so coded
-    const uint8_t MPEG_VERSION_RESERVED      = 1; // 01
-    const uint8_t MPEG_VERSION_2             = 2; // 10
-    const uint8_t MPEG_VERSION_1             = 3; // 11
-
-    const uint8_t  LAYER_RESERVED            = 0; // 00
-    const uint8_t  LAYER_III                 = 1; // 01
-    const uint8_t  LAYER_II                  = 2; // 10
-    const uint8_t  LAYER_I                   = 3; // 11
-
-    const uint8_t  CHANNEL_MODE_STEREO       = 0; // 00
-    const uint8_t  CHANNEL_MODE_JOINT_STEREO = 1; // 01
-    const uint8_t  CHANNEL_MODE_DUAL_CHANNEL = 2; // 10
-    const uint8_t  CHANNEL_MODE_MONO         = 3; // 11
-
-    (void)MPEG_VERSION_RESERVED; (void)LAYER_III; (void)LAYER_II; (void)LAYER_I; (void)CHANNEL_MODE_STEREO;
-    (void)CHANNEL_MODE_JOINT_STEREO; (void)CHANNEL_MODE_DUAL_CHANNEL; (void)LAYER_RESERVED;
-
-    // ---- 1. Analyze frame header (first 4 bytes) ---
-    // combine the first 4 bytes into a 32-bit integer (Big Endian)
-    uint32_t header = ((uint32_t)frame_data[0] << 24) |
-                      ((uint32_t)frame_data[1] << 16) |
-                      ((uint32_t)frame_data[2] << 8)  |
-                      ((uint32_t)frame_data[3]);
-
-    // check sync word (first 11 bits must be 1)
-    // MPEG 2.5 Layer III often uses 12 bits (0xfff), other 11 bits (0xffe)
-    // simple check: data [0] == 0xff and (data [1] & 0xe0) == 0xe0
-    if (! (frame_data[0] == 0xFF && (frame_data[1] & 0xE0) == 0xE0) ) {
-        MP3_LOG_ERROR("Error: Invalid MP3 sync word.\n");
-        return -4;
-    }
-
-    // MPEG version ID (Bits 11-12 of the header, or Bits 19-20 from right in the Uint32_t)
-    // Header: SSSS SSSS SSSV Vllp PBBB BFFM MCCE (S = Sync, V = version, L = layer, p = Protection ...)
-    // In our `Header` Uint32_t:
-    // Bit 31..21: Sync word (11 bits)
-    // Bit 20..19: MPEG Audio version ID
-    // Bit 18..17: Layer description
-    // Bit 16:     Protection bit
-    // Bit 15..12: Bitrate index
-    // Bit 11..10: Sampling rate frequency index
-    // Bit 9:      Padding bit
-    // Bit 8:      Private bit
-    // Bit 7..6:   Channel mode
-    // Bit 5..4:   Mode extension (for Joint Stereo)
-    // Bit 3:      Copyright
-    // Bit 2:      Original
-    // Bit 1..0:   Emphasis
-
-    uint8_t mpeg_version_id = (header >> 19) & 0x03;
-    uint8_t layer_description = (header >> 17) & 0x03;
-    uint8_t protection_bit = (header >> 16) & 0x01;
-    uint8_t channel_mode = (header >> 6) & 0x03;
-
-    // Debug output(optional)
-    // MP3_LOG_DEBUG("MPEG Version ID raw: %u\n", mpeg_version_id);
-    // MP3_LOG_DEBUG("Layer Description raw: %u\n", layer_description);
-    // MP3_LOG_DEBUG("Protection Bit: %u\n", protection_bit);
-    // MP3_LOG_DEBUG("Channel Mode raw: %u\n", channel_mode);
-
-
-    // --- 2. Check whether it is Layer III ---
-    if (layer_description != LAYER_III) {
-        //fprintf(stderr, "Info: Not an MPEG Layer III frame (Layer: %u).\n", layer_description);
-        return -1; // no Layer III
-    }
-
-    // --- 3. Side Information, Determine offset and size ---
-    int side_info_offset = 4;  // after the 4-Byte Header
-    if (protection_bit == 0) { // 0 means CRC is available
-        side_info_offset += 2; // Skip 16-bit CRC
-    }
-
-    int side_info_size; (void)side_info_size;
-    // Derive MPEG versions from the ID (according to ISO/IEC 13818-3 Table B.1)
-    // ID '00' -> MPEG 2.5
-    // ID '01' -> reserved
-    // ID '10' -> MPEG 2
-    // ID '11' -> MPEG 1
-    if (mpeg_version_id == MPEG_VERSION_1) { // MPEG-1
-        if (channel_mode == CHANNEL_MODE_MONO) {
-            side_info_size = 17; // Mono
-        } else {
-            side_info_size = 32; // Stereo, Joint Stereo, Dual Channel
-        }
-    } else if (mpeg_version_id == MPEG_VERSION_2 || mpeg_version_id == MPEG_VERSION_2_5) { // MPEG-2 oder MPEG-2.5
-        if (channel_mode == CHANNEL_MODE_MONO) {
-            side_info_size = 9;  // Mono
-        } else {
-            side_info_size = 17; // Stereo, Joint Stereo, Dual Channel
-        }
-    } else {
-        fprintf(stderr, "Error: Reserved or unknown MPEG version ID: %u.\n", mpeg_version_id);
-        return -2; //Unknown/reserved MPEG version
-    }
-
-    // ensure that the frame is long enough for the side information
-    // We need at least 2 bytes of the side info for Main_data_begin
-    if (frame_len < (size_t)(side_info_offset + 2)) {
-        fprintf(stderr, "Error: Frame data too short for side information (need %d bytes, got %zu).\n", side_info_offset + 2, frame_len);
-        return -3;
-    }
-    // (optional) Check whether the entire Side Information is available
-    /*
-    if (frame_len < (size_t)(side_info_offset + side_info_size)) {
-        fprintf(stderr, "Warning: Frame data might be too short for full side information (expected %d, got %zu available after header/CRC).\n", side_info_size, frame_len - side_info_offset);
-        // Fortfahren, da main_data_begin am Anfang ist, aber es ist ein Hinweis
-    }
-    */
-
-    // --- 4. Main_data_begin extract from the Side Information ---
-    // Main_data_begin are the first 9 bits of the Side Information
-    // Side information begins with frame_data [side_info_offset]
-    const uint8_t *side_info_ptr = frame_data + side_info_offset;
-
-    // The 9 bits consist of:
-    // - the complete 8 bits of the first bytes of the Side Information
-    // - the MSB (highest quality bit) of the second bytes of the Side Information
-    uint16_t main_data_begin_val = ((uint16_t)side_info_ptr[0] << 1) | (side_info_ptr[1] >> 7);
-
-    return main_data_begin_val;
-}
-
