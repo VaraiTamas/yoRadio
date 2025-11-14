@@ -1,11 +1,6 @@
 #ifndef player_h
 #define player_h
-
-#if I2S_DOUT!=255 || I2S_INTERNAL
-  #include "../audioI2S/AudioEx.h"
-#else
-  #include "../audioVS1053/audioVS1053Ex.h"
-#endif
+#include "../audioI2S/Audio.h"  //"audio_change"
 
 #ifndef MQTT_BURL_SIZE
   #define MQTT_BURL_SIZE  512
@@ -14,7 +9,6 @@
 #ifndef PLQ_SEND_DELAY
   #define PLQ_SEND_DELAY pdMS_TO_TICKS(1000) //portMAX_DELAY
 #endif
-
 enum playerRequestType_e : uint8_t { PR_PLAY = 1, PR_STOP = 2, PR_PREV = 3, PR_NEXT = 4, PR_VOL = 5, PR_CHECKSD = 6, PR_VUTONUS = 7, PR_BURL = 8, PR_TOGGLE = 9 };
 struct playerRequestParams_t
 {

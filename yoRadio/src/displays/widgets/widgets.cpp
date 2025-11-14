@@ -440,14 +440,20 @@ void VuWidget::_draw() {
   if (!_active || _locked) {
     return;
   }
-
+  if (!config.store.vumeter) {
+    return;
+  }
   static uint16_t measL, measR;
   uint16_t bandColor;
   uint16_t dimension = _config.align ? _bands.width : _bands.height;
-  uint16_t vulevel = player.get_VUlevel(dimension);
-  uint8_t L = (vulevel >> 8) & 0xFF;
-  uint8_t R = vulevel & 0xFF;
-  uint8_t refresh_time = 30;
+  uint16_t vulevel = player.getVUlevel();  // "audio_change" nem kell paraméter
+  uint8_t vuLeft = (vulevel >> 8) & 0xFF;
+  uint8_t vuRight = vulevel & 0xFF;
+  uint8_t maxVU = 150 ;
+  config.vuThreshold = maxVU;
+  uint8_t L = map(vuLeft, config.vuThreshold, 0, 0, dimension);
+  uint8_t R = map(vuRight, config.vuThreshold, 0, 0, dimension);
+  uint8_t refresh_time = 30;  // A VU rajzolás frissítési ideje.
   static uint32_t last_draw_time;
     #ifdef VU_PEAK
   static uint16_t peakL = 0, peakR = 0;            // Csúcsértékek
@@ -1290,7 +1296,6 @@ void BitrateWidget::_draw() {  //Módosítás
     // Serial.printf("widgets.cpp->BitrateWidget _draw() nem fut le. \n") ;
     return;
   }
-
   if (config.store.nameday) {  //  Ha be van kapcsolva a nameday Módosítás "nameday"
     dsp.drawRect(_config.left, _config.top, _dimension * 2, (_dimension / 2) - 6, _fgcolor);
     dsp.fillRect(_config.left + _dimension, _config.top, _dimension, (_dimension / 2) - 6, _fgcolor);

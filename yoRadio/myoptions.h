@@ -11,6 +11,9 @@
   #define ARDUINO_ESP32S3_DEV
 #endif
 
+//#define HEAP_DBG
+//#define NETSERVER_LOOP1
+
 /* Itt tudod beállítani a program nyelvét 
    You can set the program language here. 
    Supported languages: HU NL PL RU EN GR SK . */
@@ -97,8 +100,8 @@ Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not fil
    Speaks the time using Google TTS voice in the specified language and every specified minute.
 */
 #define CLOCK_TTS_ENABLED          true  // Enabled (true) or disabled (false)
-#define CLOCK_TTS_LANGUAGE         "GR"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
-#define CLOCK_TTS_INTERVAL_MINUTES 5     // Hány percenként mondja be. - How many times a minute does it say.
+#define CLOCK_TTS_LANGUAGE         "HU"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
+#define CLOCK_TTS_INTERVAL_MINUTES 30     // Hány percenként mondja be. - How many times a minute does it say.
 
 /* Ezzel a beállítással nincs görgetés az időjárás sávon.
    With this setting there is no scrolling on the weather bar.

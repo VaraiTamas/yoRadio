@@ -7,6 +7,7 @@
 #include "core/telnet.h"
 #include "core/player.h"
 #include "core/display.h"
+
 #include "core/network.h"
 #include "core/netserver.h"
 #include "core/controls.h"
@@ -16,7 +17,7 @@
 #ifdef USE_NEXTION
 #include "displays/nextion.h"
 #endif
-
+#include "core/audiohandlers.h"   //"audio_change"
 #if USE_OTA
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
 #include <NetworkUdp.h>
@@ -70,6 +71,8 @@ void setupOTA(){
 }
 #endif
 
+
+
 void setup() {
   Serial.begin(115200);
   if(REAL_LEDBUILTIN!=255) pinMode(REAL_LEDBUILTIN, OUTPUT);
@@ -112,10 +115,11 @@ void setup() {
   } else {
     Serial.println("❌ PSRAM nem található!");
   }
-  Serial.printf("Total heap: %lu\n", ESP.getHeapSize());
-  Serial.printf("Free heap: %lu\n", ESP.getFreeHeap());
+  Audio::audio_info_callback =  my_audio_info;   // "audio_change" audiohandlers.h ban kezelve.
+  Serial.printf("Total heap : %lu\n", ESP.getHeapSize());
+  Serial.printf("Free heap  : %lu\n", ESP.getFreeHeap());
   Serial.printf("Total PSRAM: %lu\n", ESP.getPsramSize());
-  Serial.printf("Free PSRAM: %lu\n", ESP.getFreePsram());
+  Serial.printf("Free PSRAM : %lu\n", ESP.getFreePsram());
   pm.on_end_setup();
 }
 
@@ -136,5 +140,3 @@ void loop() {
    clock_tts_loop(); // Módosítás: plussz sor.  "clock_tts"
   #endif 
 }
-
-#include "core/audiohandlers.h"

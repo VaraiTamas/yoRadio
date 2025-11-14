@@ -610,7 +610,6 @@ void Display::_title() {
     /*#ifdef USE_NEXTION
       nextion.newTitle(config.station.title);
     #endif*/
-    
   }else{
     _title1->setText("");
     if(_title2) _title2->setText("");

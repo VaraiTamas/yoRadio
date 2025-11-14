@@ -1,94 +1,149 @@
-// új hanlib
 #ifndef AUDIOHANDLERS_H
 #define AUDIOHANDLERS_H
 
-//=============================================//
-//              Audio handlers                 //
-//=============================================//
+#pragma once
 
-void audio_info(const char *info) {
+#include <Arduino.h>
+#include "../audioI2S/Audio.h"  // helyes útvonal a projektedben
+#include "../displays/tools/l10n.h"
+
+#ifdef USE_NEXTION
+extern decltype(nextion) nextion;  // helyettesd
+#endif
+//extern Stream &telnet; // vagy a megfelelő típus, ha más
+
+// Bufferméretek
+#ifndef BUFLEN
+  #define BUFLEN 512
+#endif
+
+// Prototípusok (a header elérhetővé teszi a függvényeket más fájlok számára)
+void my_audio_info(Audio::msg_t m);
+//void audio_info(const char *info);
+void audio_bitrate(const char *info);
+bool printable(const char *info);
+void audio_showstation(const char *info);
+void audio_showstreamtitle(const char *info);
+void audio_error(const char *info);
+void audio_id3artist(const char *info);
+void audio_id3album(const char *info);
+void audio_icy_description(const char *info);
+void audio_beginSDread();
+void audio_id3data(const char *info);
+void audio_eof_mp3(const char *info);
+void audio_eof_stream(const char *info);
+void audio_progress(uint32_t startpos, uint32_t endpos);
+
+static void safeStrCopy(char *dst, const char *src, size_t dstSize) {
+  if (!dst || dstSize == 0) {
+    return;
+  }
+  dst[0] = '\0';
+  if (!src) {
+    return;
+  }
+  strncpy(dst, src, dstSize - 1);
+  dst[dstSize - 1] = '\0';
+}
+
+void my_audio_info(Audio::msg_t m) {
+  // Kiíratás a sorosra (debug)
+  Serial.printf("##AUDIO -> m.s  : %s\n", m.s);
+  Serial.printf("##AUDIO -> m.msg: %s\n", m.msg);
+  if (m.s == nullptr || m.msg == nullptr) {
+    return;
+  }
   if (player.lockOutput) {
     return;
   }
-  if (config.store.audioinfo) {
-    telnet.printf("##AUDIO.INFO#: %s\n", info);
-  }
-#ifdef USE_NEXTION
-  nextion.audioinfo(info);
-#endif
-  if (strstr(info, "format is mp3") != NULL) {
-    config.setBitrateFormat(BF_MP3);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "format is aac") != NULL) {
-    config.setBitrateFormat(BF_AAC);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "format is flac") != NULL) {
-    config.setBitrateFormat(BF_FLAC);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "format is wav") != NULL) {
-    config.setBitrateFormat(BF_WAV);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "format is ogg") != NULL) {
-    config.setBitrateFormat(BF_OGG);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "format is vorbis") != NULL) {
-    config.setBitrateFormat(BF_VOR);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "format is opus") != NULL) {
-    config.setBitrateFormat(BF_OPU);
-    display.putRequest(DBITRATE);
-  }
-  if (strstr(info, "skip metadata") != NULL) {
-    config.setTitle(config.station.name);
-  }
-  if (strstr(info, "Account already in use") != NULL || strstr(info, "HTTP/1.0 401") != NULL) {
-    player.setError(info);
-  }
 
-  char *ici;
-  if ((ici = strstr(info, "BitRate: ")) != NULL) {
-    char b[20] = {0};
-    strlcpy(b, ici + 9, 50);
-    audio_bitrate(b);
-  }
-  if (((ici = strstr(info, "StreamTitle= ")) != NULL) /*&& strlen(info) > 15*/) {
-    if (strlen(config.station.title) == 0 || strcmp(config.station.title, config.station.name) == 0 || strstr(config.station.title, "timeout") != NULL) {
-      char StreamTitle[strlen(info)] = {0};
-      strlcpy(StreamTitle, ici + 13, strlen(info));
-      audio_id3album(StreamTitle);
-//audio_showstreamtitle(StreamTitle);
+  // Az üzenet típusától függően hívjuk meg a megfelelő feldolgozót
+
+  if (strcmp(m.s, "info") == 0) {
+    // Formátum felismerés
+    if (strstr(m.msg, "MPEG-1 Layer III") != NULL) {
+      config.setBitrateFormat(BF_MP3);
+      display.putRequest(DBITRATE);
+    } else if (strstr(m.msg, "AAC") != NULL) {
+      config.setBitrateFormat(BF_AAC);
+      display.putRequest(DBITRATE);
+    } else if (strstr(m.msg, "FLAC") != NULL) {
+      config.setBitrateFormat(BF_FLAC);
+      display.putRequest(DBITRATE);
+    } else if (strstr(m.msg, "WAV") != NULL) {
+      config.setBitrateFormat(BF_WAV);
+      display.putRequest(DBITRATE);
+    } else if (strstr(m.msg, "OGG") != NULL || strstr(m.msg, "VORBIS") != NULL) {
+      config.setBitrateFormat(BF_OGG);
+      display.putRequest(DBITRATE);
+    } else if (strstr(m.msg, "OPUS") != NULL) {
+      config.setBitrateFormat(BF_OPU);
+      display.putRequest(DBITRATE);
     }
   }
-  if (((ici = strstr(info, "icy-name: ")) != NULL) && strlen(info) > 12) {
-    if (strlen(config.station.title) == 0 || strcmp(config.station.title, config.station.name) == 0 || strstr(config.station.title, "timeout") != NULL) {
-      char icyName[strlen(info)] = {0};
-      strlcpy(icyName, ici + 10, strlen(info));
-#ifdef NAME_STRIM
-      if ((ici = strstr(icyName, " - ")) != NULL) {
-        char icySt[strlen(icyName) - strlen(ici)] = {0};
-        strlcpy(icySt, icyName, strlen(icyName) - strlen(ici) + 1);
-        config.setStation(icySt);
-      } else {
-        config.setStation(icyName);
-      }
+
+  if (strstr(m.msg, "skip metadata") != NULL) {
+    config.setTitle(config.station.name);
+  }
+  if (strstr(m.msg, "Account already in use") != NULL || strstr(m.msg, "HTTP/1.0 401") != NULL) {
+    player.setError(m.msg);
+  }
+  // A bitrate üzenet. ✅
+  if (strcmp(m.s, "bitrate") == 0) {
+    audio_bitrate(m.msg);
+  }
+  // Az állomás nevének kiolvasása. ✅
+  if (strcmp(m.s, "station_name") == 0 || strcmp(m.s, "icy-name") == 0) {
+    if (printable(m.msg)) {
+      config.setStation(m.msg);
       display.putRequest(NEWSTATION);
-      netserver.requestOnChange(STATION, 0);
+      netserver.requestOnChange(STATION, 0);  // Nem frissül a web!
+    }
+  }
+  // Streamtitle kiolvasása. ✅
+  if (strcmp(m.s, "streamtitle") == 0 || strcmp(m.s, "StreamTitle") == 0) {
+    audio_id3album(m.msg);
+  }
+  // icy-name kiolvasása
+  const char *ici;
+  if ((ici = strstr(m.msg, "icy-name: ")) != NULL) {
+    char icyName[BUFLEN] = {0};
+    safeStrCopy(icyName, ici + strlen("icy-name: "), sizeof(icyName));
+#ifdef NAME_STRIM
+    // ha kell, vágjuk le a " - " után jövő részt
+    char *dash = strstr(icyName, " - ");
+    if (dash) {
+      *dash = '\0';
+      config.setStation(icyName);
+    } else {
+      config.setStation(icyName);
+    }
+    display.putRequest(NEWSTATION);
+    netserver.requestOnChange(STATION, 0);
 #endif
-      audio_id3album(icyName);
-      //      audio_showstreamtitle(icyName);
+    audio_id3album(icyName);
+  }
+  // Zenei stílus kiolvasása POP stb. ✅
+  if (strcmp(m.s, "icy-genre") == 0) {
+    if (config.store.audioinfo) {
+    }
+  }
+  if (strcmp(m.s, "icy_url") == 0 || strcmp(m.s, "icy-url") == 0) {  //✅
+    if (config.store.audioinfo) {
+    }
+  }
+  if (strcmp(m.s, "icy_description") == 0) {  // ✅
+    if (config.store.audioinfo) {
+      audio_icy_description(m.msg);
     }
   }
 }
 
+/************************************* */
+/*************** BITRATE ***************/
+/************************************* */
 void audio_bitrate(const char *info) {
   if (config.store.audioinfo) {
-    telnet.printf("%s %s\n", "##AUDIO.BITRATE#:", info);
   }
   uint32_t br = atoi(info);
   if (br > 3000) {
@@ -102,51 +157,63 @@ void audio_bitrate(const char *info) {
   netserver.requestOnChange(BITRATE, 0);
 }
 
+/************************************* */
+/*********** PRINTABLE *****************/
+/************************************* */
 bool printable(const char *info) {
-  if (L10N_LANGUAGE != RU) {
-    return true;
+  if (!info) {
+    return false;
   }
-  bool p = true;
-  for (uint8_t c = 0; c < strlen(info); c++) {
-    if ((uint8_t)info[c] > 0x7e || (uint8_t)info[c] < 0x20) {
-      p = false;
+  const unsigned char *p = (const unsigned char *)info;
+  while (*p) {
+    unsigned char c = *p;
+    // ASCII 0x20–0x7E között biztosan nyomtatható
+    if (c >= 0x20 && c <= 0x7E) {
+      p++;
+      continue;
     }
-    if (!p) {
-      p = (uint8_t)info[c] >= 0xC2 && (uint8_t)info[c + 1] >= 0x80 && (uint8_t)info[c + 1] <= 0xBF;
+    // UTF-8 többbájtos karakterek vizsgálata
+    // 110xxxxx 10xxxxxx → 2 bájtos
+    // 1110xxxx 10xxxxxx 10xxxxxx → 3 bájtos
+    // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx → 4 bájtos
+    if ((c & 0xE0) == 0xC0) {  // 2 bájtos kezdő
+      if ((p[1] & 0xC0) != 0x80) {
+        return false;
+      }
+      p += 2;
+      continue;
+    } else if ((c & 0xF0) == 0xE0) {  // 3 bájtos kezdő
+      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80) {
+        return false;
+      }
+      p += 3;
+      continue;
+    } else if ((c & 0xF8) == 0xF0) {  // 4 bájtos kezdő
+      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80 || (p[3] & 0xC0) != 0x80) {
+        return false;
+      }
+      p += 4;
+      continue;
     }
+    // Egyéb nem megengedett bájt
+    return false;
   }
   return true;
 }
 
-/* bool printable(const char *info) {
-  if(L10N_LANGUAGE!=RU) return true;
-
-  bool p = true;
-  for (uint8_t c = 0; c < strlen(info); c++)
-  {
-//  if ((uint8_t)info[c] >  126 || (uint8_t)info[c] <    32) p = false;
-    if ((uint8_t)info[c] > 0x7e || (uint8_t)info[c] < 0x20) p = false;
-    if (!p) info[c] = (uint8_t)info[c] >= 0xC2 && (uint8_t)info[c+1] >= 0x80 && (uint8_t)info[c+1] <= 0xBF;
-  }
-//  if (!p)       p =        (uint8_t)info[0] >= 0xC2          &&             (uint8_t)info[1] >= 0x80          &&         (uint8_t)info[1] <= 0xBF;
-//if (!p)      p =        (uint8_t)info[0] >=   194         &&             (uint8_t)info[1] >=   128          &&         (uint8_t)info[1] <=  191;
-
-  return true;
-}	*/
-
+// Kűlső meghívásra.
 void audio_showstation(const char *info) {
   bool p = printable(info) && (strlen(info) > 0);
   (void)p;
-  //config.setTitle(p?info:config.station.name);
-  if (player.remoteStationName) {
+  if (player.remoteStationName) {  //MQTT ről jön
     config.setStation(p ? info : config.station.name);
     display.putRequest(NEWSTATION);
     netserver.requestOnChange(STATION, 0);
   }
 }
 
+// Kűlső meghívásra.
 void audio_showstreamtitle(const char *info) {
-  //DBGH();
   if (strstr(info, "Account already in use") != NULL || strstr(info, "HTTP/1.0 401") != NULL) {
     player.setError(info);
   }
@@ -163,7 +230,6 @@ void audio_showstreamtitle(const char *info) {
 }
 
 void audio_error(const char *info) {
-  //config.setTitle(info);
   player.setError(info);
   telnet.printf("##ERROR#:\t%s\n", info);
 }
@@ -176,39 +242,56 @@ void audio_id3artist(const char *info) {
   netserver.requestOnChange(STATION, 0);
 }
 
+/* config.setTitle() kötőjellel elválasztva kell kapnia Title1 és Title2 sort config.ccp -ben.
+   Ez hívja a 
+   netserver.requestOnChange(TITLE, 0); // frissíti a WEB -et.
+   netserver.loop();
+   display.putRequest(NEWTITLE); ami a display.ccp ben hívja
+   Display::_title() függvényt és frissíti a kijelzőt _title1 és _title2 scrollwidgeteket.
+*/
 void audio_id3album(const char *info) {
   if (player.lockOutput) {
     return;
   }
-  if (printable(info)) {
-    if (strlen(config.station.title) == 0 || strcmp(config.station.title, config.station.name) == 0 || strstr(config.station.title, "timeout") != NULL) {
-      config.setTitle(info);
-    } else {
-      char out[BUFLEN] = {0};
-      strlcat(out, config.station.title, BUFLEN);
-      strlcat(out, " - ", BUFLEN);
-      strlcat(out, info, BUFLEN);
-      config.setTitle(out);
-    }
+  if (!info) {
+    return;
   }
+  if (!printable(info)) {
+    return;
+  }
+  config.setTitle(info);
 }
 
-/*void audio_id3title(const char *info){
-  audio_id3album(info);
-}	*/
+void audio_icy_description(const char *info) {
+  if (player.lockOutput) {
+    return;
+  }
+  if (!info) {
+    return;
+  }
+  if (!printable(info)) {
+    return;
+  }
+  if (strlen(config.station.title) == 0 ||                           // ha üres
+      strcmp(config.station.title, config.station.name) == 0 ||      // ha a title megegyezik az állomás nevével
+      strstr(config.station.title, "timeout") != NULL ||             // ha tartalmazza a timeout szót
+      strcmp_P(config.station.title, LANG::const_PlConnect) == 0) {  // ha a title = "[csatlakozás]" vagy ami a displayL10n_hu.h ban van írva.
+    config.setTitle(info);
+  }
+}
 
 void audio_beginSDread() {
   config.setTitle("");
 }
 
-void audio_id3data(const char *info) {  //id3 metadata
+void audio_id3data(const char *info) {
   if (player.lockOutput) {
     return;
   }
   telnet.printf("##AUDIO.ID3#: %s\n", info);
 }
 
-void audio_eof_mp3(const char *info) {  //end of file
+void audio_eof_mp3(const char *info) {
   config.sdResumePos = 0;
   player.next();
 }
@@ -232,4 +315,4 @@ void audio_progress(uint32_t startpos, uint32_t endpos) {
   netserver.requestOnChange(SDLEN, 0);
 }
 
-#endif
+#endif  // AUDIOHANDLERS_H

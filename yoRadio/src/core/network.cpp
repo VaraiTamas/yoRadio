@@ -98,7 +98,7 @@ bool MyNetwork::wifiBegin(bool silent){
 void searchWiFi(void * pvParameters){
   if(!network.wifiBegin(true)){
     delay(10000);
-    xTaskCreatePinnedToCore(searchWiFi, "searchWiFi", 1024 * 4, NULL, 0, NULL, SEARCH_WIFI_CORE_ID);
+    xTaskCreatePinnedToCore(searchWiFi, "searchWiFi", 1024 * 4, NULL, 3, NULL, SEARCH_WIFI_CORE_ID); // "task_prioritas" 0 eredeti
   }else{
     network.status = CONNECTED;
     netserver.begin(true);
@@ -135,7 +135,7 @@ void MyNetwork::begin() {
     #endif
   }else{
     status = SDREADY;
-    xTaskCreatePinnedToCore(searchWiFi, "searchWiFi", 1024 * 4, NULL, 0, NULL, SEARCH_WIFI_CORE_ID);
+    xTaskCreatePinnedToCore(searchWiFi, "searchWiFi", 1024 * 4, NULL, 3, NULL, SEARCH_WIFI_CORE_ID); // "task_prioritas" 0 eredeti
   }
   
   Serial.println("##[BOOT]#\tdone");

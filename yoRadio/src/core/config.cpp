@@ -24,7 +24,7 @@
 
 Config config;
 
-void u8fix(char *src){
+void u8fix(char *src){                 // Ha az utolsó tőbbájtos karakter (ékezetes) utolsó bájtja hiányzik akkor az elejét levágja.
   char last = src[strlen(src)-1]; 
   if ((uint8_t)last >= 0xC2) src[strlen(src)-1]='\0';
 }
@@ -146,7 +146,7 @@ void Config::changeMode(int newmode){
   bool pir = player.isRunning();
   if(SDC_CS==255) return;
   if(getMode()==PM_SDCARD) {
-    sdResumePos = player.getFilePos();
+    sdResumePos = player.getAudioFilePosition();
   }
   if(network.status==SOFT_AP || display.mode()==LOST){
     saveValue(&store.play_mode, static_cast<uint8_t>(PM_SDCARD));
@@ -245,7 +245,8 @@ bool Config::prepareForPlaying(uint16_t stationId){
   }
   
   if(!loadStation(stationId)) return false;
-  setTitle(getMode()==PM_WEB?LANG::const_PlConnect:"[next track]");
+  //setTitle(getMode()==PM_WEB?LANG::const_PlConnect:"[next track]");
+  setTitle(LANG::const_PlConnect); //ittvan
   station.bitrate=0;
   setBitrateFormat(BF_UNKNOWN);
   display.putRequest(DBITRATE);
@@ -462,7 +463,7 @@ void Config::setSDpos(uint32_t val){
       player.setResumeFilePos(val-player.sd_min);
       player.sendCommand({PR_PLAY, config.store.lastSdStation});
     }else{
-      player.setFilePos(val-player.sd_min);
+      player.setAudioFilePosition(val-player.sd_min);
     }
   }
 }

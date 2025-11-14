@@ -60,6 +60,7 @@ void Player::init() {
   #endif
   setBalance(config.store.balance);
   setTone(config.store.bass, config.store.middle, config.store.trebble);
+  setVolumeSteps(100); // "audio_change" "vol_step" Új beállítás, a maximális hangerő.
   setVolume(0);
   _status = STOPPED;
   _volTimer=false;
@@ -99,7 +100,7 @@ void Player::setError(const char *e){
 
 void Player::_stop(bool alreadyStopped){
   log_i("%s called", __func__);
-  if(config.getMode()==PM_SDCARD && !alreadyStopped) config.sdResumePos = player.getFilePos();
+  if(config.getMode()==PM_SDCARD && !alreadyStopped) config.sdResumePos = player.getAudioFilePosition();
   _status = STOPPED;
   setOutputPins(false);
   if(!_hasError) config.setTitle((display.mode()==LOST || display.mode()==UPDATING)?"":LANG::const_PlStopped);
@@ -108,7 +109,7 @@ void Player::_stop(bool alreadyStopped){
   #ifdef USE_NEXTION
     nextion.bitrate(config.station.bitrate);
   #endif
-  setDefaults();
+  //setDefaults();
   if(!alreadyStopped) stopSong();
   netserver.requestOnChange(BITRATE, 0);
   display.putRequest(DBITRATE);
@@ -123,10 +124,10 @@ void Player::_stop(bool alreadyStopped){
 void Player::initHeaders(const char *file) {
   if(strlen(file)==0 || true) return; //TODO Read TAGs
   connecttoFS(sdman,file);
-  eofHeader = false;
-  while(!eofHeader) Audio::loop();
+  //eofHeader = false;
+ // while(!eofHeader) Audio::loop(); // "audio_change"
   //netserver.requestOnChange(SDPOS, 0);
-  setDefaults();
+  //setDefaults();
 }
 void resetPlayer(){
   if(!config.store.watchdog) return;
@@ -217,7 +218,7 @@ void Player::setOutputPins(bool isPlaying) {
 void Player::_play(uint16_t stationId) {
   log_i("%s called, stationId=%d", __func__, stationId);
   _hasError=false;
-  setDefaults();
+  //setDefaults();
   _status = STOPPED;
   setOutputPins(false);
   remoteStationName = false;

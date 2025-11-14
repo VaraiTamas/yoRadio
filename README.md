@@ -104,6 +104,11 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 
 ### Version history:
+### v7.7
+   - Frissítésre került az audioI2S könyvtár a Schreibfaul1 által fejlesztett V3.4.3 verzióra   
+      https://github.com/schreibfaul1/ESP32-audioI2S.git
+   - Kivezetésre került a VS1053 audio könyvtár
+   - META adatok javítása
 ### v7.6
    - Visszakerült a programba az audioI2S régebbi verziója mely stabilabb lejátszást biztosít.  
       Version 3.1.   

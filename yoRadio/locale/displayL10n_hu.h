@@ -57,7 +57,7 @@ const char *const wind[] PROGMEM = {wn_N, wn_NNE, wn_NE, wn_ENE, wn_E, wn_ESE, w
 
 const char const_PlReady[] PROGMEM = "[kész]";
 const char const_PlStopped[] PROGMEM = "[stop]";
-const char const_PlConnect[] PROGMEM = "[csatlakozás]";
+const char const_PlConnect[] PROGMEM = "";
 const char const_DlgVolume[] PROGMEM = "Hangerő";
 const char const_DlgLost[] PROGMEM = "* LESZAKADT *";
 const char const_DlgUpdate[] PROGMEM = "* FRISSÍTES *";

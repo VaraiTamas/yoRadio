@@ -15,694 +15,733 @@
  * adapted for the ESP32 by schreibfaul1
  *
  *  Created on: 13.02.2023
- *  Updated on: 09.09.2024
+ *  Updated on: 26.10.2025
  */
-//----------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 //                                     O G G    I M P L.
-//----------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 #include "vorbis_decoder.h"
 #include "lookup.h"
-#include "alloca.h"
-#include <vector>
-using namespace std;
 
-#define __malloc_heap_psram(size) \
-    heap_caps_malloc_prefer(size, 2, MALLOC_CAP_DEFAULT | MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT | MALLOC_CAP_INTERNAL)
-#define __calloc_heap_psram(ch, size) \
-    heap_caps_calloc_prefer(ch, size, 2, MALLOC_CAP_DEFAULT | MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT | MALLOC_CAP_INTERNAL)
-
-
-// global vars
-bool      s_f_vorbisNewSteamTitle = false;  // streamTitle
-bool      s_f_vorbisNewMetadataBlockPicture = false;
-bool      s_f_oggFirstPage = false;
-bool      s_f_oggContinuedPage = false;
-bool      s_f_oggLastPage = false;
-bool      s_f_parseOggDone = true;
-bool      s_f_lastSegmentTable = false;
-bool      s_f_vorbisStr_found = false;
-uint16_t  s_identificatonHeaderLength = 0;
-uint16_t  s_vorbisCommentHeaderLength = 0;
-uint16_t  s_setupHeaderLength = 0;
-uint8_t   s_pageNr = 0;
-uint16_t  s_oggHeaderSize = 0;
-uint8_t   s_vorbisChannels = 0;
-uint16_t  s_vorbisSamplerate = 0;
-uint16_t  s_lastSegmentTableLen = 0;
-uint8_t  *s_lastSegmentTable = NULL;
-uint32_t  s_vorbisBitRate = 0;
-uint32_t  s_vorbisSegmentLength = 0;
-uint32_t  s_vorbisBlockPicLenUntilFrameEnd = 0;
-uint32_t  s_vorbisCurrentFilePos = 0;
-uint32_t  s_vorbisAudioDataStart = 0;
-char     *s_vorbisChbuf = NULL;
-int32_t   s_vorbisValidSamples = 0;
-int32_t   s_commentBlockSegmentSize = 0;
-uint8_t   s_vorbisOldMode = 0;
-uint32_t  s_blocksizes[2];
-uint32_t  s_vorbisBlockPicPos = 0;
-uint32_t  s_vorbisBlockPicLen = 0;
-int32_t   s_vorbisRemainBlockPicLen = 0;
-int32_t   s_commentLength = 0;
-
-uint8_t   s_nrOfCodebooks = 0;
-uint8_t   s_nrOfFloors = 0;
-uint8_t   s_nrOfResidues = 0;
-uint8_t   s_nrOfMaps = 0;
-uint8_t   s_nrOfModes = 0;
-
-uint16_t *s_vorbisSegmentTable = NULL;
-uint16_t  s_oggPage3Len = 0; // length of the current audio segment
-uint8_t   s_vorbisSegmentTableSize = 0;
-int16_t   s_vorbisSegmentTableRdPtr = -1;
-int8_t    s_vorbisError = 0;
-float     s_vorbisCompressionRatio = 0;
-
-bitReader_t            s_bitReader;
-
-codebook_t            *s_codebooks = NULL;
-vorbis_info_floor_t  **s_floor_param = NULL;
-int8_t                *s_floor_type = NULL;
-vorbis_info_residue_t *s_residue_param = NULL;
-vorbis_info_mapping_t *s_map_param = NULL;
-vorbis_info_mode_t    *s_mode_param = NULL;
-vorbis_dsp_state_t    *s_dsp_state = NULL;
-
-vector<uint32_t>s_vorbisBlockPicItem;
-
-
-bool VORBISDecoder_AllocateBuffers(){
-    s_vorbisSegmentTable = (uint16_t*)__calloc_heap_psram(256, sizeof(uint16_t));
-    s_vorbisChbuf = (char*)__calloc_heap_psram(256, sizeof(char));
-    s_lastSegmentTable = (uint8_t*)__malloc_heap_psram(4096);
-    VORBISsetDefaults();
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+bool VorbisDecoder::init() {
+    setDefaults();
+    m_ogg_items.lastSegmentTable.alloc(4096, "m_lastSegmentTable");
+    m_f_isValid = true;
     return true;
 }
-void VORBISDecoder_FreeBuffers(){
-    if(s_vorbisSegmentTable) {free(s_vorbisSegmentTable); s_vorbisSegmentTable = NULL;}
-    if(s_vorbisChbuf){free(s_vorbisChbuf); s_vorbisChbuf = NULL;}
-    if(s_lastSegmentTable){free(s_lastSegmentTable); s_lastSegmentTable = NULL;}
-
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::reset() {
     clearGlobalConfigurations();
+    if (m_codebooks.valid()) m_codebooks.reset();
+    if (m_floor_param.valid()) m_floor_param.reset();
+    if (m_floor_type.valid()) m_floor_type.reset();
+    if (m_residue_param.valid()) m_residue_param.reset();
+    if (m_map_param.valid()) m_map_param.reset();
+    if (m_mode_param.valid()) m_mode_param.reset();
+    if (m_dsp_state.valid()) m_dsp_state.reset();
+    m_ogg_items.segment_table.clear();
+    m_f_isValid = false;
 }
-void VORBISDecoder_ClearBuffers(){
-    if(s_vorbisChbuf) memset(s_vorbisChbuf, 0, 256);
-    bitReader_clear();
-    if(s_lastSegmentTable) memset(s_lastSegmentTable, 0, 4096);
-    if(s_vorbisSegmentTable) memset(s_vorbisSegmentTable, 0, 256);
-    s_vorbisSegmentTableSize = 0;
-    s_vorbisSegmentTableRdPtr = -1;}
-void VORBISsetDefaults(){
-    s_pageNr = 0;
-    s_f_vorbisNewSteamTitle = false;  // streamTitle
-    s_f_vorbisNewMetadataBlockPicture = false;
-    s_f_lastSegmentTable = false;
-    s_f_parseOggDone = false;
-    s_f_oggFirstPage = false;
-    s_f_oggContinuedPage = false;
-    s_f_oggLastPage = false;
-    s_f_vorbisStr_found = false;
-    if(s_dsp_state){vorbis_dsp_destroy(s_dsp_state); s_dsp_state = NULL;}
-    s_vorbisChannels = 0;
-    s_vorbisSamplerate = 0;
-    s_vorbisBitRate = 0;
-    s_vorbisSegmentLength = 0;
-    s_vorbisValidSamples = 0;
-    s_vorbisSegmentTableSize = 0;
-    s_vorbisCurrentFilePos = 0;
-    s_vorbisAudioDataStart = 0;
-    s_vorbisOldMode = 0xFF;
-    s_vorbisSegmentTableRdPtr = -1;
-    s_vorbisError = 0;
-    s_lastSegmentTableLen = 0;
-    s_vorbisBlockPicPos = 0;
-    s_vorbisBlockPicLen = 0;
-    s_vorbisBlockPicLenUntilFrameEnd = 0;
-    s_commentBlockSegmentSize = 0;
-    s_vorbisBlockPicItem.clear();
-    s_vorbisBlockPicItem.shrink_to_fit();
-
-    VORBISDecoder_ClearBuffers();
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::clear() {
+    m_bitReader.reset();
+    m_ogg_items.reset();
+    m_ogg_items.lastSegmentTable.alloc(4096, "m_lastSegmentTable");
+    m_vorbisBlockPicItem.clear();
 }
-
-void clearGlobalConfigurations() { // mode, mapping, floor etc
-    if(s_nrOfCodebooks) {  // if we have a stream with changing codebooks, delete the old one
-        for(int32_t i = 0; i < s_nrOfCodebooks; i++) { vorbis_book_clear(s_codebooks + i); }
-        s_nrOfCodebooks = 0;
-    }
-    if(s_codebooks) {
-        free(s_codebooks);
-        s_codebooks = NULL;
-    }
-    if(s_dsp_state) {
-        vorbis_dsp_destroy(s_dsp_state);
-        s_dsp_state = NULL;
-    }
-    if(s_nrOfFloors) {
-        for(int32_t i = 0; i < s_nrOfFloors; i++) floor_free_info(s_floor_param[i]);
-        free(s_floor_param);
-        s_nrOfFloors = 0;
-    }
-    if(s_nrOfResidues) {
-        for(int32_t i = 0; i < s_nrOfResidues; i++) res_clear_info(s_residue_param + i);
-        s_nrOfResidues = 0;
-    }
-    if(s_nrOfMaps) {
-        for(int32_t i = 0; i < s_nrOfMaps; i++) { mapping_clear_info(s_map_param + i); }
-        s_nrOfMaps = 0;
-    }
-    if(s_floor_type) {
-        free(s_floor_type);
-        s_floor_type = NULL;
-    }
-    if(s_residue_param) {
-        free(s_residue_param);
-        s_residue_param = NULL;
-    }
-    if(s_map_param) {
-        free(s_map_param);
-        s_map_param = NULL;
-    }
-    if(s_mode_param) {
-        free(s_mode_param);
-        s_mode_param = NULL;
-    }
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+bool VorbisDecoder::isValid() {
+    return m_f_isValid;
 }
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::setDefaults() {
+    m_pageNr = 0;
+    m_f_newSteamTitle = false; // streamTitle
+    m_f_newMetadataBlockPicture = false;
+    m_f_parseOggDone = false;
+    m_f_oggFirstPage = false;
+    m_f_oggContinuedPage = false;
+    m_f_oggLastPage = false;
+    m_f_comment_done = false;
+    if (m_dsp_state.valid()) { vorbis_dsp_destroy(m_dsp_state); }
+    m_vorbisChannels = 0;
+    m_vorbisSamplerate = 0;
+    m_vorbisBitRate = 0;
+    m_vorbisValidSamples = 0;
+    m_vorbisCurrentFilePos = 0;
+    m_vorbisAudioDataStart = 0;
+    m_vorbisOldMode = 0xFF;
+    m_vorbisError = 0;
+    m_vorbisBlockPicPos = 0;
+    m_vorbisBlockPicLen = 0;
+    m_commentBlockSegmentSize = 0;
+    m_vorbisBlockPicItem.shrink_to_fit();
+    clear();
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::clearGlobalConfigurations() { // mode, mapping, floor etc
+    vorbis_book_clear(m_codebooks);
+    vorbis_dsp_destroy(m_dsp_state);
 
-//----------------------------------------------------------------------------------------------------------------------
+    if (m_nrOfFloors) {
+        for (int32_t i = 0; i < m_nrOfFloors; i++) {
+            m_floor_param[i]->_class.reset();
+            m_floor_param[i]->partitionclass.reset();
+            m_floor_param[i]->postlist.reset();
+            m_floor_param[i]->forward_index.reset();
+            m_floor_param[i]->hineighbor.reset();
+            m_floor_param[i]->loneighbor.reset();
+            m_floor_param[i].reset();
+        }
+        m_floor_param.reset();
+        m_nrOfFloors = 0;
+    }
 
-int32_t VORBISDecode(uint8_t* inbuf, int32_t* bytesLeft, int16_t* outbuf) {
+    if (m_nrOfResidues) {
+        for (int32_t i = 0; i < m_nrOfResidues; i++) {
+            m_residue_param[i].stagemasks.reset();
+            m_residue_param[i].stagebooks.reset();
+        }
+        m_residue_param.reset();
+        m_nrOfResidues = 0;
+    }
+
+    if (m_nrOfMaps) {
+        for (int32_t i = 0; i < m_nrOfMaps; i++) {
+            m_map_param[i].chmuxlist.reset();
+            m_map_param[i].submaplist.reset();
+            m_map_param[i].coupling.reset();
+        }
+        m_map_param.reset();
+        m_nrOfMaps = 0;
+    }
+
+    if (m_floor_type.valid()) m_floor_type.reset();
+    if (m_residue_param.valid()) m_residue_param.reset();
+    if (m_map_param.valid()) m_map_param.reset();
+    if (m_mode_param.valid()) m_mode_param.reset();
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::decode(uint8_t* inbuf, int32_t* bytesLeft, int16_t* outbuf) {
 
     int32_t ret = 0;
-    int32_t segmentLength = 0;
+    int32_t bytesLeft_begin = *bytesLeft;
+    m_ogg_items.data_ptr = inbuf; // save for bitReader underrun
 
-    if(s_commentBlockSegmentSize) {
-        if(s_commentBlockSegmentSize > 8192) {
-            s_commentBlockSegmentSize -= 8192;
-            s_commentLength -= 8192;
-            *bytesLeft -= 8192;
-            s_vorbisCurrentFilePos += 8192;
+    if (!m_ogg_items.segment_table.size()) {
+        ret = parse_OGG(inbuf, bytesLeft);
+        m_f_parseOggDone = true;
+        if (!m_ogg_items.segment_table.size()) { /* VORBIS_LOG_WARN("OggS without segments?") */
+            ;
         }
-        else {
-            *bytesLeft -= s_commentBlockSegmentSize;
-            s_vorbisCurrentFilePos += s_commentBlockSegmentSize;
-            s_commentLength -= s_commentBlockSegmentSize;
-            s_commentBlockSegmentSize = 0;
-        }
-        if(s_vorbisRemainBlockPicLen <= 0 && !s_f_vorbisNewMetadataBlockPicture) {
-            if(s_vorbisBlockPicItem.size() > 0) { // get blockpic data
-                // log_i("---------------------------------------------------------------------------");
-                // log_i("metadata blockpic found at pos %i, size %i bytes", s_vorbisBlockPicPos, s_vorbisBlockPicLen);
-                // for(int32_t i = 0; i < s_vorbisBlockPicItem.size(); i += 2) { log_i("segment %02i, pos %07i, len %05i", i / 2, s_vorbisBlockPicItem[i], s_vorbisBlockPicItem[i + 1]); }
-                // log_i("---------------------------------------------------------------------------");
-                s_f_vorbisNewMetadataBlockPicture = true;
-            }
-        }
-        return VORBIS_PARSE_OGG_DONE;
+        goto exit;
     }
-
-    if(!s_vorbisSegmentTableSize) {
-        s_vorbisSegmentTableRdPtr = -1; // back to the parking position
-        ret = VORBISparseOGG(inbuf, bytesLeft);
-        s_f_parseOggDone = true;
-        if(!s_vorbisSegmentTableSize) { log_w("OggS without segments?"); }
-        return ret;
-    }
-
     // With the last segment of a table, we don't know whether it will be continued in the next Ogg page.
-    // So the last segment is saved. s_lastSegmentTableLen specifies the size of the last saved segment.
+    // So the last segment is saved. m_lastSegmentTableLen specifies the size of the last saved segment.
     // If the next Ogg Page does not contain a 'continuedPage', the last segment is played first. However,
     // if 'continuedPage' is set, the first segment of the new page is added to the saved segment and played.
-    if(!s_lastSegmentTableLen){
-        if(s_vorbisSegmentTableSize) {
-            s_vorbisSegmentTableRdPtr++;
-            s_vorbisSegmentTableSize--;
-            segmentLength = s_vorbisSegmentTable[s_vorbisSegmentTableRdPtr];
-        }
+
+    if (m_ogg_items.segment_table.size()) {
+        m_vorbis_segment_length = m_ogg_items.segment_table[0];
+        m_ogg_items.segment_table.pop_front();
+        VORBIS_LOG_DEBUG("continue %i", m_f_oggContinuedPage);
     }
 
-    if(s_pageNr < 4)
-        if(VORBIS_specialIndexOf(inbuf, "vorbis", 10) == 1) s_pageNr++;
+    if (m_pageNr < 4)
+        if (special_index_of(inbuf, "vorbis", 10) == 1) m_pageNr++;
 
-    switch(s_pageNr) {
-        case 0:
-            ret = VORBIS_PARSE_OGG_DONE; // do nothing
-            break;
+    switch (m_pageNr) {
+        case 0: ret = VORBIS_PARSE_OGG_DONE; break;
         case 1:
-            ret = vorbisDecodePage1(inbuf, bytesLeft, segmentLength); // blocksize, channels, samplerates
+            m_comment.reset();
+            ret = vorbisDecodePage1(inbuf, bytesLeft, m_vorbis_segment_length); // blocksize, channels, samplerates
             break;
         case 2:
-            ret = vorbisDecodePage2(inbuf, bytesLeft, segmentLength); // comments
+            ret = vorbisDecodePage2(inbuf, bytesLeft, m_vorbis_segment_length, m_vorbisCurrentFilePos); // comments
             break;
         case 3:
-            ret = vorbisDecodePage3(inbuf, bytesLeft, segmentLength); // codebooks
+            ret = vorbisDecodePage3(inbuf, bytesLeft, m_vorbis_segment_length); // codebooks
             break;
         case 4:
-            ret = vorbisDecodePage4(inbuf, bytesLeft, segmentLength, outbuf); // decode audio
+            ret = vorbisDecodePage4(inbuf, bytesLeft, m_vorbis_segment_length, outbuf); // decode audio
             break;
-        default: log_e("unknown page %s", s_pageNr); break;
+        default:
+            VORBIS_LOG_ERROR("unknown page %s", m_pageNr);
+            ret = VORBIS_ERR;
+            break;
+    }
+exit:
+    if (m_ogg_items.bytes_consumed_from_other > 0) {
+        *bytesLeft -= m_ogg_items.bytes_consumed_from_other;
+        m_ogg_items.bytes_consumed_from_other = 0;
+    }
+    if (ret >= 0) { m_vorbisCurrentFilePos += bytesLeft_begin - (*bytesLeft); }
+    if (ret < 0) {
+        VORBIS_LOG_ERROR("ret %i", ret);
+        m_ogg_items.segment_table.clear();
     }
     return ret;
 }
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-int32_t vorbisDecodePage1(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength){
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————--------------------------------------------------------------------------------
+int32_t VorbisDecoder::vorbisDecodePage1(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength) {
     int32_t ret = VORBIS_PARSE_OGG_DONE;
     clearGlobalConfigurations(); // if a new codebook is required, delete the old one
-    int32_t idx = VORBIS_specialIndexOf(inbuf, "vorbis", 10);
-    if(idx == 1) {
-        // log_i("first packet (identification segmentLength) %i", segmentLength);
-        s_identificatonHeaderLength = segmentLength;
+    int32_t idx = special_index_of(inbuf, "vorbis", 10);
+    if (idx == 1) {
+        // VORBIS_LOG_INFO("first packet (identification segmentLength) %i", segmentLength);
+        m_identificatonHeaderLength = segmentLength;
         ret = parseVorbisFirstPacket(inbuf, segmentLength);
-    }
-    else {
-        ret = ERR_VORBIS_NOT_AUDIO; // #651
+    } else {
+        VORBIS_LOG_ERROR("vorbis identificator not found");
+        ret = VORBIS_ERR;
     }
 
     *bytesLeft -= segmentLength;
-    s_vorbisCurrentFilePos += segmentLength;
     return ret;
 }
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-int32_t vorbisDecodePage2(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength){
-    int32_t ret = VORBIS_PARSE_OGG_DONE;
-    int32_t idx = VORBIS_specialIndexOf(inbuf, "vorbis", 10);
-    if(idx == 1) {
-        s_vorbisBlockPicItem.clear();
-        s_vorbisBlockPicItem.shrink_to_fit();
-        s_f_vorbisStr_found = true;
-        s_vorbisCommentHeaderLength = segmentLength;
-        ret = parseVorbisComment(inbuf, segmentLength);
-        s_commentBlockSegmentSize = segmentLength;
-         int32_t pLen = _min((int32_t)s_vorbisBlockPicLen, s_vorbisBlockPicLenUntilFrameEnd);
-        if(s_vorbisBlockPicLen && pLen > 0){
-            s_vorbisBlockPicItem.push_back(s_vorbisBlockPicPos);
-            s_vorbisBlockPicItem.push_back(pLen);
-        }
-        s_vorbisRemainBlockPicLen = s_vorbisBlockPicLen - pLen;
-        ret = VORBIS_PARSE_OGG_DONE;
-    }
-    else {
-        s_commentBlockSegmentSize = segmentLength;
-        uint32_t pLen = min(s_vorbisRemainBlockPicLen, (int32_t)segmentLength);
-        if(s_vorbisRemainBlockPicLen && pLen > 0){
-            s_vorbisBlockPicItem.push_back(s_vorbisCurrentFilePos);
-            s_vorbisBlockPicItem.push_back(pLen);
-        }
-        s_vorbisRemainBlockPicLen -= segmentLength;
-        ret = VORBIS_PARSE_OGG_DONE;
-    }
-    return ret;
-}
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-int32_t vorbisDecodePage3(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength){
-    int32_t ret = VORBIS_PARSE_OGG_DONE;
-    int32_t idx = VORBIS_specialIndexOf(inbuf, "vorbis", 10);
-    s_oggPage3Len = segmentLength;
-    if(idx == 1) {
-        // log_i("third packet (setup segmentLength) %i", segmentLength);
-        s_setupHeaderLength = segmentLength;
-        bitReader_setData(inbuf, segmentLength);
-        if(segmentLength == 4080) {
-            // that is 16*255 bytes and thus the maximum segment size
-            // it is possible that there is another block starting with 'OggS' in which there is information
-            // about codebooks. It is possible that there is another block starting with 'OggS' in which
-            // there is information about codebooks.
-            int32_t l = continuedOggPackets(inbuf + s_oggPage3Len);
-            *bytesLeft -= l;
-            s_vorbisCurrentFilePos += l;
-            s_oggPage3Len += l;
-            s_setupHeaderLength += l;
-            bitReader_setData(inbuf, s_oggPage3Len);
-            log_w("s_oggPage3Len %i", s_oggPage3Len);
-            s_pageNr++;
-        }
-        ret = parseVorbisCodebook();
-    }
-    else { log_e("no \"vorbis\" something went wrong %i", segmentLength); }
-    s_pageNr = 4;
-    s_dsp_state = vorbis_dsp_create();
-
-    *bytesLeft -= segmentLength;
-    s_vorbisCurrentFilePos += segmentLength;
-    return ret;
-}
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-int32_t vorbisDecodePage4(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength, int16_t* outbuf){
-
-    if(s_vorbisAudioDataStart == 0){
-        s_vorbisAudioDataStart = s_vorbisCurrentFilePos;
-    }
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————--------------------------------------------------------------------------------
+int32_t VorbisDecoder::vorbisDecodePage2(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength, uint32_t current_file_pos) {
 
     int32_t ret = 0;
-    if(s_f_parseOggDone) { // first loop after VORBISparseOGG()
-        if(s_f_oggContinuedPage) {
-            if(s_lastSegmentTableLen > 0 || segmentLength > 0) {
-                if(s_lastSegmentTableLen + segmentLength > 1024) log_e("continued page too big");
-                memcpy(s_lastSegmentTable + s_lastSegmentTableLen, inbuf, segmentLength);
-                bitReader_setData(s_lastSegmentTable, s_lastSegmentTableLen + segmentLength);
-                ret = vorbis_dsp_synthesis(s_lastSegmentTable, s_lastSegmentTableLen + segmentLength, outbuf);
-                uint16_t outBuffSize = 2048 * 2;
-                s_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
-                s_lastSegmentTableLen = 0;
-                if(!ret && !segmentLength) ret = VORBIS_CONTINUE;
-            }
-            else { // s_lastSegmentTableLen is 0 and segmentLength is 0
-                s_vorbisValidSamples = 0;
-                ret = VORBIS_CONTINUE;
-            }
-            s_f_oggContinuedPage = false;
-        }
-        else { // last segment without continued Page
-            if(s_lastSegmentTableLen) {
-                bitReader_setData(s_lastSegmentTable, s_lastSegmentTableLen);
-                ret = vorbis_dsp_synthesis(s_lastSegmentTable, s_lastSegmentTableLen, outbuf);
-                uint16_t outBuffSize = 2048 * 2;
-                s_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
-                s_lastSegmentTableLen = 0;
-                if(ret == OV_ENOTAUDIO || ret == 0) ret = VORBIS_CONTINUE; // if no error send continue
-            }
-            else {
-                bitReader_setData(inbuf, segmentLength);
-                ret = vorbis_dsp_synthesis(inbuf, segmentLength, outbuf);
-                uint16_t outBuffSize = 2048 * 2;
-                s_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
-                ret = 0;
-            }
-        }
-    }
-    else { // not s_f_parseOggDone
-        if(s_vorbisSegmentTableSize || s_f_lastSegmentTable) {
-            // if(s_f_oggLastPage) log_i("last page");
-            bitReader_setData(inbuf, segmentLength);
-            ret = vorbis_dsp_synthesis(inbuf, segmentLength, outbuf);
-            uint16_t outBuffSize = 2048 * 2;
-            s_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
-            ret = 0;
-        }
-        else { // last segment
-            if(segmentLength) {
-                memcpy(s_lastSegmentTable, inbuf, segmentLength);
-                s_lastSegmentTableLen = segmentLength;
-                s_vorbisValidSamples = 0;
-                ret = 0;
-            }
-            else {
-                s_lastSegmentTableLen = 0;
-                s_vorbisValidSamples = 0;
-                ret = VORBIS_PARSE_OGG_DONE;
-            }
-        }
-        s_f_oggFirstPage = false;
-    }
-    s_f_parseOggDone = false;
-    if(s_f_oggLastPage && !s_vorbisSegmentTableSize) { VORBISsetDefaults(); }
+    ret = parseVorbisComment(inbuf, segmentLength, current_file_pos);
 
-    if(ret != VORBIS_CONTINUE){ // nothing to do here, is playing from lastSegmentBuff
+    if (ret == VORBIS_COMMENT_INVALID) {
+        VORBIS_LOG_DEBUG("VORBIS_COMMENT_INVALID");
+    } else if (ret == VORBIS_COMMENT_NEED_MORE) {
+        VORBIS_LOG_DEBUG("VORBIS_COMMENT_NEED_MORE");
         *bytesLeft -= segmentLength;
-        s_vorbisCurrentFilePos += segmentLength;
+    } else if (ret == VORBIS_COMMENT_DONE) {
+        VORBIS_LOG_DEBUG("VORBIS_COMMENT_DONE");
+        *bytesLeft -= segmentLength;
+        VORBIS_LOG_DEBUG("bytesLeft %i", *bytesLeft);
+    } else {
+        VORBIS_LOG_DEBUG("VORBIS_UNKNOWN");
     }
     return ret;
 }
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::vorbisDecodePage3(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength) {
+    int32_t ret = VORBIS_PARSE_OGG_DONE;
+    int32_t idx = special_index_of(inbuf, "vorbis", 10);
+    if (idx == 1) {
+        m_oggPage3Len = segmentLength - 7;           // skip ".vorbis"
+        bitReader_setData(inbuf + 7, m_oggPage3Len); // skip also ".vorbis"
+        VORBIS_LOG_DEBUG(" segmentLength %i", segmentLength);
+        ret = parseVorbisCodebook();
+    } else {
+        VORBIS_LOG_ERROR("no \"vorbis\" something went wrong, segmentLenght: %i", segmentLength);
+        ret = VORBIS_ERR;
+    }
+    m_pageNr = 4;
+    m_dsp_state = vorbis_dsp_create();
 
-//----------------------------------------------------------------------------------------------------------------------
+    *bytesLeft -= segmentLength;
+    return ret;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::vorbisDecodePage4(uint8_t* inbuf, int32_t* bytesLeft, uint32_t segmentLength, int16_t* outbuf) {
 
-uint8_t VORBISGetChannels(){
-    return s_vorbisChannels;
+    if (m_vorbisAudioDataStart == 0) { m_vorbisAudioDataStart = m_vorbisCurrentFilePos; }
+
+    int32_t  ret = 0;
+    uint16_t outBuffSize = 4608 * 2;
+
+    if (m_f_oggLastPage) {
+        if (segmentLength > 1) {
+            bitReader_setData(inbuf, segmentLength);
+            ret = vorbis_dsp_synthesis(inbuf, segmentLength, outbuf);
+            m_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
+        } else {
+            m_ogg_items.lastSegmentTableLen = 0;
+            m_vorbisValidSamples = 0;
+            ret = VORBIS_PARSE_OGG_DONE;
+        }
+        VORBIS_LOG_DEBUG("last page, sl %i", segmentLength);
+        goto exit;
+    }
+
+    if (m_ogg_items.segment_table.size()) {
+        if (m_f_oggContinuedPage) {
+            m_f_oggContinuedPage = false;
+            memcpy(m_ogg_items.lastSegmentTable.get() + m_ogg_items.lastSegmentTableLen, inbuf, segmentLength);
+            bitReader_setData(m_ogg_items.lastSegmentTable.get(), m_ogg_items.lastSegmentTableLen + segmentLength);
+            ret = vorbis_dsp_synthesis(m_ogg_items.lastSegmentTable.get(), m_ogg_items.lastSegmentTableLen + segmentLength, outbuf);
+            m_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
+            m_ogg_items.lastSegmentTableLen = 0;
+            goto exit;
+        } else if (m_ogg_items.lastSegmentTableLen) {
+            bitReader_setData(m_ogg_items.lastSegmentTable.get(), m_ogg_items.lastSegmentTableLen);
+            ret = vorbis_dsp_synthesis(m_ogg_items.lastSegmentTable.get(), m_ogg_items.lastSegmentTableLen, outbuf);
+            m_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
+
+            bitReader_setData(inbuf, segmentLength);
+            ret = vorbis_dsp_synthesis(inbuf, segmentLength, outbuf);
+            m_vorbisValidSamples += vorbis_dsp_pcmout(outbuf + (m_vorbisValidSamples * m_vorbisChannels), outBuffSize);
+            m_ogg_items.lastSegmentTableLen = false;
+            goto exit;
+        } else {
+            bitReader_setData(inbuf, segmentLength);
+            ret = vorbis_dsp_synthesis(inbuf, segmentLength, outbuf);
+            if (ret < 0) {
+                VORBIS_LOG_ERROR("segmentLength %i", segmentLength);
+                ps_ptr<uint8_t> hd;
+                hd.set_name("p4");
+                hd.copy_from(inbuf, 10);
+                hd.hex_dump(10);
+            }
+            m_vorbisValidSamples = vorbis_dsp_pcmout(outbuf, outBuffSize);
+            goto exit;
+        }
+    } else {
+        memcpy(m_ogg_items.lastSegmentTable.get(), inbuf, segmentLength);
+        m_ogg_items.lastSegmentTableLen = segmentLength;
+        m_vorbisValidSamples = 0;
+        ret = 0;
+    }
+exit:
+    if (ret == OV_ENOTAUDIO) {
+        m_vorbisValidSamples = 0;
+        VORBIS_LOG_INFO("non audio package at pos %i", m_vorbisCurrentFilePos);
+        ret = 0;
+    }
+    *bytesLeft -= segmentLength;
+    return ret;
 }
-uint32_t VORBISGetSampRate(){
-    return s_vorbisSamplerate;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint8_t VorbisDecoder::getChannels() {
+    return m_vorbisChannels;
 }
-uint8_t VORBISGetBitsPerSample(){
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::getSampleRate() {
+    return m_vorbisSamplerate;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint8_t VorbisDecoder::getBitsPerSample() {
     return 16;
 }
-uint32_t VORBISGetBitRate(){
-    return s_vorbisBitRate;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::getBitRate() {
+    return m_vorbisBitRate;
 }
-uint32_t VORBISGetAudioDataStart(){
-    return s_vorbisAudioDataStart;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::getAudioDataStart() {
+    return m_vorbisAudioDataStart;
 }
-uint16_t VORBISGetOutputSamps(){
-    return s_vorbisValidSamples; // 1024
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::getOutputSamples() {
+    return m_vorbisValidSamples; // 1024
 }
-char* VORBISgetStreamTitle(){
-    if(s_f_vorbisNewSteamTitle){
-        s_f_vorbisNewSteamTitle = false;
-        return s_vorbisChbuf;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::getAudioFileDuration() {
+    return 0;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+const char* VorbisDecoder::getStreamTitle() {
+    if (m_f_newSteamTitle) {
+        m_f_newSteamTitle = false;
+        return m_comment.stream_title.c_get();
     }
     return NULL;
 }
-vector<uint32_t> VORBISgetMetadataBlockPicture(){
-    if(s_f_vorbisNewMetadataBlockPicture){
-        s_f_vorbisNewMetadataBlockPicture = false;
-        return s_vorbisBlockPicItem;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+std::vector<uint32_t> VorbisDecoder::getMetadataBlockPicture() {
+    if (m_f_newMetadataBlockPicture) {
+        m_f_newMetadataBlockPicture = false;
+        return m_comment.pic_vec;
     }
-    if(s_vorbisBlockPicItem.size() > 0){
-        s_vorbisBlockPicItem.clear();
-        s_vorbisBlockPicItem.shrink_to_fit();
-    }
-    return s_vorbisBlockPicItem;
+    std::vector<uint32_t> v;
+    return v;
 }
-//----------------------------------------------------------------------------------------------------------------------
-int32_t parseVorbisFirstPacket(uint8_t *inbuf, int16_t nBytes){ // 4.2.2. Identification header
-                                                            // https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-820005
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+const char* VorbisDecoder::arg1() {
+    return ""; // nothing todo
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+const char* VorbisDecoder::arg2() {
+    return ""; // nothing todo
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::val1() {
+    return 0; // nothing todo
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::val2() {
+    return 0; // nothing todo
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::parseVorbisFirstPacket(uint8_t* inbuf, int16_t nBytes) { // 4.2.2. Identification header
+                                                                                // https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-820005
     // first bytes are: '.vorbis'
     uint16_t pos = 7;
-    uint32_t version     = *(inbuf + pos);
-             version    += *(inbuf + pos + 1) << 8;
-             version    += *(inbuf + pos + 2) << 16;
-             version    += *(inbuf + pos + 3) << 24; (void)version;
+    uint32_t version = *(inbuf + pos);
+    version += *(inbuf + pos + 1) << 8;
+    version += *(inbuf + pos + 2) << 16;
+    version += *(inbuf + pos + 3) << 24;
+    (void)version;
 
-    uint8_t  channels    = *(inbuf + pos + 4);
+    uint8_t channels = *(inbuf + pos + 4);
 
-    uint32_t sampleRate  = *(inbuf + pos + 5);
-             sampleRate += *(inbuf + pos + 6) << 8;
-             sampleRate += *(inbuf + pos + 7) << 16;
-             sampleRate += *(inbuf + pos + 8) << 24;
+    uint32_t sampleRate = *(inbuf + pos + 5);
+    sampleRate += *(inbuf + pos + 6) << 8;
+    sampleRate += *(inbuf + pos + 7) << 16;
+    sampleRate += *(inbuf + pos + 8) << 24;
 
-    uint32_t br_max      = *(inbuf + pos + 9);
-             br_max     += *(inbuf + pos + 10) << 8;
-             br_max     += *(inbuf + pos + 11) << 16;
-             br_max     += *(inbuf + pos + 12) << 24;
+    uint32_t br_max = *(inbuf + pos + 9);
+    br_max += *(inbuf + pos + 10) << 8;
+    br_max += *(inbuf + pos + 11) << 16;
+    br_max += *(inbuf + pos + 12) << 24;
 
-    uint32_t br_nominal  = *(inbuf + pos + 13);
-             br_nominal += *(inbuf + pos + 14) << 8;
-             br_nominal += *(inbuf + pos + 15) << 16;
-             br_nominal += *(inbuf + pos + 16) << 24;
+    uint32_t br_nominal = *(inbuf + pos + 13);
+    br_nominal += *(inbuf + pos + 14) << 8;
+    br_nominal += *(inbuf + pos + 15) << 16;
+    br_nominal += *(inbuf + pos + 16) << 24;
 
-    uint32_t br_min      = *(inbuf + pos + 17);
-             br_min     += *(inbuf + pos + 18) << 8;
-             br_min     += *(inbuf + pos + 19) << 16;
-             br_min     += *(inbuf + pos + 20) << 24;
+    uint32_t br_min = *(inbuf + pos + 17);
+    br_min += *(inbuf + pos + 18) << 8;
+    br_min += *(inbuf + pos + 19) << 16;
+    br_min += *(inbuf + pos + 20) << 24;
 
-    uint8_t  blocksize   = *(inbuf + pos + 21);
+    uint8_t blocksize = *(inbuf + pos + 21);
 
-    s_blocksizes[0] = 1 << ( blocksize & 0x0F);
-    s_blocksizes[1] = 1 << ((blocksize & 0xF0) >> 4);
+    m_blocksizes[0] = 1 << (blocksize & 0x0F);
+    m_blocksizes[1] = 1 << ((blocksize & 0xF0) >> 4);
 
-    if(s_blocksizes[0] < 64){
-        log_e("blocksize[0] too low");
+    if (m_blocksizes[0] < 64) {
+        VORBIS_LOG_ERROR("Vorbis, blocksize[0] too low %i", m_blocksizes[0]);
         return -1;
     }
-    if(s_blocksizes[1] < s_blocksizes[0]){
-        log_e("s_blocksizes[1] is smaller than s_blocksizes[0]");
+    if (m_blocksizes[1] < m_blocksizes[0]) {
+        VORBIS_LOG_ERROR("Vorbis, m_blocksizes[1] %i is smaller than m_blocksizes[0] %i", m_blocksizes[1], m_blocksizes[0]);
         return -1;
     }
-    if(s_blocksizes[1] > 8192){
-        log_e("s_blocksizes[1] is too big");
+    if (m_blocksizes[1] > 8192) {
+        VORBIS_LOG_ERROR("Vorbis, m_blocksizes[1] is too big: %i", m_blocksizes[1]);
         return -1;
     }
 
-    if(channels < 1 || channels > 2){
-        log_e("nr of channels is not valid ch=%i", channels);
+    if (channels < 1 || channels > 2) {
+        VORBIS_LOG_ERROR("Vorbis, nr of channels is not valid ch=%i", channels);
         return -1;
     }
-    s_vorbisChannels = channels;
+    m_vorbisChannels = channels;
 
-    if(sampleRate < 4096 || sampleRate > 64000){
-        log_e("sampleRate is not valid sr=%i", sampleRate);
+    if (sampleRate < 4096 || sampleRate > 64000) {
+        VORBIS_LOG_ERROR("Vorbis, sampleRate is not valid sr=%i", sampleRate);
         return -1;
     }
-    s_vorbisSamplerate = sampleRate;
+    m_vorbisSamplerate = sampleRate;
 
-    s_vorbisBitRate = br_nominal;
+    m_vorbisBitRate = br_nominal;
 
     return VORBIS_PARSE_OGG_DONE;
-
 }
-//----------------------------------------------------------------------------------------------------------------------
-int32_t parseVorbisComment(uint8_t *inbuf, int16_t nBytes){      // reference https://xiph.org/vorbis/doc/v-comment.html
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::parseVorbisComment(uint8_t* inbuf, int16_t nBytes, uint32_t current_file_pos) {
+    // reference https://xiph.org/vorbis/doc/v-comment.html
 
-    // first bytes are: '.vorbis'
-    uint32_t pos = 7;
-    uint32_t vendorLength       = *(inbuf + pos + 3) << 24; // lengt of vendor string, e.g. Xiph.Org libVorbis I 20070622
-             vendorLength      += *(inbuf + pos + 2) << 16;
-             vendorLength      += *(inbuf + pos + 1) << 8;
-             vendorLength      += *(inbuf + pos);
+    constexpr uint32_t MAX_COMMENT_SIZE = 1024;
+    int32_t            available_bytes = nBytes;
 
-    if(vendorLength > 254){  // guard
-       log_e("vorbis comment too long, vendorLength %i", vendorLength);
-       return 0;
-    }
-
-    memcpy(s_vorbisChbuf, inbuf + 11, vendorLength);
-    s_vorbisChbuf[vendorLength] = '\0';
-    pos += 4 + vendorLength;
-    s_vorbisCommentHeaderLength -= (7 + 4 + vendorLength);
-
-    // log_i("vendorLength %x", vendorLength);
-    // log_i("vendorString %s", s_vorbisChbuf);
-
-    uint8_t nrOfComments = *(inbuf + pos);
-    // log_i("nrOfComments %i", nrOfComments);
-    pos += 4;
-    s_vorbisCommentHeaderLength -= 4;
-
-    int32_t idx = 0;
-    char* artist = NULL;
-    char* title  = NULL;
-    uint32_t commentLength = 0;
-    for(int32_t i = 0; i < nrOfComments; i++){
-        commentLength  = 0;
-        commentLength  = *(inbuf + pos + 3) << 24;
-        commentLength += *(inbuf + pos + 2) << 16;
-        commentLength += *(inbuf + pos + 1) << 8;
-        commentLength += *(inbuf + pos);
-        s_commentLength = commentLength;
-
-        uint8_t cl = min((uint32_t)254, commentLength);
-        memcpy(s_vorbisChbuf, inbuf + pos +  4, cl);
-        s_vorbisChbuf[cl] = '\0';
-
-        // log_i("commentLength %i comment %s", commentLength, s_vorbisChbuf);
-
-        idx =        VORBIS_specialIndexOf((uint8_t*)s_vorbisChbuf, "artist=", 10);
-        if(idx != 0) idx =  VORBIS_specialIndexOf((uint8_t*)s_vorbisChbuf, "ARTIST=", 10);
-        if(idx == 0){ artist = strndup((const char*)(s_vorbisChbuf + 7), commentLength - 7); s_commentLength = 0;}
-
-        idx =        VORBIS_specialIndexOf((uint8_t*)s_vorbisChbuf, "title=", 10);
-        if(idx != 0) idx =  VORBIS_specialIndexOf((uint8_t*)s_vorbisChbuf, "TITLE=", 10);
-        if(idx == 0){ title = strndup((const char*)(s_vorbisChbuf + 6), commentLength - 6); s_commentLength = 0;}
-
-        idx =        VORBIS_specialIndexOf((uint8_t*)s_vorbisChbuf, "metadata_block_picture=", 25);
-        if(idx != 0) idx =  VORBIS_specialIndexOf((uint8_t*)s_vorbisChbuf, "METADATA_BLOCK_PICTURE", 25);
-        if(idx == 0){
-            s_vorbisBlockPicLen = commentLength - 23;
-            s_vorbisBlockPicPos += s_vorbisCurrentFilePos + 4 +pos + 23;
-            s_vorbisBlockPicLenUntilFrameEnd = s_vorbisCommentHeaderLength - 4 - 23;
+    auto parse_comment = [&](ps_ptr<char> comment) -> void {
+        int idx = comment.index_of("=");
+        if (idx <= 0) return;
+        ps_ptr<char> key = comment.substr(0, idx);
+        ps_ptr<char> val = comment.substr(idx + 1);
+        if (key.starts_with_icase("metadata_block_picture")) {
+            if (m_comment.item_vec.size() % 2 != 0) { VORBIS_LOG_ERROR("vec.size is odd: %i", m_comment.item_vec.size()); }
+            m_comment.item_vec[0] += strlen("METADATA_BLOCK_PICTURE=");
+            for (int i = 0; i < m_comment.item_vec.size(); i += 2) {
+                m_comment.pic_vec.push_back(m_comment.item_vec[i]);                             // start pos
+                m_comment.pic_vec.push_back(m_comment.item_vec[i + 1] - m_comment.item_vec[i]); // len = end pos - start pos
+            }
+            m_comment.item_vec.clear();
+            m_f_newMetadataBlockPicture = true;
+            // for (int i = 0; i < m_comment.pic_vec.size(); i += 2) { OPUS_LOG_INFO("Segment %i   %i - %i", i / 2, m_comment.pic_vec[i], m_comment.pic_vec[i + 1]); }
+            VORBIS_LOG_DEBUG("Skipping embedded picture (%d bytes)", val.size());
+            return;
         }
-        pos += commentLength + 4;
-        s_vorbisCommentHeaderLength -= (4 + commentLength);
-    }
-    if(artist && title){
-        strcpy(s_vorbisChbuf, artist);
-        strcat(s_vorbisChbuf, " - ");
-        strcat(s_vorbisChbuf, title);
-        s_f_vorbisNewSteamTitle = true;
-    }
-    else if(artist){
-        strcpy(s_vorbisChbuf, artist);
-        s_f_vorbisNewSteamTitle = true;
-    }
-    else if(title){
-        strcpy(s_vorbisChbuf, title);
-        s_f_vorbisNewSteamTitle = true;
-    }
-    if(artist){free(artist); artist = NULL;}
-    if(title) {free(title);  title = NULL;}
+        if (key.starts_with_icase("artist")) {
+            if (!m_comment.stream_title.valid()) {
+                m_comment.stream_title.assign(val.c_get());
+            } else {
+                m_comment.stream_title.append(" - ");
+                m_comment.stream_title.append(val.c_get());
+            }
+            audio.info(audio, Audio::evt_id3data, "Artist: %s", val.c_get());
+        }
+        if (key.starts_with_icase("title")) {
+            if (!m_comment.stream_title.valid()) {
+                m_comment.stream_title.assign(val.c_get());
+            } else {
+                m_comment.stream_title.append(" - ");
+                m_comment.stream_title.append(val.c_get());
+            }
+            audio.info(audio, Audio::evt_id3data, "Title: %s", val.c_get());
+        }
+        if (key.starts_with_icase("work")) {
+            audio.info(audio, Audio::evt_id3data, "Work: %s", val.c_get());
+        }
+        if (key.starts_with_icase("composer")) {
+            audio.info(audio, Audio::evt_id3data, "Composer: %s", val.c_get());
+        }
+        if (key.starts_with_icase("genre")) {
+            audio.info(audio, Audio::evt_id3data, "Genre: %s", val.c_get());
+        }
+        if (key.starts_with_icase("date")) {
+            audio.info(audio, Audio::evt_id3data, "Date: %s", val.c_get());
+        }
+        if (key.starts_with_icase("album")) {
+            audio.info(audio, Audio::evt_id3data, "Album: %s", val.c_get());
+        }
+        if (key.starts_with_icase("comment")) {
+            audio.info(audio, Audio::evt_id3data, "Comments: %s", val.c_get());
+        }
+        if (key.starts_with_icase("tracknumber")) {
+            audio.info(audio, Audio::evt_id3data, "Track number/Position in set: %s", val.c_get());
+        }
 
-    return VORBIS_PARSE_OGG_DONE;
+        if (m_comment.stream_title.valid()) m_f_newSteamTitle = true;
+        // comment.println(); // optional output
+        m_comment.item_vec.clear();
+    };
+
+    auto fill_content = [&](uint8_t* buff, uint32_t len) -> void {
+        // defensive guards (avoid signed/unsigned confusion)
+        const uint32_t S_MAX = MAX_COMMENT_SIZE;
+        uint32_t       s = m_comment.comment_content.strlen(); // vorhandene länge
+        if (s >= S_MAX) {
+            // already full — nothing more to add
+            VORBIS_LOG_DEBUG("comment_content already at or above MAX_COMMENT_SIZE (%u >= %u)", s, S_MAX);
+            return;
+        }
+
+        // clamp len to something sensible (len can come from the caller, so check)
+        uint32_t available_space = S_MAX - s;
+        uint32_t to_fill = (len <= available_space) ? len : available_space;
+
+        VORBIS_LOG_DEBUG("strlen %u, incoming len %u, to_fill %u", s, len, to_fill);
+
+        // defensive: wenn to_fill == 0, nichts tun
+        if (to_fill == 0) return;
+
+        // copy/append execute safely
+        const char* src = reinterpret_cast<const char*>(buff);
+        if (s == 0) {
+            // initial copy
+            m_comment.comment_content.copy_from(src, to_fill);
+        } else {
+            // append, ensure append argument limited to to_fill
+            m_comment.comment_content.append(src, to_fill);
+        }
+    };
+
+    // 🔹 1. If the previous comment block was incomplete → continue now
+    if (m_comment.oob) {
+        int64_t tmp_to_read = (int64_t)m_comment.comment_size - (int64_t)m_comment.save_len;
+        if (tmp_to_read < 0) tmp_to_read = 0;
+        uint32_t to_read = (uint32_t)tmp_to_read;
+        if (available_bytes <= 0) {  // clamp to available_bytes (available_bytes ist signed int)
+            // nothing to do
+            if (m_comment.list_length == 0) return VORBIS_COMMENT_DONE;
+            return VORBIS_COMMENT_NEED_MORE;
+        }
+        if ((uint32_t)available_bytes < to_read) to_read = (uint32_t)available_bytes;
+
+        VORBIS_LOG_DEBUG("to_read %i, available_bytes %i", to_read, available_bytes);
+        m_comment.start_pos = current_file_pos;
+        VORBIS_LOG_DEBUG("partial start %i", m_comment.start_pos);
+        m_comment.item_vec.push_back(m_comment.start_pos);
+        fill_content(inbuf, to_read);
+        m_comment.save_len += to_read;
+        m_comment.pointer = to_read;
+        available_bytes -= to_read;
+        if (m_comment.save_len == m_comment.comment_size) {
+            VORBIS_LOG_DEBUG("end %i", m_comment.start_pos + to_read);
+            m_comment.item_vec.push_back(m_comment.start_pos + to_read);
+            // m_comment.comment_content.println();
+            parse_comment(m_comment.comment_content);
+            m_comment.comment_content.reset();
+            m_comment.oob = false;
+            m_comment.list_length--;
+        } else {
+            VORBIS_LOG_DEBUG("partial end %i", m_comment.start_pos + nBytes);
+            m_comment.item_vec.push_back(m_comment.start_pos + nBytes);
+        }
+        if (m_comment.list_length == 0) return VORBIS_COMMENT_DONE;
+        if (available_bytes == 0) return VORBIS_COMMENT_NEED_MORE;
+        // fall through
+    }
+    // 🔹 2. If this is the first page → read header
+    bool first_call = (m_comment.pointer == 0 && m_comment.list_length == 0);
+    if (first_call) {
+        int32_t idx = specialIndexOf(inbuf, "vorbis", 10);
+        if (idx != 1) return VORBIS_COMMENT_INVALID;
+
+        m_comment.pointer = 7; // skip ".vorbis"
+        available_bytes -= 7;
+        uint32_t vendorLength = little_endian(inbuf + m_comment.pointer);
+        m_comment.pointer += 4 + vendorLength; // skip vendor string
+        available_bytes -= 4 + vendorLength;
+        m_comment.list_length = little_endian(inbuf + m_comment.pointer);
+        m_comment.pointer += 4;
+        available_bytes -= 4;
+        VORBIS_LOG_DEBUG("VendorLen=%u, CommentCount=%u", vendorLength, m_comment.list_length);
+    }
+
+    // 🔹 3. read comments
+    while (m_comment.list_length > 0) {
+
+        // --- handle possible split 4-byte comment length ---
+        if (m_comment.partial_length > 0 || available_bytes < 4) {
+            uint8_t bytes_to_copy = std::min<uint8_t>(4 - m_comment.partial_length, available_bytes);
+            memcpy(m_comment.length_bytes + m_comment.partial_length, inbuf + (nBytes - available_bytes), bytes_to_copy);
+
+            m_comment.partial_length += bytes_to_copy;
+            available_bytes -= bytes_to_copy;
+            m_comment.pointer += bytes_to_copy;
+
+            VORBIS_LOG_DEBUG("Partial length bytes collected: %d/4", m_comment.partial_length);
+
+            if (m_comment.partial_length < 4) {
+                // still incomplete → need more data next call
+                return VORBIS_COMMENT_NEED_MORE;
+            }
+
+            // now we have all 4 bytes
+            m_comment.comment_size = little_endian(m_comment.length_bytes);
+            m_comment.partial_length = 0; // reset for next comment
+            VORBIS_LOG_DEBUG("m_comment.comment_size (assembled) %u", m_comment.comment_size);
+        } else {
+            memcpy(m_comment.length_bytes, inbuf + (nBytes - available_bytes), 4);
+            m_comment.comment_size = little_endian(m_comment.length_bytes);
+            m_comment.pointer += 4;
+            available_bytes -= 4;
+            VORBIS_LOG_DEBUG("m_comment.comment_size %u", m_comment.comment_size);
+        }
+
+        if (m_comment.comment_size <= available_bytes) { // can completely read
+            m_comment.start_pos = current_file_pos + m_comment.pointer;
+            VORBIS_LOG_DEBUG("start %i", m_comment.start_pos);
+            m_comment.item_vec.push_back(m_comment.start_pos);
+            fill_content(inbuf + (nBytes - available_bytes), m_comment.comment_size);
+            m_comment.end_pos = m_comment.start_pos + m_comment.comment_size;
+            VORBIS_LOG_DEBUG("end %i", m_comment.end_pos);
+            m_comment.item_vec.push_back(m_comment.end_pos);
+            m_comment.pointer += m_comment.comment_size;
+            available_bytes -= m_comment.comment_size;
+            parse_comment(m_comment.comment_content);
+            m_comment.comment_content.reset();
+            m_comment.list_length--;
+            if (m_comment.list_length == 0) return VORBIS_COMMENT_DONE;
+        }
+
+        else { // out of bounds
+            m_comment.start_pos = current_file_pos + m_comment.pointer;
+            VORBIS_LOG_DEBUG("start %i", m_comment.start_pos);
+            m_comment.item_vec.push_back(m_comment.start_pos);
+            fill_content(inbuf + (nBytes - available_bytes), available_bytes);
+            m_comment.save_len = available_bytes;
+            VORBIS_LOG_DEBUG("partial_end %i", m_comment.start_pos + m_comment.save_len);
+            m_comment.item_vec.push_back(m_comment.start_pos + m_comment.save_len);
+            m_comment.pointer = 0;
+            m_comment.oob = true;
+            return VORBIS_COMMENT_NEED_MORE;
+        }
+    }
+    return VORBIS_COMMENT_NEED_MORE;
 }
-//----------------------------------------------------------------------------------------------------------------------
-int32_t parseVorbisCodebook(){
-
-    s_bitReader.headptr += 7;
-    s_bitReader.length = s_oggPage3Len;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::parseVorbisCodebook() {
 
     int32_t i;
     int32_t ret = 0;
 
-    s_nrOfCodebooks = bitReader(8) +1;
-    s_codebooks = (codebook_t*) __calloc_heap_psram(s_nrOfCodebooks, sizeof(*s_codebooks));
-
-    for(i = 0; i < s_nrOfCodebooks; i++){
-        ret = vorbis_book_unpack(s_codebooks + i);
-        if(ret) log_e("codebook %i returned err", i);
-        if(ret) goto err_out;
+    m_nrOfCodebooks = bitReader(8) + 1;
+    m_codebooks.calloc_array(m_nrOfCodebooks, "m_codebooks");
+    VORBIS_LOG_DEBUG("nr of codebooks %i", m_nrOfCodebooks);
+    for (i = 0; i < m_nrOfCodebooks; i++) {
+        VORBIS_LOG_DEBUG("codebooks %i", i);
+        ret = vorbis_book_unpack(m_codebooks.get() + i);
+        if (ret) VORBIS_LOG_ERROR("Vorbis codebook %i returned  a err", i);
+        if (ret) goto err_out;
     }
 
     /* time backend settings, not actually used */
     i = bitReader(6);
-    for(; i >= 0; i--){
+    for (; i >= 0; i--) {
         ret = bitReader(16);
-        if(ret != 0){
-            log_e("err while reading backend settings");
+        if (ret != 0) {
+            VORBIS_LOG_ERROR("err while reading backend settings");
             goto err_out;
         }
     }
     /* floor backend settings */
-    s_nrOfFloors  = bitReader(6) + 1;
-
-    s_floor_param = (vorbis_info_floor_t **)__malloc_heap_psram(sizeof(*s_floor_param) * s_nrOfFloors);
-    s_floor_type  = (int8_t *)__malloc_heap_psram(sizeof(int8_t) * s_nrOfFloors);
-    for(i = 0; i < s_nrOfFloors; i++) {
-        s_floor_type[i] = bitReader(16);
-        if(s_floor_type[i] < 0 || s_floor_type[i] >= VI_FLOORB) {
-            log_e("err while reading floors");
+    m_nrOfFloors = bitReader(6) + 1;
+    m_floor_param.calloc_array(m_nrOfFloors, "m_floor_param");
+    m_floor_type.alloc(sizeof(int8_t) * m_nrOfFloors, "m_floor_type");
+    VORBIS_LOG_DEBUG("nr of floors %i", m_nrOfFloors);
+    for (i = 0; i < m_nrOfFloors; i++) {
+        VORBIS_LOG_DEBUG("floors %i", i);
+        m_floor_type[i] = bitReader(16);
+        if (m_floor_type[i] < 0 || m_floor_type[i] >= VI_FLOORB) {
+            VORBIS_LOG_ERROR("err while reading floors");
             goto err_out;
         }
-        if(s_floor_type[i]){
-            s_floor_param[i] = floor1_info_unpack();
+        if (m_floor_type[i]) {
+            m_floor_param[i] = floor1_info_unpack();
+        } else {
+            m_floor_param[i] = floor0_info_unpack();
         }
-        else{
-            s_floor_param[i] = floor0_info_unpack();
-        }
-        if(!s_floor_param[i]){
-            log_e("floor parameter not found");
+        if (!m_floor_param[i].valid()) {
+            VORBIS_LOG_ERROR("floor parameter not found");
             goto err_out;
         }
     }
 
     /* residue backend settings */
-    s_nrOfResidues = bitReader(6) + 1;
-    s_residue_param = (vorbis_info_residue_t *)__malloc_heap_psram(sizeof(*s_residue_param) * s_nrOfResidues);
-    for(i = 0; i < s_nrOfResidues; i++){
-         if(res_unpack(s_residue_param + i)){
-            log_e("err while unpacking residues");
+    m_nrOfResidues = bitReader(6) + 1;
+    m_residue_param.calloc_array(m_nrOfResidues, "m_residue_param");
+    VORBIS_LOG_DEBUG("nr of residues %i", m_nrOfResidues);
+    for (i = 0; i < m_nrOfResidues; i++) {
+        VORBIS_LOG_DEBUG("residue %i", i);
+        if (res_unpack(m_residue_param.get() + i)) {
+            VORBIS_LOG_ERROR("err while unpacking residues");
             goto err_out;
-         }
+        }
     }
 
     // /* map backend settings */
-    s_nrOfMaps = bitReader(6) + 1;
-    s_map_param = (vorbis_info_mapping_t *)__malloc_heap_psram(sizeof(*s_map_param) * s_nrOfMaps);
-    for(i = 0; i < s_nrOfMaps; i++) {
-        if(bitReader(16) != 0) goto err_out;
-        if(mapping_info_unpack(s_map_param + i)){
-            log_e("err while unpacking mappings");
+    m_nrOfMaps = bitReader(6) + 1;
+    m_map_param.calloc_array(m_nrOfMaps, "m_map_param");
+    for (i = 0; i < m_nrOfMaps; i++) {
+        if (bitReader(16) != 0) goto err_out;
+        if (mapping_info_unpack(m_map_param.get() + i)) {
+            VORBIS_LOG_ERROR("err while unpacking mappings");
             goto err_out;
         }
     }
 
     /* mode settings */
-    s_nrOfModes = bitReader(6) + 1;
-    s_mode_param = (vorbis_info_mode_t *)__malloc_heap_psram(s_nrOfModes* sizeof(*s_mode_param));
-    for(i = 0; i < s_nrOfModes; i++) {
-        s_mode_param[i].blockflag = bitReader(1);
-        if(bitReader(16)) goto err_out;
-        if(bitReader(16)) goto err_out;
-        s_mode_param[i].mapping = bitReader(8);
-        if(s_mode_param[i].mapping >= s_nrOfMaps){
-            log_e("too many modes");
+    m_nrOfModes = bitReader(6) + 1;
+    m_mode_param.alloc(sizeof(vorbis_info_mode_t) * m_nrOfModes, "m_mode_param");
+    for (i = 0; i < m_nrOfModes; i++) {
+        m_mode_param[i].blockflag = bitReader(1);
+        if (bitReader(16)) goto err_out;
+        if (bitReader(16)) goto err_out;
+        m_mode_param[i].mapping = bitReader(8);
+        if (m_mode_param[i].mapping >= m_nrOfMaps) {
+            VORBIS_LOG_ERROR("too many modes");
             goto err_out;
         }
     }
 
-    if(bitReader(1) != 1){
-        log_e("codebooks, end bit not found");
+    if (bitReader(1) != 1) {
+        VORBIS_LOG_ERROR("codebooks, end bit not found");
         goto err_out;
     }
-    // if(s_setupHeaderLength != s_bitReader.headptr - s_bitReader.data){
-    //     log_e("Error reading setup header, assumed %i bytes, read %i bytes", s_setupHeaderLength, s_bitReader.headptr - s_bitReader.data);
+    // if(m_setupHeaderLength != m_bitReader.headptr - m_bitReader.data){
+    //     VORBIS_LOG_ERROR("Error reading setup header, assumed %i bytes, read %i bytes", m_setupHeaderLength, m_bitReader.headptr - m_bitReader.data);
     //     goto err_out;
     // }
     /* top level EOP check */
@@ -710,195 +749,165 @@ int32_t parseVorbisCodebook(){
     return VORBIS_PARSE_OGG_DONE;
 
 err_out:
-//    vorbis_info_clear(vi);
-    log_e("err in codebook!  at pos %d", s_bitReader.headptr - s_bitReader.data);
+    //    vorbis_info_clear(vi);
+    VORBIS_LOG_ERROR("err in codebook!  at pos %d", m_bitReader.headptr - m_bitReader.data);
     return (OV_EBADHEADER);
 }
-//----------------------------------------------------------------------------------------------------------------------
-int32_t VORBISparseOGG(uint8_t *inbuf, int32_t *bytesLeft){
-                                                           // reference https://www.xiph.org/ogg/doc/rfc3533.txt
-    int32_t ret = 0; (void)ret;
-
-    int32_t idx = VORBIS_specialIndexOf(inbuf, "OggS", 8192);
-    if(idx != 0){
-        if(s_f_oggContinuedPage) return ERR_VORBIS_DECODER_ASYNC;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::parse_OGG(uint8_t* inbuf, int32_t* bytesLeft) {
+    // reference https://www.xiph.org/ogg/doc/rfc3533.txt
+    int32_t  ret = 0;
+    uint32_t ogg_lengt_total = 0;
+    (void)ret;
+    int32_t idx = special_index_of(inbuf, "OggS", 8192);
+    if (idx != 0) {
+        if (m_f_oggContinuedPage) {
+            VORBIS_LOG_ERROR("Vorbis decoder asynchron, 'OggS' not found");
+            return VORBIS_ERR;
+        }
         inbuf += idx;
         *bytesLeft -= idx;
-        s_vorbisCurrentFilePos += idx;
     }
-
-    int16_t segmentTableWrPtr = -1;
-
-    uint8_t  version            = *(inbuf +  4); (void) version;
-    uint8_t  headerType         = *(inbuf +  5); (void) headerType;
-    uint64_t granulePosition    = (uint64_t)*(inbuf + 13) << 56;  // granule_position: an 8 Byte field containing -
-             granulePosition   += (uint64_t)*(inbuf + 12) << 48;  // position information. For an audio stream, it MAY
-             granulePosition   += (uint64_t)*(inbuf + 11) << 40;  // contain the total number of PCM samples encoded
-             granulePosition   += (uint64_t)*(inbuf + 10) << 32;  // after including all frames finished on this page.
-             granulePosition   += *(inbuf +  9) << 24;  // This is a hint for the decoder and gives it some timing
-             granulePosition   += *(inbuf +  8) << 16;  // and position information. A special value of -1 (in two's
-             granulePosition   += *(inbuf +  7) << 8;   // complement) indicates that no packets finish on this page.
-             granulePosition   += *(inbuf +  6); (void) granulePosition;
-    uint32_t bitstreamSerialNr  = *(inbuf + 17) << 24;  // bitstream_serial_number: a 4 Byte field containing the
-             bitstreamSerialNr += *(inbuf + 16) << 16;  // unique serial number by which the logical bitstream
-             bitstreamSerialNr += *(inbuf + 15) << 8;   // is identified.
-             bitstreamSerialNr += *(inbuf + 14); (void) bitstreamSerialNr;
-    uint32_t pageSequenceNr     = *(inbuf + 21) << 24;  // page_sequence_number: a 4 Byte field containing the sequence
-             pageSequenceNr    += *(inbuf + 20) << 16;  // number of the page so the decoder can identify page loss
-             pageSequenceNr    += *(inbuf + 19) << 8;   // This sequence number is increasing on each logical bitstream
-             pageSequenceNr    += *(inbuf + 18); (void) pageSequenceNr;
-    uint32_t CRCchecksum        = *(inbuf + 25) << 24;
-             CRCchecksum       += *(inbuf + 24) << 16;
-             CRCchecksum       += *(inbuf + 23) << 8;
-             CRCchecksum       += *(inbuf + 22); (void) CRCchecksum;
-    uint8_t  pageSegments       = *(inbuf + 26);        // giving the number of segment entries
-
+    uint8_t version = *(inbuf + 4);
+    (void)version;
+    uint8_t headerType = *(inbuf + 5);
+    (void)headerType;
+    uint64_t granulePosition = (uint64_t)*(inbuf + 13) << 56; // granule_position: an 8 Byte field containing -
+    granulePosition += (uint64_t)*(inbuf + 12) << 48;         // position information. For an audio stream, it MAY
+    granulePosition += (uint64_t)*(inbuf + 11) << 40;         // contain the total number of PCM samples encoded
+    granulePosition += (uint64_t)*(inbuf + 10) << 32;         // after including all frames finished on this page.
+    granulePosition += *(inbuf + 9) << 24;                    // This is a hint for the decoder and gives it some timing
+    granulePosition += *(inbuf + 8) << 16;                    // and position information. A special value of -1 (in two's
+    granulePosition += *(inbuf + 7) << 8;                     // complement) indicates that no packets finish on this page.
+    granulePosition += *(inbuf + 6);
+    (void)granulePosition;
+    uint32_t bitstreamSerialNr = *(inbuf + 17) << 24; // bitstream_serial_number: a 4 Byte field containing the
+    bitstreamSerialNr += *(inbuf + 16) << 16;         // unique serial number by which the logical bitstream
+    bitstreamSerialNr += *(inbuf + 15) << 8;          // is identified.
+    bitstreamSerialNr += *(inbuf + 14);
+    (void)bitstreamSerialNr;
+    uint32_t pageSequenceNr = *(inbuf + 21) << 24; // page_sequence_number: a 4 Byte field containing the sequence
+    pageSequenceNr += *(inbuf + 20) << 16;         // number of the page so the decoder can identify page loss
+    pageSequenceNr += *(inbuf + 19) << 8;          // This sequence number is increasing on each logical bitstream
+    pageSequenceNr += *(inbuf + 18);
+    (void)pageSequenceNr;
+    uint32_t CRCchecksum = *(inbuf + 25) << 24;
+    CRCchecksum += *(inbuf + 24) << 16;
+    CRCchecksum += *(inbuf + 23) << 8;
+    CRCchecksum += *(inbuf + 22);
+    (void)CRCchecksum;
+    uint8_t pageSegments = *(inbuf + 26); // giving the number of segment entries
     // read the segment table (contains pageSegments bytes),  1...251: Length of the frame in bytes,
     // 255: A second byte is needed.  The total length is first_byte + second byte
-    s_vorbisSegmentLength = 0;
-    segmentTableWrPtr = -1;
 
-    for(int32_t i = 0; i < pageSegments; i++){
+    ogg_lengt_total = 27 + pageSegments;
+    for (int32_t i = 0; i < pageSegments; i++) {
         int32_t n = *(inbuf + 27 + i);
-        while(*(inbuf + 27 + i) == 255){
+        while (*(inbuf + 27 + i) == 255) {
             i++;
-            if(i == pageSegments) break;
-            n+= *(inbuf + 27 + i);
+            if (i == pageSegments) break;
+            n += *(inbuf + 27 + i);
         }
-        segmentTableWrPtr++;
-        s_vorbisSegmentTable[segmentTableWrPtr] = n;
-        s_vorbisSegmentLength += n;
+        m_ogg_items.segment_table.push_back(n);
+        ogg_lengt_total += n;
     }
-    s_vorbisSegmentTableSize = segmentTableWrPtr + 1;
-    s_vorbisCompressionRatio = (float)(960 * 2 * pageSegments)/s_vorbisSegmentLength;  // const 960 validBytes out
+    m_vorbisCompressionRatio = (float)(960 * 2 * pageSegments) / ogg_lengt_total; // const 960 validBytes out
 
-    bool     continuedPage = headerType & 0x01; // set: page contains data of a packet continued from the previous page
-    bool     firstPage     = headerType & 0x02; // set: this is the first page of a logical bitstream (bos)
-    bool     lastPage      = headerType & 0x04; // set: this is the last page of a logical bitstream (eos)
+    bool continuedPage = headerType & 0x01; // set: page contains data of a packet continued from the previous page
+    bool firstPage = headerType & 0x02;     // set: this is the first page of a logical bitstream (bos)
+    bool lastPage = headerType & 0x04;      // set: this is the last page of a logical bitstream (eos)
 
-    uint16_t headerSize    = pageSegments + 27;
+    uint16_t headerSize = pageSegments + 27;
 
-    // log_i("headerSize %i, s_vorbisSegmentLength %i, s_vorbisSegmentTableSize %i", headerSize, s_vorbisSegmentLength, s_vorbisSegmentTableSize);
-    if(firstPage || continuedPage || lastPage){
-    // log_w("firstPage %i  continuedPage %i  lastPage %i", firstPage, continuedPage, lastPage);
+    // VORBIS_LOG_INFO("headerSize %i, m_vorbisSegmentLength %i, m_vorbisSegmentTableSize %i", headerSize, m_vorbisSegmentLength, m_vorbisSegmentTableSize);
+    if (firstPage || continuedPage || lastPage) {
+        // VORBIS_LOG_INFO("firstPage %i  continuedPage %i  lastPage %i", firstPage, continuedPage, lastPage);
     }
 
     *bytesLeft -= headerSize;
     inbuf += headerSize;
-    s_vorbisCurrentFilePos += headerSize;
- //   if(s_pageNr < 4 && !continuedPage) s_pageNr++;
 
-    s_f_oggFirstPage = firstPage;
-    s_f_oggContinuedPage = continuedPage;
-    s_f_oggLastPage = lastPage;
-    s_oggHeaderSize = headerSize;
+    m_f_oggFirstPage = firstPage;
+    m_f_oggContinuedPage = continuedPage;
+    m_f_oggLastPage = lastPage;
 
-    if(firstPage) s_pageNr = 0;
+    if (firstPage) { m_pageNr = 0; }
 
     return VORBIS_PARSE_OGG_DONE; // no error
 }
-//----------------------------------------------------------------------------------------------------------------------
-uint16_t continuedOggPackets(uint8_t *inbuf){
-
-    // skip OggS header to pageSegments
-    // log_w("%c%c%c%c", *(inbuf+0), *(inbuf+1), *(inbuf+2), *(inbuf+3));
-    uint16_t segmentLength = 0;
-    uint8_t  headerType    = *(inbuf +  5);
-    uint8_t  pageSegments  = *(inbuf + 26);        // giving the number of segment entries
-
-    for(int32_t i = 0; i < pageSegments; i++){
-        int32_t n = *(inbuf + 27 + i);
-        while(*(inbuf + 27 + i) == 255){
-            i++;
-            if(i == pageSegments) break;
-            n+= *(inbuf + 27 + i);
-        }
-        segmentLength += n;
-    }
-    uint16_t headerSize = pageSegments + 27;
-    bool continuedPage = headerType & 0x01;
-
-    if(continuedPage){
-
-    //  codebook data are in 2 ogg packets
-    //  codebook data must no be interrupted by oggPH (ogg page header)
-    //  therefore shift codebook data2 left (oggPH size times) whith memmove
-    //  |oggPH| codebook data 1 |oggPH| codebook data 2 |oggPH|
-    //  |oppPH| codebook data 1 + 2              |unused|occPH|
-log_e("continued page");
-        memmove(inbuf , inbuf + headerSize, segmentLength);
-        return segmentLength + headerSize;
-        return 0;
-    }
-
-    return 0;
-}
-//----------------------------------------------------------------------------------------------------------------------
-int32_t VORBISFindSyncWord(unsigned char *buf, int32_t nBytes){
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::findSyncWord(uint8_t* buf, int32_t nBytes) {
     // assume we have a ogg wrapper
-    int32_t idx = VORBIS_specialIndexOf(buf, "OggS", nBytes);
-    if(idx >= 0){ // Magic Word found
-    //    log_i("OggS found at %i", idx);
+    int32_t idx = special_index_of(buf, "OggS", nBytes);
+    if (idx >= 0) { // Magic Word found
+                    //    VORBIS_LOG_INFO("OggS found at %i", idx);
         return idx;
     }
-    // log_i("find sync");
-    return ERR_VORBIS_OGG_SYNC_NOT_FOUND;
+    VORBIS_LOG_ERROR("Vorbis, sync 'OggS' not found");
+    return VORBIS_ERR;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t vorbis_book_unpack(codebook_t *s) {
-    char   *lengthlist = NULL;
-    uint8_t quantvals = 0;
-    int32_t i, j;
-    int32_t     maptype;
-    int32_t     ret = 0;
-
-    memset(s, 0, sizeof(*s));
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+const char* VorbisDecoder::whoIsIt() {
+    return "VORBIS";
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::setRawBlockParams(uint8_t channels, uint32_t sampleRate, uint8_t BPS, uint32_t tsis, uint32_t AuDaLength) {
+    return; // nothing todo
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::vorbis_book_unpack(codebook_t* s) {
+    ps_ptr<int32_t> lengthlist;
+    uint8_t         quantvals = 0;
+    int32_t         i, j;
+    int32_t         maptype;
+    int32_t         ret = 0;
 
     /* make sure alignment is correct */
-    if(bitReader(24) != 0x564342){
-        log_e("String \"BCV\" not found");
-        goto _eofout;  // "BCV"
+    if (bitReader(24) != 0x564342) {
+        VORBIS_LOG_ERROR("Vorbis, string \"VCB\" not found"); // VorbisCodeBook
+        goto _eofout;                                         // "BCV"
     }
 
     /* first the basic parameters */
-    ret = bitReader(16) ;
-    if(ret < 0) printf("error in vorbis_book_unpack, ret =%li\n", (long int)ret);
-    if(ret > 255) printf("error in vorbis_book_unpack, ret =%li\n", (long int)ret);
+    ret = bitReader(16);
+    if (ret < 0) VORBIS_LOG_ERROR("error in vorbis_book_unpack, ret =%li\n", (long int)ret);
+    if (ret > 255) VORBIS_LOG_ERROR("error in vorbis_book_unpack, ret =%li\n", (long int)ret);
     s->dim = (uint8_t)ret;
     s->entries = bitReader(24);
-    if(s->entries == -1) {log_e("no entries in unpack codebooks ?");   goto _eofout;}
+    if (s->entries == -1) {
+        VORBIS_LOG_ERROR("no entries in unpack codebooks ?");
+        goto _eofout;
+    }
 
     /* codeword ordering.... length ordered or unordered? */
-    switch(bitReader(1)) {
+    switch (bitReader(1)) {
         case 0:
             /* unordered */
-            lengthlist = (char *)__malloc_heap_psram(sizeof(*lengthlist) * s->entries);
+            lengthlist.alloc_array(s->entries * 2, "lengthlist");
 
             /* allocated but unused entries? */
-            if(bitReader(1)) {
+            if (bitReader(1)) {
                 /* yes, unused entries */
 
-                for(i = 0; i < s->entries; i++) {
-                    if(bitReader(1)) {
+                for (i = 0; i < s->entries; i++) {
+                    if (bitReader(1)) {
                         int32_t num = bitReader(5);
-                        if(num == -1) goto _eofout;
+                        if (num == -1) goto _eofout;
                         lengthlist[i] = num + 1;
                         s->used_entries++;
-                        if(num + 1 > s->dec_maxlength) s->dec_maxlength = num + 1;
-                    }
-                    else
+                        if (num + 1 > s->dec_maxlength) s->dec_maxlength = num + 1;
+                    } else
                         lengthlist[i] = 0;
                 }
-            }
-            else {
+            } else {
                 /* all entries used; no tagging */
                 s->used_entries = s->entries;
-                for(i = 0; i < s->entries; i++) {
+                for (i = 0; i < s->entries; i++) {
                     int32_t num = bitReader(5);
-                    if(num == -1) goto _eofout;
+                    if (num == -1) goto _eofout;
                     lengthlist[i] = num + 1;
 
-                    if(num + 1 > s->dec_maxlength) s->dec_maxlength = num + 1;
+                    if (num + 1 > s->dec_maxlength) s->dec_maxlength = num + 1;
                 }
             }
             break;
@@ -908,12 +917,12 @@ int32_t vorbis_book_unpack(codebook_t *s) {
                 int32_t length = bitReader(5) + 1;
 
                 s->used_entries = s->entries;
-                lengthlist = (char *)__malloc_heap_psram(sizeof(*lengthlist) * s->entries);
+                lengthlist.alloc_array(s->entries * 2, "lengthlist");
 
-                for(i = 0; i < s->entries;) {
+                for (i = 0; i < s->entries;) {
                     int32_t num = bitReader(_ilog(s->entries - i));
-                    if(num == -1) goto _eofout;
-                    for(j = 0; j < num && i < s->entries; j++, i++) lengthlist[i] = length;
+                    if (num == -1) goto _eofout;
+                    for (j = 0; j < num && i < s->entries; j++, i++) lengthlist[i] = length;
                     s->dec_maxlength = length;
                     length++;
                 }
@@ -925,18 +934,18 @@ int32_t vorbis_book_unpack(codebook_t *s) {
     }
 
     /* Do we have a mapping to unpack? */
-    if((maptype = bitReader(4)) > 0) {
+    if ((maptype = bitReader(4)) > 0) {
         s->q_min = _float32_unpack(bitReader(32), &s->q_minp);
         s->q_del = _float32_unpack(bitReader(32), &s->q_delp);
 
         s->q_bits = bitReader(4) + 1;
-        s->q_seq =  bitReader(1);
+        s->q_seq = bitReader(1);
 
         s->q_del >>= s->q_bits;
         s->q_delp += s->q_bits;
     }
 
-    switch(maptype) {
+    switch (maptype) {
         case 0:
             /* no mapping; decode type 0 */
             /* how many bytes for the indexing? */
@@ -944,10 +953,8 @@ int32_t vorbis_book_unpack(codebook_t *s) {
             s->dec_nodeb = _determine_node_bytes(s->used_entries, _ilog(s->entries) / 8 + 1);
             s->dec_leafw = _determine_leaf_words(s->dec_nodeb, _ilog(s->entries) / 8 + 1);
             s->dec_type = 0;
-            ret = _make_decode_table(s, lengthlist, quantvals, maptype);
-            if(ret != 0) {
-                 goto _errout;
-            }
+            ret = _make_decode_table(s, lengthlist.get(), quantvals, maptype);
+            if (ret != 0) { goto _errout; }
             break;
 
         case 1:
@@ -961,51 +968,39 @@ int32_t vorbis_book_unpack(codebook_t *s) {
                 /* vector of column offsets; remember flag bit */
                 int32_t total2 = (_ilog(quantvals - 1) * s->dim + 8) / 8 + (s->q_bits + 7) / 8;
 
-                if(total1 <= 4 && total1 <= total2) {
+                if (total1 <= 4 && total1 <= total2) {
                     /* use dec_type 1: vector of packed values */
                     /* need quantized values before  */
-                    s->q_val = __malloc_heap_psram(sizeof(uint16_t) * quantvals);
-                    for(i = 0; i < quantvals; i++) ((uint16_t *)s->q_val)[i] = bitReader(s->q_bits);
+                    s->q_val.calloc_array(sizeof(uint16_t) * quantvals, "q_val");
+                    for (i = 0; i < quantvals; i++) ((uint16_t*)s->q_val.get())[i] = bitReader(s->q_bits);
 
-                    if(oggpack_eop()) {
-                        if(s->q_val) {free(s->q_val), s->q_val = NULL;}
-                        goto _eofout;
-                    }
+                    if (oggpack_eop()) { goto _eofout; }
 
                     s->dec_type = 1;
                     s->dec_nodeb = _determine_node_bytes(s->used_entries, (s->q_bits * s->dim + 8) / 8);
                     s->dec_leafw = _determine_leaf_words(s->dec_nodeb, (s->q_bits * s->dim + 8) / 8);
-                    ret = _make_decode_table(s, lengthlist, quantvals, maptype);
-                    if(ret) {
-                        if(s->q_val) {free(s->q_val), s->q_val = NULL;}
-                        goto _errout;
-                    }
-
-                    if(s->q_val) {free(s->q_val), s->q_val = NULL;} /* about to go out of scope; _make_decode_table was using it */
-                }
-                else {
+                    ret = _make_decode_table(s, lengthlist.get(), quantvals, maptype);
+                    if (ret) { goto _errout; }
+                } else {
                     /* use dec_type 2: packed vector of column offsets */
                     /* need quantized values before */
-                    if(s->q_bits <= 8) {
-                        s->q_val = __malloc_heap_psram(quantvals);
-                        for(i = 0; i < quantvals; i++) ((uint8_t *)s->q_val)[i] = bitReader(s->q_bits);
-                    }
-                    else {
-                        s->q_val = __malloc_heap_psram(quantvals * 2);
-                        for(i = 0; i < quantvals; i++) ((uint16_t *)s->q_val)[i] = bitReader(s->q_bits);
+                    if (s->q_bits <= 8) {
+                        s->q_val.alloc(quantvals, "q_val");
+                        for (i = 0; i < quantvals; i++) ((uint8_t*)s->q_val.get())[i] = bitReader(s->q_bits);
+                    } else {
+                        s->q_val.alloc(quantvals * 2, "q_val");
+                        for (i = 0; i < quantvals; i++) ((uint16_t*)s->q_val.get())[i] = bitReader(s->q_bits);
                     }
 
-                    if(oggpack_eop()) goto _eofout;
+                    if (oggpack_eop()) goto _eofout;
 
                     s->q_pack = _ilog(quantvals - 1);
                     s->dec_type = 2;
                     s->dec_nodeb = _determine_node_bytes(s->used_entries, (_ilog(quantvals - 1) * s->dim + 8) / 8);
                     s->dec_leafw = _determine_leaf_words(s->dec_nodeb, (_ilog(quantvals - 1) * s->dim + 8) / 8);
 
-                    ret = _make_decode_table(s, lengthlist, quantvals, maptype);
-                    if(ret){
-                        goto _errout;
-                    }
+                    ret = _make_decode_table(s, lengthlist.get(), quantvals, maptype);
+                    if (ret) { goto _errout; }
                 }
             }
             break;
@@ -1014,61 +1009,49 @@ int32_t vorbis_book_unpack(codebook_t *s) {
             quantvals = s->entries * s->dim;
             /* dec_type choices here are 1,3; 2 is not possible */
 
-            if((s->q_bits * s->dim + 8) / 8 <= 4) { /* remember flag bit */
+            if ((s->q_bits * s->dim + 8) / 8 <= 4) { /* remember flag bit */
                 /* use dec_type 1: vector of packed values */
 
                 s->dec_type = 1;
                 s->dec_nodeb = _determine_node_bytes(s->used_entries, (s->q_bits * s->dim + 8) / 8);
                 s->dec_leafw = _determine_leaf_words(s->dec_nodeb, (s->q_bits * s->dim + 8) / 8);
-                if(_make_decode_table(s, lengthlist, quantvals, maptype)) goto _errout;
-            }
-            else {
+                if (_make_decode_table(s, lengthlist.get(), quantvals, maptype)) goto _errout;
+            } else {
                 /* use dec_type 3: scalar offset into packed value array */
 
                 s->dec_type = 3;
                 s->dec_nodeb = _determine_node_bytes(s->used_entries, _ilog(s->used_entries - 1) / 8 + 1);
                 s->dec_leafw = _determine_leaf_words(s->dec_nodeb, _ilog(s->used_entries - 1) / 8 + 1);
-                if(_make_decode_table(s, lengthlist, quantvals, maptype)) goto _errout;
+                if (_make_decode_table(s, lengthlist.get(), quantvals, maptype)) goto _errout;
 
                 /* get the vals & pack them */
                 s->q_pack = (s->q_bits + 7) / 8 * s->dim;
-                s->q_val = __malloc_heap_psram(s->q_pack * s->used_entries);
+                s->q_val.alloc(s->q_pack * s->used_entries, "q_val");
 
-                if(s->q_bits <= 8) {
-                    for(i = 0; i < s->used_entries * s->dim; i++)
-                        ((uint8_t *)(s->q_val))[i] = bitReader(s->q_bits);
-                }
-                else {
-                    for(i = 0; i < s->used_entries * s->dim; i++)
-                        ((uint16_t *)(s->q_val))[i] = bitReader(s->q_bits);
+                if (s->q_bits <= 8) {
+                    for (i = 0; i < s->used_entries * s->dim; i++) ((uint8_t*)(s->q_val.get()))[i] = bitReader(s->q_bits);
+                } else {
+                    for (i = 0; i < s->used_entries * s->dim; i++) ((uint16_t*)(s->q_val.get()))[i] = bitReader(s->q_bits);
                 }
             }
             break;
-        default:
-            log_e("maptype %i schould be 0, 1 or 2", maptype);
-            goto _errout;
+        default: VORBIS_LOG_ERROR("maptype %i schould be 0, 1 or 2", maptype); goto _errout;
     }
-    if(oggpack_eop()) goto _eofout;
-    if(lengthlist) {free(lengthlist); lengthlist = NULL;}
-    if(s->q_val)   {free(s->q_val), s->q_val = NULL;}
+    if (oggpack_eop()) goto _eofout;
     return 0; // ok
 _errout:
 _eofout:
-    vorbis_book_clear(s);
-    if(lengthlist) {free(lengthlist); lengthlist = NULL;}
-    if(s->q_val)   {free(s->q_val), s->q_val = NULL;}
-    return -1; // error
+    vorbis_book_clear(m_codebooks);
+    return VORBIS_ERR; // error
 }
-//---------------------------------------------------------------------------------------------------------------------
-
-//----------------------------------------------------------------------------------------------------------------------
-int32_t VORBIS_specialIndexOf(uint8_t* base, const char* str, int32_t baselen, bool exact){
-    int32_t result = -1;  // seek for str in buffer or in header up to baselen, not nullterninated
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::special_index_of(uint8_t* base, const char* str, int32_t baselen, bool exact) {
+    int32_t result = -1;                  // seek for str in buffer or in header up to baselen, not nullterninated
     if (strlen(str) > baselen) return -1; // if exact == true seekstr in buffer must have "\0" at the end
-    for (int32_t i = 0; i < baselen - strlen(str); i++){
+    for (int32_t i = 0; i < baselen - strlen(str); i++) {
         result = i;
-        for (int32_t j = 0; j < strlen(str) + exact; j++){
-            if (*(base + i + j) != *(str + j)){
+        for (int32_t j = 0; j < strlen(str) + exact; j++) {
+            if (*(base + i + j) != *(str + j)) {
                 result = -1;
                 break;
             }
@@ -1077,67 +1060,47 @@ int32_t VORBIS_specialIndexOf(uint8_t* base, const char* str, int32_t baselen, b
     }
     return result;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-const uint32_t mask[] = {0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
-                         0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff, 0x00001fff,
-                         0x00003fff, 0x00007fff, 0x0000ffff, 0x0001ffff, 0x0003ffff, 0x0007ffff, 0x000fffff,
-                         0x001fffff, 0x003fffff, 0x007fffff, 0x00ffffff, 0x01ffffff, 0x03ffffff, 0x07ffffff,
-                         0x0fffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff, 0xffffffff};
-
-
-void bitReader_clear(){
-    s_bitReader.data = NULL;
-    s_bitReader.headptr = NULL;
-    s_bitReader.length = 0;
-    s_bitReader.headend = 0;
-    s_bitReader.headbit = 0;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::bitReader_setData(uint8_t* buff, uint32_t buffSize) {
+    m_bitReader.data = buff;
+    m_bitReader.headptr = buff;
+    m_bitReader.length = buffSize;
+    m_bitReader.headend = buffSize * 8;
+    m_bitReader.headbit = 0;
 }
-
-void bitReader_setData(uint8_t *buff, uint16_t buffSize){
-    s_bitReader.data = buff;
-    s_bitReader.headptr = buff;
-    s_bitReader.length = buffSize;
-    s_bitReader.headend = buffSize * 8;
-    s_bitReader.headbit = 0;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* Read in bits without advancing the bitptr; bits <= 32 */
-int32_t bitReader_look(uint16_t nBits){
+int32_t VorbisDecoder::bitReader_look(uint16_t nBits) {
     uint32_t m = mask[nBits];
     int32_t  ret = 0;
 
-    nBits += s_bitReader.headbit;
+    nBits += m_bitReader.headbit;
 
-    if(nBits >= s_bitReader.headend << 3) {
-        uint8_t       *ptr = s_bitReader.headptr;
-        if(nBits) {
-            ret = *ptr++ >> s_bitReader.headbit;
-            if(nBits > 8) {
-                ret |= *ptr++ << (8 - s_bitReader.headbit);
-                if(nBits > 16) {
-                    ret |= *ptr++ << (16 - s_bitReader.headbit);
-                    if(nBits > 24) {
-                         ret |= *ptr++ << (24 - s_bitReader.headbit);
-                        if(nBits > 32 && s_bitReader.headbit) {
-                            ret |= *ptr << (32 - s_bitReader.headbit);
-                        }
+    if (nBits >= m_bitReader.headend << 3) {
+        uint8_t* ptr = m_bitReader.headptr;
+        if (nBits) {
+            ret = *ptr++ >> m_bitReader.headbit;
+            if (nBits > 8) {
+                ret |= *ptr++ << (8 - m_bitReader.headbit);
+                if (nBits > 16) {
+                    ret |= *ptr++ << (16 - m_bitReader.headbit);
+                    if (nBits > 24) {
+                        ret |= *ptr++ << (24 - m_bitReader.headbit);
+                        if (nBits > 32 && m_bitReader.headbit) { ret |= *ptr << (32 - m_bitReader.headbit); }
                     }
                 }
             }
         }
-    }
-    else {
+    } else {
         /* make this a switch jump-table */
-        ret = s_bitReader.headptr[0] >> s_bitReader.headbit;
-        if(nBits > 8) {
-            ret |= s_bitReader.headptr[1] << (8 - s_bitReader.headbit);
-            if(nBits > 16) {
-                ret |= s_bitReader.headptr[2] << (16 - s_bitReader.headbit);
-                if(nBits > 24) {
-                    ret |= s_bitReader.headptr[3] << (24 - s_bitReader.headbit);
-                    if(nBits > 32 && s_bitReader.headbit) ret |= s_bitReader.headptr[4] << (32 - s_bitReader.headbit);
+        ret = m_bitReader.headptr[0] >> m_bitReader.headbit;
+        if (nBits > 8) {
+            ret |= m_bitReader.headptr[1] << (8 - m_bitReader.headbit);
+            if (nBits > 16) {
+                ret |= m_bitReader.headptr[2] << (16 - m_bitReader.headbit);
+                if (nBits > 24) {
+                    ret |= m_bitReader.headptr[3] << (24 - m_bitReader.headbit);
+                    if (nBits > 32 && m_bitReader.headbit) ret |= m_bitReader.headptr[4] << (32 - m_bitReader.headbit);
                 }
             }
         }
@@ -1146,143 +1109,230 @@ int32_t bitReader_look(uint16_t nBits){
     ret &= (int32_t)m;
     return ret;
 }
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::bitReader(uint16_t nBits) {
+    if (!m_bitReader.headptr || nBits == 0) return 0;
 
-/* bits <= 32 */
-int32_t bitReader(uint16_t nBits) {
-    int32_t ret = bitReader_look(nBits);
-    if(bitReader_adv(nBits) < 0) return -1;
-    return (ret);
-}
+    uint32_t val = 0;
+    uint32_t bits_collected = 0;
 
-/* limited to 32 at a time */
-int8_t bitReader_adv(uint16_t nBits) {
-    nBits += s_bitReader.headbit;
-    s_bitReader.headbit = nBits & 7;
-    s_bitReader.headend -= (nBits >> 3);
-    s_bitReader.headptr += (nBits >> 3);
-    if(s_bitReader.headend < 1){
-        return -1;
-        log_e("error in bitreader");
+    while (nBits > 0) {
+
+        // Check whether the BitReader is empty (end of the current Ogg page)
+        if (m_bitReader.headptr >= m_bitReader.data + m_bitReader.length) {
+
+            // ------------------------------------------------------------
+            // 🧩 Ogg limit exceeded → read next page
+            // ------------------------------------------------------------
+            uint8_t leftover = 0;
+            uint8_t bits_left = 0;
+
+            // If in the middle of the byte: save remaining bits
+            if (m_bitReader.headbit > 0 && m_bitReader.headptr > m_bitReader.data) {
+                leftover = *(m_bitReader.headptr - 1) >> (8 - m_bitReader.headbit);
+                bits_left = m_bitReader.headbit;
+            }
+
+            // Load new Ogg page
+            int32_t  oggLen = 256;
+            int32_t  ret = parse_OGG(m_bitReader.headptr, &oggLen);
+            uint32_t header_consumed = (256 - oggLen);
+            VORBIS_LOG_DEBUG("header_consumed %i", header_consumed);
+            if (ret != VORBIS_PARSE_OGG_DONE) {
+                VORBIS_LOG_ERROR("bitReader: failed to continue across Ogg page");
+                return -1;
+            }
+
+            // Apply first segment
+            if (!m_ogg_items.segment_table.empty()) {
+                VORBIS_LOG_DEBUG("old segment %i", m_vorbis_segment_length);
+                m_vorbis_segment_length = m_ogg_items.segment_table.front();
+                m_ogg_items.segment_table.pop_front();
+                VORBIS_LOG_DEBUG("new segment %i", m_vorbis_segment_length);
+                uint32_t header_consumed = (256 - oggLen);
+                m_ogg_items.bytes_consumed_from_other = m_vorbis_segment_length + header_consumed;
+            } else {
+                VORBIS_LOG_ERROR("bitReader: empty Ogg segment table");
+                return -1;
+            }
+
+            // New page data starts behind header+lacing
+            uint8_t* newPage = m_bitReader.headptr + header_consumed;
+            bitReader_setData(newPage, m_vorbis_segment_length);
+
+            // If remaining bits exist → append to the beginning of the new page
+            if (bits_left > 0) {
+                m_bitReader.data[0] = (m_bitReader.data[0] << bits_left) | leftover;
+                m_bitReader.headbit = bits_left;
+            } else {
+                m_bitReader.headbit = 0;
+            }
+
+            m_bitReader.headptr = m_bitReader.data;
+            m_bitReader.headend = m_vorbis_segment_length;
+
+            VORBIS_LOG_INFO("BitReader: crossed Ogg boundary (bits_left=%u, new_segment=%u)", bits_left, m_vorbis_segment_length);
+            continue;
+        }
+
+        // ------------------------------------------------------------
+        // 🧩 Normal reading of bits from the current byte
+        // ------------------------------------------------------------
+        uint8_t  current_byte = *m_bitReader.headptr;
+        uint32_t bits_avail = 8 - m_bitReader.headbit;
+        uint32_t take = std::min<uint32_t>(bits_avail, nBits);
+
+        uint32_t mask = ((1u << take) - 1);
+        val |= ((current_byte >> m_bitReader.headbit) & mask) << bits_collected;
+
+        bits_collected += take;
+        nBits -= take;
+        m_bitReader.headbit += take;
+
+        // Byte vollständig gelesen?
+        if (m_bitReader.headbit >= 8) {
+            m_bitReader.headbit = 0;
+            m_bitReader.headptr++;
+            m_bitReader.headend--;
+        }
     }
+
+    if (m_bitReader.headend <= 0) { VORBIS_LOG_WARN("bitReader nearly empty: %d bytes left", m_bitReader.headend); }
+
+    return val;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int8_t VorbisDecoder::bitReader_adv(uint16_t nBits) {
+    // new bit position in the current byte
+    uint32_t newBit = m_bitReader.headbit + nBits;
+
+    // Calculate how many whole bytes we skip
+    uint32_t byteAdvance = newBit >> 3;
+
+    // Remaining bits in the current byte
+    m_bitReader.headbit = newBit & 7;
+
+    // Check if we would go past the end
+    if (byteAdvance > (uint32_t)m_bitReader.headend || (byteAdvance == (uint32_t)m_bitReader.headend && m_bitReader.headbit > 0)) {
+        VORBIS_LOG_ERROR("bitReader_adv: ran out of data (advance=%u, left=%i)", byteAdvance, m_bitReader.headend);
+        return -1;
+    }
+
+    // Continue byte pointer
+    m_bitReader.headptr += byteAdvance;
+    m_bitReader.headend -= byteAdvance;
+
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t ilog(uint32_t v) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::ilog(uint32_t v) {
     int32_t ret = 0;
-    if(v) --v;
-    while(v) {
+    if (v) --v;
+    while (v) {
         ret++;
         v >>= 1;
     }
     return (ret);
 }
-//----------------------------------------------------------------------------------------------------------------------
-uint8_t _ilog(uint32_t v) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint8_t VorbisDecoder::_ilog(uint32_t v) {
     uint8_t ret = 0;
-    while(v) {
+    while (v) {
         ret++;
         v >>= 1;
     }
     return (ret);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* 32 bit float (not IEEE; nonnormalized mantissa + biased exponent) : neeeeeee eeemmmmm mmmmmmmm mmmmmmmm
  Why not IEEE?  It's just not that important here. */
 
-int32_t _float32_unpack(int32_t val, int32_t *point) {
+int32_t VorbisDecoder::_float32_unpack(int32_t val, int32_t* point) {
     int32_t mant = val & 0x1fffff;
     bool    sign = val < 0;
 
     *point = ((val & 0x7fe00000L) >> 21) - 788;
 
-    if(mant) {
-        while(!(mant & 0x40000000)) {
+    if (mant) {
+        while (!(mant & 0x40000000)) {
             mant <<= 1;
             *point -= 1;
         }
-        if(sign) mant = -mant;
+        if (sign) mant = -mant;
+    } else {
+        *point = -9999;
     }
-    else { *point = -9999; }
     return mant;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* choose the smallest supported node size that fits our decode table. Legal bytewidths are 1/1 1/2 2/2 2/4 4/4 */
-int32_t _determine_node_bytes(uint32_t used, uint8_t leafwidth) {
+int32_t VorbisDecoder::_determine_node_bytes(uint32_t used, uint8_t leafwidth) {
     /* special case small books to size 4 to avoid multiple special cases in repack */
-    if(used < 2) return 4;
+    if (used < 2) return 4;
 
-    if(leafwidth == 3) leafwidth = 4;
-    if(_ilog((3 * used - 6)) + 1 <= leafwidth * 4) return leafwidth / 2 ? leafwidth / 2 : 1;
+    if (leafwidth == 3) leafwidth = 4;
+    if (_ilog((3 * used - 6)) + 1 <= leafwidth * 4) return leafwidth / 2 ? leafwidth / 2 : 1;
     return leafwidth;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* convenience/clarity; leaves are specified as multiple of node word size (1 or 2) */
-int32_t _determine_leaf_words(int32_t nodeb, int32_t leafwidth) {
-    if(leafwidth > nodeb) return 2;
+int32_t VorbisDecoder::_determine_leaf_words(int32_t nodeb, int32_t leafwidth) {
+    if (leafwidth > nodeb) return 2;
     return 1;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t _make_decode_table(codebook_t *s, char *lengthlist, uint8_t quantvals, int32_t maptype) {
-    uint32_t *work = nullptr;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::_make_decode_table(codebook_t* s, int32_t* lengthlist, uint8_t quantvals, int32_t maptype) {
+    ps_ptr<uint32_t> work;
 
-    if(s->dec_nodeb == 4) {
-        s->dec_table = __malloc_heap_psram((s->used_entries * 2 + 1) * sizeof(*work));
+    if (s->dec_nodeb == 4) {
+        s->dec_table.alloc((s->used_entries + 1) * sizeof(*work), "dec_table");
         /* +1 (rather than -2) is to accommodate 0 and 1 sized books, which are specialcased to nodeb==4 */
-        if(_make_words(lengthlist, s->entries, (uint32_t *)s->dec_table, quantvals, s, maptype)) return 1;
+        if (_make_words(lengthlist, s->entries, (uint32_t*)s->dec_table.get(), quantvals, s, maptype)) return 1;
 
         return 0;
     }
 
-    work = (uint32_t *)__calloc_heap_psram((uint32_t)(s->used_entries * 2 - 2) , sizeof(*work));
-    if(!work) log_e("oom");
+    work.alloc((s->used_entries * 2) * sizeof(int32_t), "work");
+    work.clear();
 
-    if(_make_words(lengthlist, s->entries, work, quantvals, s, maptype)) {
-        if(work) {free(work); work = NULL;}
-        return 1;
-    }
-    s->dec_table = __malloc_heap_psram((s->used_entries * (s->dec_leafw + 1) - 2) * s->dec_nodeb);
-    if(s->dec_leafw == 1) {
-        switch(s->dec_nodeb) {
+    if (_make_words(lengthlist, s->entries, work.get(), quantvals, s, maptype)) { return 1; }
+    s->dec_table.alloc((s->used_entries * (s->dec_leafw + 1) - 2) * s->dec_nodeb, "dec_table");
+    if (s->dec_leafw == 1) {
+        switch (s->dec_nodeb) {
             case 1:
-                for(uint32_t i = 0; i < s->used_entries * 2 - 2; i++)
-                    ((uint8_t *)s->dec_table)[i] = (uint16_t)((work[i] & 0x80000000UL) >> 24) | work[i];
+                for (uint32_t i = 0; i < s->used_entries * 2 - 2; i++) ((uint8_t*)s->dec_table.get())[i] = (uint16_t)((work[i] & 0x80000000UL) >> 24) | work[i];
                 break;
             case 2:
-                for(uint32_t i = 0; i < s->used_entries * 2 - 2; i++)
-                    ((uint16_t *)s->dec_table)[i] = (uint16_t)((work[i] & 0x80000000UL) >> 16) | work[i];
+                for (uint32_t i = 0; i < s->used_entries * 2 - 2; i++) ((uint16_t*)s->dec_table.get())[i] = (uint16_t)((work[i] & 0x80000000UL) >> 16) | work[i];
                 break;
         }
-    }
-    else {
+    } else {
         /* more complex; we have to do a two-pass repack that updates the node indexing. */
         uint32_t top = s->used_entries * 3 - 2;
-        if(s->dec_nodeb == 1) {
-            uint8_t *out = (uint8_t *)s->dec_table;
+        if (s->dec_nodeb == 1) {
+            uint8_t* out = (uint8_t*)s->dec_table.get();
 
-            for(int32_t i = s->used_entries * 2 - 4; i >= 0; i -= 2) {
-                if(work[i] & 0x80000000UL) {
-                    if(work[i + 1] & 0x80000000UL) {
+            for (int32_t i = s->used_entries * 2 - 4; i >= 0; i -= 2) {
+                if (work[i] & 0x80000000UL) {
+                    if (work[i + 1] & 0x80000000UL) {
                         top -= 4;
                         out[top] = (uint8_t)(work[i] >> 8 & 0x7f) | 0x80;
                         out[top + 1] = (uint8_t)(work[i + 1] >> 8 & 0x7f) | 0x80;
                         out[top + 2] = (uint8_t)work[i] & 0xff;
                         out[top + 3] = (uint8_t)work[i + 1] & 0xff;
-                    }
-                    else {
+                    } else {
                         top -= 3;
                         out[top] = (uint8_t)(work[i] >> 8 & 0x7f) | 0x80;
                         out[top + 1] = (uint8_t)work[work[i + 1] * 2];
                         out[top + 2] = (uint8_t)work[i] & 0xff;
                     }
-                }
-                else {
-                    if(work[i + 1] & 0x80000000UL) {
+                } else {
+                    if (work[i + 1] & 0x80000000UL) {
                         top -= 3;
-                        out[top]     = (uint8_t)work[work[i] * 2];
+                        out[top] = (uint8_t)work[work[i] * 2];
                         out[top + 1] = (uint8_t)(work[i + 1] >> 8 & 0x7f) | 0x80;
                         out[top + 2] = (uint8_t)work[i + 1] & 0xff;
-                    }
-                    else {
+                    } else {
                         top -= 2;
                         out[top] = (uint8_t)work[work[i] * 2];
                         out[top + 1] = (uint8_t)work[work[i + 1] * 2];
@@ -1290,33 +1340,29 @@ int32_t _make_decode_table(codebook_t *s, char *lengthlist, uint8_t quantvals, i
                 }
                 work[i] = top;
             }
-        }
-        else {
-            uint16_t *out = (uint16_t *)s->dec_table;
-            for(int32_t i = s->used_entries * 2 - 4; i >= 0; i -= 2) {
-                if(work[i] & 0x80000000UL) {
-                    if(work[i + 1] & 0x80000000UL) {
+        } else {
+            uint16_t* out = (uint16_t*)s->dec_table.get();
+            for (int32_t i = s->used_entries * 2 - 4; i >= 0; i -= 2) {
+                if (work[i] & 0x80000000UL) {
+                    if (work[i + 1] & 0x80000000UL) {
                         top -= 4;
                         out[top] = (uint16_t)(work[i] >> 16 & 0x7fff) | 0x8000;
                         out[top + 1] = (uint16_t)(work[i + 1] >> 16 & 0x7fff) | 0x8000;
                         out[top + 2] = (uint16_t)work[i] & 0xffff;
                         out[top + 3] = (uint16_t)work[i + 1] & 0xffff;
-                    }
-                    else {
+                    } else {
                         top -= 3;
                         out[top] = (uint16_t)(work[i] >> 16 & 0x7fff) | 0x8000;
                         out[top + 1] = (uint16_t)work[work[i + 1] * 2];
                         out[top + 2] = (uint16_t)work[i] & 0xffff;
                     }
-                }
-                else {
-                    if(work[i + 1] & 0x80000000UL) {
+                } else {
+                    if (work[i + 1] & 0x80000000UL) {
                         top -= 3;
                         out[top] = (uint16_t)work[work[i] * 2];
                         out[top + 1] = (uint16_t)(work[i + 1] >> 16 & 0x7fff) | 0x8000;
                         out[top + 2] = (uint16_t)work[i + 1] & 0xffff;
-                    }
-                    else {
+                    } else {
                         top -= 2;
                         out[top] = (uint16_t)work[work[i] * 2];
                         out[top + 1] = (uint16_t)work[work[i + 1] * 2];
@@ -1326,44 +1372,43 @@ int32_t _make_decode_table(codebook_t *s, char *lengthlist, uint8_t quantvals, i
             }
         }
     }
-    if(work) {free(work); work = NULL;}
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* given a list of word lengths, number of used entries, and byte width of a leaf, generate the decode table */
-int32_t _make_words(char *l, uint16_t n, uint32_t *work, uint8_t quantvals, codebook_t *b, int32_t maptype) {
+int32_t VorbisDecoder::_make_words(int32_t* l, uint16_t n, uint32_t* work, uint8_t quantvals, codebook_t* b, int32_t maptype) {
 
     int32_t  i, j, count = 0;
     uint32_t top = 0;
     uint32_t marker[33];
 
-    if(n < 2) { work[0] = 0x80000000; }
-    else {
+    if (n < 2) {
+        work[0] = 0x80000000;
+    } else {
         memset(marker, 0, sizeof(marker));
 
-        for(i = 0; i < n; i++) {
+        for (i = 0; i < n; i++) {
             int32_t length = l[i];
-            if(length) {
+            if (length) {
                 uint32_t entry = marker[length];
                 uint32_t chase = 0;
-                if(count && !entry) return -1; /* overpopulated tree! */
+                if (count && !entry) return -1; /* overpopulated tree! */
 
                 /* chase the tree as far as it's already populated, fill in past */
-                for(j = 0; j < length - 1; j++) {
+                for (j = 0; j < length - 1; j++) {
                     uint32_t bit = (entry >> (length - j - 1)) & 1;
-                    if(chase >= top) {
+                    if (chase >= top) {
                         top++;
                         work[chase * 2] = top;
                         work[chase * 2 + 1] = 0;
-                    }
-                    else if(!work[chase * 2 + bit]){
+                    } else if (!work[chase * 2 + bit]) {
                         work[chase * 2 + bit] = top;
                     }
                     chase = work[chase * 2 + bit];
                 }
                 {
                     int32_t bit = (entry >> (length - j - 1)) & 1;
-                    if(chase >= top) {
+                    if (chase >= top) {
                         top++;
                         work[chase * 2 + 1] = 0;
                     }
@@ -1371,8 +1416,8 @@ int32_t _make_words(char *l, uint16_t n, uint32_t *work, uint8_t quantvals, code
                 }
 
                 /* Look to see if the next shorter marker points to the node above. if so, update it and repeat.  */
-                for(j = length; j > 0; j--) {
-                    if(marker[j] & 1) {
+                for (j = length; j > 0; j--) {
+                    if (marker[j] & 1) {
                         marker[j] = marker[j - 1] << 1;
                         break;
                     }
@@ -1381,12 +1426,11 @@ int32_t _make_words(char *l, uint16_t n, uint32_t *work, uint8_t quantvals, code
 
                 /* prune the tree; the implicit invariant says all the int32_ter markers were dangling from our
                    just-taken node. Dangle them from our *new* node. */
-                for(j = length + 1; j < 33; j++)
-                    if((marker[j] >> 1) == entry) {
+                for (j = length + 1; j < 33; j++)
+                    if ((marker[j] >> 1) == entry) {
                         entry = marker[j];
                         marker[j] = marker[j - 1] << 1;
-                    }
-                    else
+                    } else
                         break;
             }
         }
@@ -1394,29 +1438,27 @@ int32_t _make_words(char *l, uint16_t n, uint32_t *work, uint8_t quantvals, code
 
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
-uint32_t decpack(int32_t entry, int32_t used_entry, uint8_t quantvals, codebook_t *b, int32_t maptype) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::decpack(int32_t entry, int32_t used_entry, uint8_t quantvals, codebook_t* b, int32_t maptype) {
     uint32_t ret = 0;
 
-    switch(b->dec_type) {
-        case 0:
-            return (uint32_t)entry;
+    switch (b->dec_type) {
+        case 0: return (uint32_t)entry;
 
         case 1:
-            if(maptype == 1) {
+            if (maptype == 1) {
                 /* vals are already read into temporary column vector here */
                 assert(b->dim >= 0);
-                for(uint8_t j = 0; j < b->dim; j++) {
+                for (uint8_t j = 0; j < b->dim; j++) {
                     uint32_t off = (uint32_t)(entry % quantvals);
                     entry /= quantvals;
                     assert((b->q_bits * j) >= 0);
                     uint32_t shift = (uint32_t)b->q_bits * j;
-                    ret |= ((uint16_t *)(b->q_val))[off] << shift;
+                    ret |= ((uint16_t*)(b->q_val.get()))[off] << shift;
                 }
-            }
-            else {
+            } else {
                 assert(b->dim >= 0);
-                for(uint8_t j = 0; j < b->dim; j++) {
+                for (uint8_t j = 0; j < b->dim; j++) {
                     assert((b->q_bits * j) >= 0);
                     uint32_t shift = (uint32_t)b->q_bits * j;
                     int32_t  _ret = bitReader(b->q_bits) << shift;
@@ -1428,7 +1470,7 @@ uint32_t decpack(int32_t entry, int32_t used_entry, uint8_t quantvals, codebook_
 
         case 2:
             assert(b->dim >= 0);
-            for(uint8_t j = 0; j < b->dim; j++) {
+            for (uint8_t j = 0; j < b->dim; j++) {
                 uint32_t off = uint32_t(entry % quantvals);
                 entry /= quantvals;
                 assert(b->q_pack * j >= 0);
@@ -1437,115 +1479,108 @@ uint32_t decpack(int32_t entry, int32_t used_entry, uint8_t quantvals, codebook_
             }
             return ret;
 
-        case 3:
-            return (uint32_t)used_entry;
+        case 3: return (uint32_t)used_entry;
     }
     return 0; /* silence compiler */
 }
-//---------------------------------------------------------------------------------------------------------------------
-/* most of the time, entries%dimensions == 0, but we need to be well defined.  We define that the possible vales at
- each scalar is values == entries/dim.  If entries%dim != 0, we'll have 'too few' values (values*dim<entries), which
- means that we'll have 'left over' entries; left over entries use zeroed values (and are wasted).  So don't generate
- codebooks like that */
-/* there might be a straightforward one-line way to do the below that's portable and totally safe against roundoff, but
- I haven't thought of it.  Therefore, we opt on the side of caution */
-uint8_t _book_maptype1_quantvals(codebook_t *b) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+/* most of the time, entries%dimensions == 0, but we need to be well defined.  We define that the possible vales at each scalar is values == entries/dim.  If entries%dim != 0, we'll have 'too few'
+ values (values*dim<entries), which means that we'll have 'left over' entries; left over entries use zeroed values (and are wasted).  So don't generate codebooks like that */
+/* there might be a straightforward one-line way to do the below that's portable and totally safe against roundoff, but I haven't thought of it.  Therefore, we opt on the side of caution */
+uint8_t VorbisDecoder::_book_maptype1_quantvals(codebook_t* b) {
     /* get us a starting hint, we'll polish it below */
     uint8_t bits = _ilog(b->entries);
     uint8_t vals = b->entries >> ((bits - 1) * (b->dim - 1) / b->dim);
 
-    while(1) {
+    while (1) {
         uint32_t acc = 1;
         uint32_t acc1 = 1;
 
-        for(uint8_t i = 0; i < b->dim; i++) {
+        for (uint8_t i = 0; i < b->dim; i++) {
             acc *= vals;
             acc1 *= vals + 1;
         }
-        if(acc <= b->entries && acc1 > b->entries) { return (vals); }
-        else {
-            if(acc > b->entries) { vals--; }
-            else { vals++; }
+        if (acc <= b->entries && acc1 > b->entries) {
+            return (vals);
+        } else {
+            if (acc > b->entries) {
+                vals--;
+            } else {
+                vals++;
+            }
         }
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t oggpack_eop() {
-    if(s_bitReader.headptr -s_bitReader.data  > s_setupHeaderLength){
-        log_i("s_bitReader.headptr %i, s_setupHeaderLength %i", s_bitReader.headptr, s_setupHeaderLength);
-        log_i("ogg package 3 overflow");
-         return -1;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::oggpack_eop() {
+    if (m_bitReader.headptr - m_bitReader.data > m_bitReader.length) {
+        VORBIS_LOG_INFO("s_bitReader.headptr - data %i, bitReader.length %i", m_bitReader.headptr - m_bitReader.data, m_bitReader.length);
+        return -1;
     }
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
-void vorbis_book_clear(codebook_t *b) {
-    /* static book is not cleared; we're likely called on the lookup and the static codebook beint32_ts to the
-   info struct */
-    if(b->q_val) free(b->q_val);
-    if(b->dec_table) free(b->dec_table);
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+ps_ptr<VorbisDecoder::vorbis_info_floor> VorbisDecoder::floor0_info_unpack() {
 
-    memset(b, 0, sizeof(*b));
-}
-//---------------------------------------------------------------------------------------------------------------------
- vorbis_info_floor_t* floor0_info_unpack() {
+    int32_t j;
 
-    int32_t               j;
+    ps_ptr<vorbis_info_floor> info;
+    info.calloc_array(1, "info");
 
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)__malloc_heap_psram(sizeof(*info));
-    info->order =    bitReader( 8);
-    info->rate =     bitReader(16);
-    info->barkmap =  bitReader(16);
-    info->ampbits =  bitReader( 6);
-    info->ampdB =    bitReader( 8);
-    info->numbooks = bitReader( 4) + 1;
+    info->order = bitReader(8);
+    info->rate = bitReader(16);
+    info->barkmap = bitReader(16);
+    info->ampbits = bitReader(6);
+    info->ampdB = bitReader(8);
+    info->numbooks = bitReader(4) + 1;
 
-    if(info->order < 1) goto err_out;
-    if(info->rate < 1) goto err_out;
-    if(info->barkmap < 1) goto err_out;
+    if (info->order < 1) goto err_out;
+    if (info->rate < 1) goto err_out;
+    if (info->barkmap < 1) goto err_out;
 
-    for(j = 0; j < info->numbooks; j++) {
+    for (j = 0; j < info->numbooks; j++) {
         info->books[j] = bitReader(8);
-        if(info->books[j] >= s_nrOfCodebooks) goto err_out;
+        if (info->books[j] >= m_nrOfCodebooks) goto err_out;
     }
 
-    if(oggpack_eop()) goto err_out;
+    if (oggpack_eop()) goto err_out;
     return (info);
 
 err_out:
-    floor_free_info(info);
-    return (NULL);
+    return {};
 }
-//---------------------------------------------------------------------------------------------------------------------
-vorbis_info_floor_t* floor1_info_unpack() {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+ps_ptr<VorbisDecoder::vorbis_info_floor> VorbisDecoder::floor1_info_unpack() {
 
-    int32_t j, k, count = 0, maxclass = -1, rangebits;
+    ps_ptr<uint8_t> B;
+    int32_t         j, k, count = 0, maxclass = -1, rangebits;
 
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)__calloc_heap_psram(1, sizeof(vorbis_info_floor_t));
+    ps_ptr<vorbis_info_floor> info;
+    info.calloc_array(1, "info");
+
     /* read partitions */
     info->partitions = bitReader(5); /* only 0 to 31 legal */
-    info->partitionclass = (uint8_t *)__malloc_heap_psram(info->partitions * sizeof(*info->partitionclass));
-    for(j = 0; j < info->partitions; j++) {
+    info->partitionclass.alloc(info->partitions * sizeof(uint8_t), "partitionclass");
+    for (j = 0; j < info->partitions; j++) {
         info->partitionclass[j] = bitReader(4); /* only 0 to 15 legal */
-        if(maxclass < info->partitionclass[j]) maxclass = info->partitionclass[j];
+        if (maxclass < info->partitionclass[j]) maxclass = info->partitionclass[j];
     }
 
     /* read partition classes */
-    info->_class = (floor1class_t *)__malloc_heap_psram((uint32_t)(maxclass + 1) * sizeof(*info->_class));
-    for(j = 0; j < maxclass + 1; j++) {
+    info->_class.alloc((uint32_t)(maxclass + 1) * sizeof(floor1class_t), "_class");
+    for (j = 0; j < maxclass + 1; j++) {
         info->_class[j].class_dim = bitReader(3) + 1; /* 1 to 8 */
         info->_class[j].class_subs = bitReader(2);    /* 0,1,2,3 bits */
-        if(oggpack_eop() < 0) goto err_out;
-        if(info->_class[j].class_subs){
+        if (oggpack_eop() < 0) goto err_out;
+        if (info->_class[j].class_subs) {
             info->_class[j].class_book = bitReader(8);
-        }
-        else{
+        } else {
             info->_class[j].class_book = 0;
         }
-        if(info->_class[j].class_book >= s_nrOfCodebooks) goto err_out;
-        for(k = 0; k < (1 << info->_class[j].class_subs); k++) {
+        if (info->_class[j].class_book >= m_nrOfCodebooks) goto err_out;
+        for (k = 0; k < (1 << info->_class[j].class_subs); k++) {
             info->_class[j].class_subbook[k] = (uint8_t)bitReader(8) - 1;
-            if(info->_class[j].class_subbook[k] >= s_nrOfCodebooks && info->_class[j].class_subbook[k] != 0xff) goto err_out;
+            if (info->_class[j].class_subbook[k] >= m_nrOfCodebooks && info->_class[j].class_subbook[k] != 0xff) goto err_out;
         }
     }
 
@@ -1553,44 +1588,46 @@ vorbis_info_floor_t* floor1_info_unpack() {
     info->mult = bitReader(2) + 1; /* only 1,2,3,4 legal now */
     rangebits = bitReader(4);
 
-    for(j = 0, k = 0; j < info->partitions; j++) count += info->_class[info->partitionclass[j]].class_dim;
-    info->postlist = (uint16_t *)__malloc_heap_psram((count + 2) * sizeof(*info->postlist));
-    info->forward_index = (uint8_t *)__malloc_heap_psram((count + 2) * sizeof(*info->forward_index));
-    info->loneighbor = (uint8_t *)__malloc_heap_psram(count * sizeof(*info->loneighbor));
-    info->hineighbor = (uint8_t *)__malloc_heap_psram(count * sizeof(*info->hineighbor));
+    for (j = 0, k = 0; j < info->partitions; j++) count += info->_class[info->partitionclass[j]].class_dim;
+    info->postlist.alloc((count + 2) * sizeof(uint16_t), "postlist");
+    info->forward_index.alloc((count + 2) * sizeof(uint8_t), "forward_index");
+    info->loneighbor.alloc(count * sizeof(uint8_t), "loneighbor");
+    info->hineighbor.alloc(count * sizeof(uint8_t), "hineighbor");
 
     count = 0;
-    for(j = 0, k = 0; j < info->partitions; j++) {
+    for (j = 0, k = 0; j < info->partitions; j++) {
         count += info->_class[info->partitionclass[j]].class_dim;
-        if(count > VIF_POSIT) goto err_out;
-        for(; k < count; k++) {
+        if (count > VIF_POSIT) goto err_out;
+        for (; k < count; k++) {
             int32_t t = info->postlist[k + 2] = bitReader(rangebits);
-            if(t >= (1 << rangebits)) goto err_out;
+            if (t >= (1 << rangebits)) goto err_out;
         }
     }
-    if(oggpack_eop()) goto err_out;
+    if (oggpack_eop()) goto err_out;
     info->postlist[0] = 0;
     info->postlist[1] = 1 << rangebits;
     info->posts = count + 2;
 
     /* also store a sorted position index */
-    for(j = 0; j < info->posts; j++) info->forward_index[j] = j;
-    vorbis_mergesort(info->forward_index, info->postlist, info->posts);
+    for (j = 0; j < info->posts; j++) info->forward_index[j] = j;
 
+    // vorbis_mergesort--------------------------------------------------------------------------------
+    vorbis_mergesort(info->forward_index.get(), info->postlist.get(), info->posts);
+    //-------------------------------------------------------------------------------------------------
     /* discover our neighbors for decode where we don't use fit flags (that would push the neighbors outward) */
-    for(j = 0; j < info->posts - 2; j++) {
+    for (j = 0; j < info->posts - 2; j++) {
         int32_t lo = 0;
         int32_t hi = 1;
         int32_t lx = 0;
         int32_t hx = info->postlist[1];
         int32_t currentx = info->postlist[j + 2];
-        for(k = 0; k < j + 2; k++) {
+        for (k = 0; k < j + 2; k++) {
             int32_t x = info->postlist[k];
-            if(x > lx && x < currentx) {
+            if (x > lx && x < currentx) {
                 lo = k;
                 lx = x;
             }
-            if(x < hx && x > currentx) {
+            if (x < hx && x > currentx) {
                 hi = k;
                 hx = x;
             }
@@ -1602,350 +1639,337 @@ vorbis_info_floor_t* floor1_info_unpack() {
     return (info);
 
 err_out:
-    floor_free_info(info);
-    return (NULL);
+    return {};
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::vorbis_mergesort(uint8_t* index, uint16_t* vals, uint16_t n) {
+    uint16_t        i, j;
+    ps_ptr<uint8_t> B_mem;
+    B_mem.alloc(n * sizeof(uint8_t));
+
+    if (!B_mem.valid()) return;
+
+    uint8_t* A = index;
+    uint8_t* B = B_mem.get();
+    bool     flipped = false;
+
+    for (i = 1; i < n; i <<= 1) {
+        for (j = 0; j + i < n;) {
+            uint16_t k1 = j;
+            uint16_t mid = j + i;
+            uint16_t k2 = mid;
+            uint16_t end = (j + i * 2 < n ? j + i * 2 : n);
+            while (k1 < mid && k2 < end) {
+                if (vals[A[k1]] < vals[A[k2]])
+                    B[j++] = A[k1++];
+                else
+                    B[j++] = A[k2++];
+            }
+            while (k1 < mid) B[j++] = A[k1++];
+            while (k2 < end) B[j++] = A[k2++];
+        }
+
+        for (; j < n; j++) B[j] = A[j];
+
+        std::swap(A, B); // swap pointer
+        flipped = !flipped;
+    }
+
+    if (A != index) {
+        std::memcpy(index, A, n); // result back to index
+    }
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* vorbis_info is for range checking */
-int32_t res_unpack(vorbis_info_residue_t *info){
-    int32_t               j, k;
-    memset(info, 0, sizeof(*info));
+int32_t VorbisDecoder::res_unpack(vorbis_info_residue* info) {
+    int32_t j, k;
 
-    info->type =       bitReader(16);
-    if(info->type > 2 || info->type < 0) goto errout;
-    info->begin =      bitReader(24);
-    info->end =        bitReader(24);
-    info->grouping =   bitReader(24) + 1;
+    info->type = bitReader(16);
+    if (info->type > 2 || info->type < 0) goto errout;
+    info->begin = bitReader(24);
+    info->end = bitReader(24);
+    info->grouping = bitReader(24) + 1;
     info->partitions = bitReader(6) + 1;
-    info->groupbook =  bitReader(8);
-    if(info->groupbook >= s_nrOfCodebooks) goto errout;
+    info->groupbook = bitReader(8);
+    if (info->groupbook >= m_nrOfCodebooks) goto errout;
 
-    info->stagemasks = (uint8_t *)__malloc_heap_psram(info->partitions * sizeof(*info->stagemasks));
-    info->stagebooks = (uint8_t *)__malloc_heap_psram(info->partitions * 8 * sizeof(*info->stagebooks));
+    info->stagemasks.alloc(info->partitions * sizeof(uint8_t));
+    info->stagebooks.alloc(info->partitions * 8 * sizeof(uint8_t));
 
-    for(j = 0; j < info->partitions; j++) {
+    for (j = 0; j < info->partitions; j++) {
         int32_t cascade = bitReader(3);
-        if(bitReader(1)) cascade |= (bitReader(5) << 3);
+        if (bitReader(1)) cascade |= (bitReader(5) << 3);
         info->stagemasks[j] = cascade;
     }
 
-    for(j = 0; j < info->partitions; j++) {
-        for(k = 0; k < 8; k++) {
-            if((info->stagemasks[j] >> k) & 1) {
+    for (j = 0; j < info->partitions; j++) {
+        for (k = 0; k < 8; k++) {
+            if ((info->stagemasks[j] >> k) & 1) {
                 uint8_t book = bitReader(8);
-                if(book >= s_nrOfCodebooks) goto errout;
+                if (book >= m_nrOfCodebooks) goto errout;
                 info->stagebooks[j * 8 + k] = book;
-                if(k + 1 > info->stages) info->stages = k + 1;
-            }
-            else
+                if (k + 1 > info->stages) info->stages = k + 1;
+            } else
                 info->stagebooks[j * 8 + k] = 0xff;
         }
     }
 
-    if(oggpack_eop()) goto errout;
+    if (oggpack_eop()) goto errout;
 
     return 0;
 errout:
-    res_clear_info(info);
     return 1;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* also responsible for range checking */
-int32_t mapping_info_unpack(vorbis_info_mapping_t *info) {
-    int32_t               i;
-    memset(info, 0, sizeof(*info));
+int32_t VorbisDecoder::mapping_info_unpack(vorbis_info_mapping* info) {
+    int32_t i;
 
-    if(bitReader(1)) info->submaps = bitReader(4) + 1;
+    if (bitReader(1))
+        info->submaps = bitReader(4) + 1;
     else
         info->submaps = 1;
 
-    if(bitReader(1)) {
+    if (bitReader(1)) {
         info->coupling_steps = bitReader(8) + 1;
-        info->coupling = (coupling_step_t *)__malloc_heap_psram(info->coupling_steps * sizeof(*info->coupling));
+        info->coupling.alloc(info->coupling_steps * sizeof(coupling_step_t));
 
-        for(i = 0; i < info->coupling_steps; i++) {
-            int32_t testM = info->coupling[i].mag = bitReader(ilog(s_vorbisChannels));
-            int32_t testA = info->coupling[i].ang = bitReader(ilog(s_vorbisChannels));
+        for (i = 0; i < info->coupling_steps; i++) {
+            int32_t testM = info->coupling[i].mag = bitReader(ilog(m_vorbisChannels));
+            int32_t testA = info->coupling[i].ang = bitReader(ilog(m_vorbisChannels));
 
-            if(testM < 0 || testA < 0 || testM == testA || testM >= s_vorbisChannels || testA >= s_vorbisChannels) goto err_out;
+            if (testM < 0 || testA < 0 || testM == testA || testM >= m_vorbisChannels || testA >= m_vorbisChannels) goto err_out;
         }
     }
 
-    if(bitReader(2) > 0) goto err_out;
+    if (bitReader(2) > 0) goto err_out;
     /* 2,3:reserved */
 
-    if(info->submaps > 1) {
-        info->chmuxlist = (uint8_t *)__malloc_heap_psram(sizeof(*info->chmuxlist) * s_vorbisChannels);
-        for(i = 0; i < s_vorbisChannels; i++) {
+    if (info->submaps > 1) {
+        info->chmuxlist.alloc(sizeof(uint8_t) * m_vorbisChannels);
+        for (i = 0; i < m_vorbisChannels; i++) {
             info->chmuxlist[i] = bitReader(4);
-            if(info->chmuxlist[i] >= info->submaps) goto err_out;
+            if (info->chmuxlist[i] >= info->submaps) goto err_out;
         }
     }
 
-    info->submaplist = (submap_t *)__malloc_heap_psram(sizeof(*info->submaplist) * info->submaps);
-    for(i = 0; i < info->submaps; i++) {
+    info->submaplist.alloc(sizeof(submap_t) * info->submaps);
+    for (i = 0; i < info->submaps; i++) {
         int32_t temp = bitReader(8);
         (void)temp;
         info->submaplist[i].floor = bitReader(8);
-        if(info->submaplist[i].floor >= s_nrOfFloors) goto err_out;
+        if (info->submaplist[i].floor >= m_nrOfFloors) goto err_out;
         info->submaplist[i].residue = bitReader(8);
-        if(info->submaplist[i].residue >= s_nrOfResidues) goto err_out;
+        if (info->submaplist[i].residue >= m_nrOfResidues) goto err_out;
     }
 
     return 0;
 
 err_out:
-    mapping_clear_info(info);
     return -1;
 }
-//---------------------------------------------------------------------------------------------------------------------
-void vorbis_mergesort(uint8_t *index, uint16_t *vals, uint16_t n) {
-    uint16_t i, j;
-    uint8_t *temp;
-    uint8_t *A = index;
-    uint8_t *B = (uint8_t *)__malloc_heap_psram(n * sizeof(*B));
-
-    for(i = 1; i < n; i <<= 1) {
-        for(j = 0; j + i < n;) {
-            uint16_t k1 = j;
-            uint16_t mid = j + i;
-            uint16_t k2 = mid;
-            int32_t      end = (j + i * 2 < n ? j + i * 2 : n);
-            while(k1 < mid && k2 < end) {
-                if(vals[A[k1]] < vals[A[k2]]) B[j++] = A[k1++];
-                else
-                    B[j++] = A[k2++];
-            }
-            while(k1 < mid) B[j++] = A[k1++];
-            while(k2 < end) B[j++] = A[k2++];
-        }
-        for(; j < n; j++) B[j] = A[j];
-        temp = A;
-        A = B;
-        B = temp;
-    }
-
-    if(B == index) {
-        for(j = 0; j < n; j++) B[j] = A[j];
-        free(A);
-    }
-    else
-        free(B);
-}
-//---------------------------------------------------------------------------------------------------------------------
-void floor_free_info(vorbis_info_floor_t *i) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)i;
-    if(info) {
-        if(info->_class)         {free(info->_class);        }
-        if(info->partitionclass) {free(info->partitionclass);}
-        if(info->postlist)       {free(info->postlist);      }
-        if(info->forward_index)  {free(info->forward_index); }
-        if(info->hineighbor)     {free(info->hineighbor);    }
-        if(info->loneighbor)     {free(info->loneighbor);    }
-        memset(info, 0, sizeof(*info));
-        if(info) free(info);
-    }
-}
-//---------------------------------------------------------------------------------------------------------------------
-void res_clear_info(vorbis_info_residue_t *info) {
-    if(info) {
-        if(info->stagemasks) free(info->stagemasks);
-        if(info->stagebooks) free(info->stagebooks);
-        memset(info, 0, sizeof(*info));
-    }
-}
-//---------------------------------------------------------------------------------------------------------------------
-void mapping_clear_info(vorbis_info_mapping_t *info) {
-    if(info) {
-        if(info->chmuxlist) free(info->chmuxlist);
-        if(info->submaplist) free(info->submaplist);
-        if(info->coupling) free(info->coupling);
-        memset(info, 0, sizeof(*info));
-    }
-}
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 //      ⏫⏫⏫    O G G      I M P L     A B O V E  ⏫⏫⏫
 //      ⏬⏬⏬ V O R B I S   I M P L     B E L O W  ⏬⏬⏬
-//---------------------------------------------------------------------------------------------------------------------
-vorbis_dsp_state_t *vorbis_dsp_create() {
-    int32_t i;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+ps_ptr<VorbisDecoder::vorbis_dsp_state> VorbisDecoder::vorbis_dsp_create() {
+    ps_ptr<vorbis_dsp_state> v;
+    v.calloc_array(1);
+    v->work.calloc_array(m_vorbisChannels);
+    v->mdctright.calloc_array(m_vorbisChannels);
 
-    vorbis_dsp_state_t *v = (vorbis_dsp_state_t *)__calloc_heap_psram(1, sizeof(vorbis_dsp_state_t));
+    for (uint8_t i = 0; i < m_vorbisChannels; ++i) {
+        const size_t work_size = (m_blocksizes[1] >> 1) * sizeof(int32_t);
+        v->work.at(i).calloc(work_size);
 
-    v->work = (int32_t **)__malloc_heap_psram(s_vorbisChannels * sizeof(*v->work));
-    v->mdctright = (int32_t **)__malloc_heap_psram(s_vorbisChannels* sizeof(*v->mdctright));
-
-    for(i = 0; i < s_vorbisChannels; i++) {
-        v->work[i] = (int32_t *)__calloc_heap_psram(1, (s_blocksizes[1] >> 1) * sizeof(*v->work[i]));
-        v->mdctright[i] = (int32_t *)__calloc_heap_psram(1, (s_blocksizes[1] >> 2) * sizeof(*v->mdctright[i]));
+        const size_t mdct_size = (m_blocksizes[1] >> 2) * sizeof(int32_t);
+        v->mdctright.at(i).calloc(mdct_size);
     }
 
-    v->lW = 0; /* previous window size */
-    v->W = 0;  /* current window size  */
-
-    v->out_end = -1; // vorbis_dsp_restart
+    // Initialize state
+    v->lW = 0;
+    v->W = 0;
     v->out_begin = -1;
+    v->out_end = -1;
 
     return v;
 }
-//---------------------------------------------------------------------------------------------------------------------
-void vorbis_dsp_destroy(vorbis_dsp_state_t *v) {
-    int32_t i;
-    if(v) {
-        if(v->work) {
-            for(i = 0; i < s_vorbisChannels; i++) {
-                if(v->work[i]) {free(v->work[i]); v->work[i] = NULL;}
-            }
-            if(v->work){free(v->work); v->work = NULL;}
-        }
-        if(v->mdctright) {
-            for(i = 0; i < s_vorbisChannels; i++) {
-                if(v->mdctright[i]){free(v->mdctright[i]); v->mdctright[i] = NULL;}
-            }
-            if(v->mdctright){free(v->mdctright); v->mdctright = NULL;}
-        }
-        free(v);
-        v = NULL;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::vorbis_dsp_destroy(ps_ptr<vorbis_dsp_state>& v) {
+    if (!v.valid()) return;
+
+    for (uint8_t i = 0; i < m_vorbisChannels; ++i) {
+        v->work.at(i).reset();
+        v->mdctright.at(i).reset();
     }
+    v->mdctright.reset();
+    v->work.reset();
+    v.reset();
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t vorbis_dsp_synthesis(uint8_t* inbuf, uint16_t len, int16_t* outbuf) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::vorbis_book_clear(ps_ptr<codebook_t>& v) {
+    if (!v.valid()) return;
+    int s = 0;
+    for (int i = 0; i < m_nrOfCodebooks; i++) {
+        if (v[i].q_val.valid()) {
+            s += v[i].q_val.size();
+            v[i].q_val.reset();
+        }
+        if (v[i].dec_table.valid()) {
+            s += v[i].dec_table.size();
+            v[i].dec_table.reset();
+        }
+    }
+    if (v->dec_table.valid()) {
+        s += v->dec_table.size();
+        v->dec_table.reset();
+    }
+    if (v->q_val.valid()) {
+        s += v->q_val.size();
+        v->q_val.reset();
+    }
+    s += v.size();
+    v.reset();
+    m_nrOfCodebooks = 0;
+    // VORBIS_LOG_INFO("free codebook_t %i bytes", s);
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::vorbis_dsp_synthesis(uint8_t* inbuf, uint16_t len, int16_t* outbuf) {
 
     int32_t mode, i;
 
     /* Check the packet type */
-    if(bitReader(1) != 0)  {
+    if (bitReader(1) != 0) {
         /* Oops.  This is not an audio data packet */
         return OV_ENOTAUDIO;
     }
 
     /* read our mode and pre/post windowsize */
-    mode = bitReader(ilog(s_nrOfModes));
-    if(mode == -1 || mode >= s_nrOfModes) return OV_EBADPACKET;
+    mode = bitReader(ilog(m_nrOfModes));
+    if (mode == -1 || mode >= m_nrOfModes) return OV_EBADPACKET;
 
     /* shift information we still need from last window */
-    s_dsp_state->lW = s_dsp_state->W;
-    s_dsp_state->W = s_mode_param[mode].blockflag;
-    for(i = 0; i < s_vorbisChannels; i++){
-        mdct_shift_right(s_blocksizes[s_dsp_state->lW], s_dsp_state->work[i], s_dsp_state->mdctright[i]);
-    }
-    if(s_dsp_state->W) {
+    m_dsp_state->lW = m_dsp_state->W;
+    m_dsp_state->W = m_mode_param[mode].blockflag;
+    for (i = 0; i < m_vorbisChannels; i++) { mdct_shift_right(m_blocksizes[m_dsp_state->lW], m_dsp_state->work[i].get(), m_dsp_state->mdctright[i].get()); }
+    if (m_dsp_state->W) {
         int32_t temp;
         bitReader(1);
         temp = bitReader(1);
-        if(temp == -1) return OV_EBADPACKET;
+        if (temp == -1) return OV_EBADPACKET;
     }
 
     /* packet decode and portions of synthesis that rely on only this block */
     {
-        mapping_inverse(s_map_param + s_mode_param[mode].mapping);
+        mapping_inverse(m_map_param.get() + m_mode_param[mode].mapping);
 
-        if(s_dsp_state->out_begin == -1) {
-            s_dsp_state->out_begin = 0;
-            s_dsp_state->out_end = 0;
-        }
-        else {
-            s_dsp_state->out_begin = 0;
-            s_dsp_state->out_end = s_blocksizes[s_dsp_state->lW] / 4 + s_blocksizes[s_dsp_state->W] / 4;
+        if (m_dsp_state->out_begin == -1) {
+            m_dsp_state->out_begin = 0;
+            m_dsp_state->out_end = 0;
+        } else {
+            m_dsp_state->out_begin = 0;
+            m_dsp_state->out_end = m_blocksizes[m_dsp_state->lW] / 4 + m_blocksizes[m_dsp_state->W] / 4;
         }
     }
 
     return (0);
 }
-//---------------------------------------------------------------------------------------------------------------------
-void mdct_shift_right(int32_t n, int32_t *in, int32_t *right) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::mdct_shift_right(int32_t n, int32_t* in, int32_t* right) {
     int32_t i;
     n >>= 2;
     in += 1;
 
-    for(i = 0; i < n; i++) right[i] = in[i << 1];
+    for (i = 0; i < n; i++) right[i] = in[i << 1];
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t mapping_inverse(vorbis_info_mapping_t *info) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::mapping_inverse(vorbis_info_mapping* info) {
 
-    int32_t     i, j;
-    int32_t n = s_blocksizes[s_dsp_state->W];
+    int32_t i, j;
+    int32_t n = m_blocksizes[m_dsp_state->W];
 
-    int32_t **pcmbundle = (int32_t **)alloca(sizeof(*pcmbundle) * s_vorbisChannels);
-    int32_t      *zerobundle = (int32_t *)alloca(sizeof(*zerobundle) * s_vorbisChannels);
-    int32_t      *nonzero = (int32_t *)alloca(sizeof(*nonzero) * s_vorbisChannels);
-    int32_t **floormemo = (int32_t **)alloca(sizeof(*floormemo) * s_vorbisChannels);
+    ps_ptr<int32_t*> pcmbundle;
+    pcmbundle.calloc_array(m_vorbisChannels);
+    ps_ptr<int32_t> zerobundle;
+    zerobundle.alloc(sizeof(int32_t) * m_vorbisChannels);
+    ps_ptr<int32_t> nonzero;
+    nonzero.alloc(sizeof(int32_t) * m_vorbisChannels);
+    ps_ptr<ps_ptr<int32_t>> floormemo;
+    floormemo.calloc_array(m_vorbisChannels);
 
     /* recover the spectral envelope; store it in the PCM vector for now */
-    for(i = 0; i < s_vorbisChannels; i++) {
+    for (i = 0; i < m_vorbisChannels; i++) {
 
         int32_t submap = 0;
         int32_t floorno;
 
-        if(info->submaps > 1) submap = info->chmuxlist[i];
+        if (info->submaps > 1) submap = info->chmuxlist[i];
         floorno = info->submaplist[submap].floor;
 
-        if(s_floor_type[floorno]) {
+        if (m_floor_type[floorno]) {
             /* floor 1 */
-            floormemo[i] = (int32_t *)alloca(sizeof(*floormemo[i]) * floor1_memosize(s_floor_param[floorno]));
-            floormemo[i] = floor1_inverse1(s_floor_param[floorno], floormemo[i]);
-        }
-        else {
+            floormemo[i].alloc(sizeof(*floormemo[i]) * floor1_memosize(m_floor_param[floorno]));
+            floormemo[i] = floor1_inverse1(m_floor_param[floorno], floormemo[i].get());
+        } else {
             /* floor 0 */
-            floormemo[i] = (int32_t *)alloca(sizeof(*floormemo[i]) * floor0_memosize(s_floor_param[floorno]));
-            floormemo[i] = floor0_inverse1(s_floor_param[floorno], floormemo[i]);
+            floormemo[i].alloc(sizeof(*floormemo[i]) * floor0_memosize(m_floor_param[floorno]));
+            floormemo[i] = floor0_inverse1(m_floor_param[floorno], floormemo[i].get());
         }
 
-        if(floormemo[i]) nonzero[i] = 1;
+        if (floormemo[i].get())
+            nonzero[i] = 1;
         else
             nonzero[i] = 0;
-        memset(s_dsp_state->work[i], 0, sizeof(*s_dsp_state->work[i]) * n / 2);
+        memset(m_dsp_state->work[i].get(), 0, sizeof(*m_dsp_state->work[i]) * n / 2);
     }
 
     /* channel coupling can 'dirty' the nonzero listing */
-    for(i = 0; i < info->coupling_steps; i++) {
-        if(nonzero[info->coupling[i].mag] || nonzero[info->coupling[i].ang]) {
+    for (i = 0; i < info->coupling_steps; i++) {
+        if (nonzero[info->coupling[i].mag] || nonzero[info->coupling[i].ang]) {
             nonzero[info->coupling[i].mag] = 1;
             nonzero[info->coupling[i].ang] = 1;
         }
     }
 
     /* recover the residue into our working vectors */
-    for(i = 0; i < info->submaps; i++) {
+    for (i = 0; i < info->submaps; i++) {
         uint8_t ch_in_bundle = 0;
-        for(j = 0; j < s_vorbisChannels; j++) {
-            if(!info->chmuxlist || info->chmuxlist[j] == i) {
-                if(nonzero[j]) zerobundle[ch_in_bundle] = 1;
+        for (j = 0; j < m_vorbisChannels; j++) {
+            if (!info->chmuxlist.get() || info->chmuxlist[j] == i) {
+                if (nonzero[j])
+                    zerobundle[ch_in_bundle] = 1;
                 else
                     zerobundle[ch_in_bundle] = 0;
-                pcmbundle[ch_in_bundle++] = s_dsp_state->work[j];
+                pcmbundle[ch_in_bundle++] = m_dsp_state->work[j].get();
             }
         }
-
-        res_inverse(s_residue_param + info->submaplist[i].residue, pcmbundle, zerobundle, ch_in_bundle);
+        res_inverse(m_residue_param.get() + info->submaplist[i].residue, pcmbundle.get(), zerobundle.get(), ch_in_bundle);
     }
 
     // for(j=0;j<vi->channels;j++)
     //_analysis_output("coupled",seq+j,vb->pcm[j],-8,n/2,0,0);
 
     /* channel coupling */
-    for(i = info->coupling_steps - 1; i >= 0; i--) {
-        int32_t *pcmM = s_dsp_state->work[info->coupling[i].mag];
-        int32_t *pcmA = s_dsp_state->work[info->coupling[i].ang];
+    for (i = info->coupling_steps - 1; i >= 0; i--) {
+        int32_t* pcmM = m_dsp_state->work[info->coupling[i].mag].get();
+        int32_t* pcmA = m_dsp_state->work[info->coupling[i].ang].get();
 
-        for(j = 0; j < n / 2; j++) {
+        for (j = 0; j < n / 2; j++) {
             int32_t mag = pcmM[j];
             int32_t ang = pcmA[j];
 
-            if(mag > 0)
-                if(ang > 0) {
+            if (mag > 0)
+                if (ang > 0) {
                     pcmM[j] = mag;
                     pcmA[j] = mag - ang;
-                }
-                else {
+                } else {
                     pcmA[j] = mag;
                     pcmM[j] = mag + ang;
                 }
-            else if(ang > 0) {
+            else if (ang > 0) {
                 pcmM[j] = mag;
                 pcmA[j] = mag + ang;
-            }
-            else {
+            } else {
                 pcmA[j] = mag;
                 pcmM[j] = mag - ang;
             }
@@ -1957,23 +1981,22 @@ int32_t mapping_inverse(vorbis_info_mapping_t *info) {
 
     /* compute and apply spectral envelope */
 
-    for(i = 0; i < s_vorbisChannels; i++) {
-        int32_t *pcm = s_dsp_state->work[i];
-        int32_t      submap = 0;
-        int32_t      floorno;
+    for (i = 0; i < m_vorbisChannels; i++) {
+        int32_t* pcm = m_dsp_state->work[i].get();
+        int32_t  submap = 0;
+        int32_t  floorno;
 
-        if(info->submaps > 1) submap = info->chmuxlist[i];
+        if (info->submaps > 1) submap = info->chmuxlist[i];
         floorno = info->submaplist[submap].floor;
 
-        if(s_floor_type[floorno]) {
+        if (m_floor_type[floorno]) {
             /* floor 1 */
-            floor1_inverse2(s_floor_param[floorno], floormemo[i], pcm);
-        }
-        else {
+            floor1_inverse2(m_floor_param[floorno], floormemo[i].get(), pcm);
+        } else {
             /* floor 0 */
-            floor0_inverse2(s_floor_param[floorno], floormemo[i], pcm);
+            floor0_inverse2(m_floor_param[floorno], floormemo[i].get(), pcm);
         }
-
+        floormemo[i].reset();
     }
 
     // for(j=0;j<vi->channels;j++)
@@ -1981,9 +2004,7 @@ int32_t mapping_inverse(vorbis_info_mapping_t *info) {
 
     /* transform the PCM data; takes PCM vector, vb; modifies PCM vector */
     /* only MDCT right now.... */
-    for(i = 0; i < s_vorbisChannels; i++){
-        mdct_backward(n, s_dsp_state->work[i]);
-    }
+    for (i = 0; i < m_vorbisChannels; i++) { mdct_backward(n, m_dsp_state->work[i].get()); }
 
     // for(j=0;j<vi->channels;j++)
     //_analysis_output("imdct",seq+j,vb->pcm[j],-24,n,0,0);
@@ -1991,35 +2012,33 @@ int32_t mapping_inverse(vorbis_info_mapping_t *info) {
     /* all done! */
     return (0);
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t floor0_memosize(vorbis_info_floor_t *i) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)i;
-    return info->order + 1;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::floor0_memosize(ps_ptr<vorbis_info_floor>& i) {
+    return i.get()->order + 1;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t floor1_memosize(vorbis_info_floor_t *i) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)i;
-    return info->posts;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::floor1_memosize(ps_ptr<vorbis_info_floor>& i) {
+    return i.get()->posts;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t *floor0_inverse1(vorbis_info_floor_t *i, int32_t *lsp) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)i;
-    int32_t                 j;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t* VorbisDecoder::floor0_inverse1(ps_ptr<vorbis_info_floor>& i, int32_t* lsp) {
+    vorbis_info_floor* info = (vorbis_info_floor*)i.get();
+    int32_t            j;
 
     int32_t ampraw = bitReader(info->ampbits);
 
-    if(ampraw > 0) { /* also handles the -1 out of data case */
+    if (ampraw > 0) { /* also handles the -1 out of data case */
         int32_t maxval = (1 << info->ampbits) - 1;
-        int32_t     amp = ((ampraw * info->ampdB) << 4) / maxval;
-        int32_t     booknum = bitReader(_ilog(info->numbooks));
+        int32_t amp = ((ampraw * info->ampdB) << 4) / maxval;
+        int32_t booknum = bitReader(_ilog(info->numbooks));
 
-        if(booknum != -1 && booknum < info->numbooks) { /* be paranoid */
-            codebook_t        *b = s_codebooks + info->books[booknum];
-            int32_t           last = 0;
+        if (booknum != -1 && booknum < info->numbooks) { /* be paranoid */
+            codebook_t* b = m_codebooks.get() + info->books[booknum];
+            int32_t     last = 0;
 
-            if(vorbis_book_decodev_set(b, lsp, info->order, -24) == -1) goto eop;
-            for(j = 0; j < info->order;) {
-                for(uint8_t k = 0; j < info->order && k < b->dim; k++, j++) lsp[j] += last;
+            if (vorbis_book_decodev_set(b, lsp, info->order, -24) == -1) goto eop;
+            for (j = 0; j < info->order;) {
+                for (uint8_t k = 0; j < info->order && k < b->dim; k++, j++) lsp[j] += last;
                 last = lsp[j - 1];
             }
 
@@ -2030,22 +2049,22 @@ int32_t *floor0_inverse1(vorbis_info_floor_t *i, int32_t *lsp) {
 eop:
     return (NULL);
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t *floor1_inverse1(vorbis_info_floor_t *in, int32_t *fit_value) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)in;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t* VorbisDecoder::floor1_inverse1(ps_ptr<vorbis_info_floor>& in, int32_t* fit_value) {
+    vorbis_info_floor* info = (vorbis_info_floor*)in.get();
 
-    int32_t                 quant_look[4] = {256, 128, 86, 64};
-    int32_t                 i, j, k;
-    int32_t                 quant_q = quant_look[info->mult - 1];
-    codebook_t         *books = s_codebooks;
+    int32_t     quant_look[4] = {256, 128, 86, 64};
+    int32_t     i, j, k;
+    int32_t     quant_q = quant_look[info->mult - 1];
+    codebook_t* books = m_codebooks.get();
 
     /* unpack wrapped/predicted values from stream */
-    if(bitReader(1) == 1) {
+    if (bitReader(1) == 1) {
         fit_value[0] = bitReader(ilog(quant_q - 1));
         fit_value[1] = bitReader(ilog(quant_q - 1));
 
-    /* partition by partition */
-        for(i = 0, j = 2; i < info->partitions; i++) {
+        /* partition by partition */
+        for (i = 0, j = 2; i < info->partitions; i++) {
             int32_t classv = info->partitionclass[i];
             int32_t cdim = info->_class[classv].class_dim;
             int32_t csubbits = info->_class[classv].class_subs;
@@ -2053,97 +2072,99 @@ int32_t *floor1_inverse1(vorbis_info_floor_t *in, int32_t *fit_value) {
             int32_t cval = 0;
 
             /* decode the partition's first stage cascade value */
-            if(csubbits) {
+            if (csubbits) {
                 cval = vorbis_book_decode(books + info->_class[classv].class_book);
-                if(cval == -1) goto eop;
+                if (cval == -1) goto eop;
             }
 
-            for(k = 0; k < cdim; k++) {
+            for (k = 0; k < cdim; k++) {
                 int32_t book = info->_class[classv].class_subbook[cval & (csub - 1)];
                 cval >>= csubbits;
-                if(book != 0xff) {
-                    if((fit_value[j + k] = vorbis_book_decode(books + book)) == -1) goto eop;
+                if (book != 0xff) {
+                    if ((fit_value[j + k] = vorbis_book_decode(books + book)) == -1) goto eop;
+                } else {
+                    fit_value[j + k] = 0;
                 }
-                else { fit_value[j + k] = 0; }
             }
             j += cdim;
         }
 
         /* unwrap positive values and reconsitute via linear interpolation */
-        for(i = 2; i < info->posts; i++) {
-            int32_t predicted =
-                render_point(info->postlist[info->loneighbor[i - 2]], info->postlist[info->hineighbor[i - 2]],
-                            fit_value[info->loneighbor[i - 2]], fit_value[info->hineighbor[i - 2]], info->postlist[i]);
+        for (i = 2; i < info->posts; i++) {
+            int32_t predicted = render_point(info->postlist[info->loneighbor[i - 2]], info->postlist[info->hineighbor[i - 2]], fit_value[info->loneighbor[i - 2]], fit_value[info->hineighbor[i - 2]],
+                                             info->postlist[i]);
             int32_t hiroom = quant_q - predicted;
             int32_t loroom = predicted;
             int32_t room = (hiroom < loroom ? hiroom : loroom) << 1;
             int32_t val = fit_value[i];
 
-            if(val) {
-                if(val >= room) {
-                    if(hiroom > loroom) { val = val - loroom; }
-                    else { val = -1 - (val - hiroom); }
-                }
-                else {
-                    if(val & 1) { val = -((val + 1) >> 1); }
-                    else { val >>= 1; }
+            if (val) {
+                if (val >= room) {
+                    if (hiroom > loroom) {
+                        val = val - loroom;
+                    } else {
+                        val = -1 - (val - hiroom);
+                    }
+                } else {
+                    if (val & 1) {
+                        val = -((val + 1) >> 1);
+                    } else {
+                        val >>= 1;
+                    }
                 }
 
                 fit_value[i] = val + predicted;
                 fit_value[info->loneighbor[i - 2]] &= 0x7fff;
                 fit_value[info->hineighbor[i - 2]] &= 0x7fff;
+            } else {
+                fit_value[i] = predicted | 0x8000;
             }
-            else { fit_value[i] = predicted | 0x8000; }
         }
 
         return (fit_value);
-    }
-    else{
-        // log_i("err in br");
+    } else {
+        // VORBIS_LOG_ERROR("err in br");
         ;
     }
 eop:
     return (NULL);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* returns the [original, not compacted] entry number or -1 on eof *********/
-int32_t vorbis_book_decode(codebook_t* book) {
-    if(book->dec_type) return -1;
+int32_t VorbisDecoder::vorbis_book_decode(codebook_t* book) {
+    if (book->dec_type) return -1;
     return decode_packed_entry_number(book);
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t decode_packed_entry_number(codebook_t *book) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::decode_packed_entry_number(codebook_t* book) {
     uint32_t chase = 0;
-    int32_t      read = book->dec_maxlength;
+    int32_t  read = book->dec_maxlength;
     int32_t  lok = bitReader_look(read), i;
 
-    while(lok < 0 && read > 1){
-        lok = bitReader_look(--read);
-    }
+    while (lok < 0 && read > 1) { lok = bitReader_look(--read); }
 
-    if(lok < 0) {
+    if (lok < 0) {
         bitReader_adv(1); /* force eop */
         return -1;
     }
 
     /* chase the tree with the bits we got */
-    if(book->dec_nodeb == 1) {
-        if(book->dec_leafw == 1) {
+    if (book->dec_nodeb == 1) {
+        if (book->dec_leafw == 1) {
             /* 8/8 */
-            uint8_t *t = (uint8_t *)book->dec_table;
-            for(i = 0; i < read; i++) {
+            uint8_t* t = (uint8_t*)book->dec_table.get();
+            for (i = 0; i < read; i++) {
                 chase = t[chase * 2 + ((lok >> i) & 1)];
-                if(chase & 0x80UL) break;
+                if (chase & 0x80UL) break;
             }
             chase &= 0x7fUL;
-        }
-        else {
+        } else {
             /* 8/16 */
-            uint8_t *t = (uint8_t *)book->dec_table;
-            for(i = 0; i < read; i++) {
+            uint8_t* t = (uint8_t*)book->dec_table.get();
+            for (i = 0; i < read; i++) {
                 int32_t bit = (lok >> i) & 1;
                 int32_t next = t[chase + bit];
-                if(next & 0x80) {
+                if (next & 0x80) {
                     chase = (next << 8) | t[chase + bit + 1 + (!bit || (t[chase] & 0x80))];
                     break;
                 }
@@ -2151,28 +2172,24 @@ int32_t decode_packed_entry_number(codebook_t *book) {
             }
             chase &= 0x7fffUL;
         }
-    }
-    else {
-        if(book->dec_nodeb == 2) {
-            if(book->dec_leafw == 1) {
+    } else {
+        if (book->dec_nodeb == 2) {
+            if (book->dec_leafw == 1) {
                 /* 16/16 */
                 int32_t idx;
-                for(i = 0; i < read; i++) {
+                for (i = 0; i < read; i++) {
                     idx = chase * 2 + ((lok >> i) & 1);
-                    chase = ((uint16_t *)(book->dec_table))[idx];
-                    if(chase & 0x8000UL){
-                        break;
-                    }
+                    chase = ((uint16_t*)(book->dec_table.get()))[idx];
+                    if (chase & 0x8000UL) { break; }
                 }
                 chase &= 0x7fffUL;
-            }
-            else {
+            } else {
                 /* 16/32 */
-                uint16_t *t = (uint16_t *)book->dec_table;
-                for(i = 0; i < read; i++) {
+                uint16_t* t = (uint16_t*)book->dec_table.get();
+                for (i = 0; i < read; i++) {
                     int32_t bit = (lok >> i) & 1;
                     int32_t next = t[chase + bit];
-                    if(next & 0x8000) {
+                    if (next & 0x8000) {
                         chase = (next << 16) | t[chase + bit + 1 + (!bit || (t[chase] & 0x8000))];
                         break;
                     }
@@ -2180,26 +2197,25 @@ int32_t decode_packed_entry_number(codebook_t *book) {
                 }
                 chase &= 0x7fffffffUL;
             }
-        }
-        else {
-            for(i = 0; i < read; i++) {
-                chase = ((uint32_t *)(book->dec_table))[chase * 2 + ((lok >> i) & 1)];
-                if(chase & 0x80000000UL) break;
+        } else {
+            for (i = 0; i < read; i++) {
+                chase = ((uint32_t*)(book->dec_table.get()))[chase * 2 + ((lok >> i) & 1)];
+                if (chase & 0x80000000UL) break;
             }
             chase &= 0x7fffffffUL;
         }
     }
 
-    if(i < read) {
+    if (i < read) {
         bitReader_adv(i + 1);
         return chase;
     }
     bitReader_adv(read + 1);
-    log_e("read %i", read);
-    return (-1);
+    VORBIS_LOG_ERROR("read %i", read);
+    return (VORBIS_ERR);
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t render_point(int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t x) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::render_point(int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t x) {
     y0 &= 0x7fff; /* mask off flag */
     y1 &= 0x7fff;
 
@@ -2210,44 +2226,43 @@ int32_t render_point(int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t x) 
         int32_t err = ady * (x - x0);
 
         int32_t off = err / adx;
-        if(dy < 0) return (y0 - off);
+        if (dy < 0) return (y0 - off);
         return (y0 + off);
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* unlike the others, we guard against n not being an integer number * of <dim> internally rather than in the upper
  layer (called only by * floor0) */
-int32_t vorbis_book_decodev_set(codebook_t *book, int32_t *a, int32_t n, int32_t point) {
-    if(book->used_entries > 0) {
-        int32_t *v = (int32_t *)alloca(sizeof(*v) * book->dim);
-        int32_t      i;
+int32_t VorbisDecoder::vorbis_book_decodev_set(codebook_t* book, int32_t* a, int32_t n, int32_t point) {
+    if (book->used_entries > 0) {
+        int32_t* v = (int32_t*)alloca(sizeof(*v) * book->dim);
+        int32_t  i;
 
-        for(i = 0; i < n;) {
-            if(decode_map(book, v, point)) return -1;
-            for(uint8_t j = 0; i < n && j < book->dim; j++) a[i++] = v[j];
+        for (i = 0; i < n;) {
+            if (decode_map(book, v, point)) return -1;
+            for (uint8_t j = 0; i < n && j < book->dim; j++) a[i++] = v[j];
         }
-    }
-    else {
+    } else {
         int32_t i;
 
-        for(i = 0; i < n;) { a[i++] = 0; }
+        for (i = 0; i < n;) { a[i++] = 0; }
     }
 
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t decode_map(codebook_t *s, int32_t *v, int32_t point) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::decode_map(codebook_t* s, int32_t* v, int32_t point) {
 
     uint32_t entry = decode_packed_entry_number(s);
 
-    if(oggpack_eop()) return (-1);
+    // if (oggpack_eop()) {return (-1);}
 
     /* according to decode type */
-    switch(s->dec_type) {
+    switch (s->dec_type) {
         case 1: {
             /* packed vector of values */
             int32_t mask = (1 << s->q_bits) - 1;
-            for(uint8_t i = 0; i < s->dim; i++) {
+            for (uint8_t i = 0; i < s->dim; i++) {
                 v[i] = entry & mask;
                 entry >>= s->q_bits;
             }
@@ -2256,98 +2271,91 @@ int32_t decode_map(codebook_t *s, int32_t *v, int32_t point) {
         case 2: {
             /* packed vector of column offsets */
             int32_t mask = (1 << s->q_pack) - 1;
-            for(uint8_t i = 0; i < s->dim; i++) {
-                if(s->q_bits <= 8) v[i] = ((uint8_t *)(s->q_val))[entry & mask];
+            for (uint8_t i = 0; i < s->dim; i++) {
+                if (s->q_bits <= 8)
+                    v[i] = ((uint8_t*)(s->q_val.get()))[entry & mask];
                 else
-                    v[i] = ((uint16_t *)(s->q_val))[entry & mask];
+                    v[i] = ((uint16_t*)(s->q_val.get()))[entry & mask];
                 entry >>= s->q_pack;
             }
             break;
         }
         case 3: {
             /* offset into array */
-            void *ptr = (int32_t *)s->q_val + entry * s->q_pack;
+            void* ptr = (int32_t*)s->q_val.get() + entry * s->q_pack;
 
-            if(s->q_bits <= 8) {
-                for(uint8_t i = 0; i < s->dim; i++) v[i] = ((uint8_t *)ptr)[i];
-            }
-            else {
-                for(uint8_t i = 0; i < s->dim; i++) v[i] = ((uint16_t *)ptr)[i];
+            if (s->q_bits <= 8) {
+                for (uint8_t i = 0; i < s->dim; i++) v[i] = ((uint8_t*)ptr)[i];
+            } else {
+                for (uint8_t i = 0; i < s->dim; i++) v[i] = ((uint16_t*)ptr)[i];
             }
             break;
         }
-        default:
-            return -1;
+        default: return -1;
     }
 
     /* we have the unpacked multiplicands; compute final vals */
     {
-        int32_t     shiftM = point - s->q_delp;
+        int32_t shiftM = point - s->q_delp;
         int32_t add = point - s->q_minp;
-        if(add > 0) add = s->q_min >> add;
+        if (add > 0)
+            add = s->q_min >> add;
         else
             add = s->q_min << -add;
 
-        if(shiftM > 0)
-            for(uint8_t i = 0; i < s->dim; i++) v[i] = add + ((v[i] * s->q_del) >> shiftM);
+        if (shiftM > 0)
+            for (uint8_t i = 0; i < s->dim; i++) v[i] = add + ((v[i] * s->q_del) >> shiftM);
         else
-            for(uint8_t i = 0; i < s->dim; i++) v[i] = add + ((v[i] * s->q_del) << -shiftM);
+            for (uint8_t i = 0; i < s->dim; i++) v[i] = add + ((v[i] * s->q_del) << -shiftM);
 
-        if(s->q_seq)
-            for(uint8_t i = 1; i < s->dim; i++) v[i] += v[i - 1];
+        if (s->q_seq)
+            for (uint8_t i = 1; i < s->dim; i++) v[i] += v[i - 1];
     }
 
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t res_inverse(vorbis_info_residue_t *info, int32_t **in, int32_t *nonzero, uint8_t ch) {
-    int32_t               j, k, s;
-    uint8_t           m = 0, n = 0;
-    uint8_t           used = 0;
-    codebook_t         *phrasebook = s_codebooks + info->groupbook;
-    uint32_t          samples_per_partition = info->grouping;
-    uint8_t           partitions_per_word = phrasebook->dim;
-    uint32_t          pcmend = s_blocksizes[s_dsp_state->W];
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::res_inverse(vorbis_info_residue* info, int32_t** in, int32_t* nonzero, uint8_t ch) {
+    int32_t     j, k, s;
+    uint8_t     m = 0, n = 0;
+    uint8_t     used = 0;
+    codebook_t* phrasebook = m_codebooks.get() + info->groupbook;
+    uint32_t    samples_per_partition = info->grouping;
+    uint8_t     partitions_per_word = phrasebook->dim;
+    uint32_t    pcmend = m_blocksizes[m_dsp_state->W];
 
-
-    if(info->type < 2) {
+    if (info->type < 2) {
         uint32_t max = pcmend >> 1;
         uint32_t end = (info->end < max ? info->end : max);
         uint32_t n1 = end - info->begin;
 
-        if(n1 > 0) {
+        if (n1 > 0) {
             uint32_t partvals = n1 / samples_per_partition;
             uint32_t partwords = (partvals + partitions_per_word - 1) / partitions_per_word;
 
-            for(uint8_t i = 0; i < ch; i++) {
-                if(nonzero[i]) in[used++] = in[i];
+            for (uint8_t i = 0; i < ch; i++) {
+                if (nonzero[i]) in[used++] = in[i];
             }
             ch = used;
 
-            if(used) {
-                char **partword = (char **)alloca(ch * sizeof(*partword));
-                for(j = 0; j < ch; j++) {
-                    partword[j] = (char *)alloca(partwords * partitions_per_word * sizeof(*partword[j]));
-                }
-                for(s = 0; s < info->stages; s++) {
-                    for(uint32_t i = 0; i < partvals;) {
-                        if(s == 0) {
+            if (used) {
+                char** partword = (char**)alloca(ch * sizeof(*partword));
+                for (j = 0; j < ch; j++) { partword[j] = (char*)alloca(partwords * partitions_per_word * sizeof(*partword[j])); }
+                for (s = 0; s < info->stages; s++) {
+                    for (uint32_t i = 0; i < partvals;) {
+                        if (s == 0) {
                             /* fetch the partition word for each channel */
                             partword[0][i + partitions_per_word - 1] = 1;
-                            for(k = partitions_per_word - 2; k >= 0; k--) {
-                                partword[0][i + k] = partword[0][i + k + 1] * info->partitions;
+                            for (k = partitions_per_word - 2; k >= 0; k--) { partword[0][i + k] = partword[0][i + k + 1] * info->partitions; }
+                            for (j = 1; j < ch; j++) {
+                                for (k = partitions_per_word - 1; k >= 0; k--) { partword[j][i + k] = partword[j - 1][i + k]; }
                             }
-                            for(j = 1; j < ch; j++) {
-                                for(k = partitions_per_word - 1; k >= 0; k--) {
-                                    partword[j][i + k] = partword[j - 1][i + k];
-                                }
-                            }
-                            for(n = 0; n < ch; n++) {
+                            for (n = 0; n < ch; n++) {
                                 int32_t temp = vorbis_book_decode(phrasebook);
-                                if(temp == -1) goto eopbreak;
+                                if (temp == -1) goto eopbreak;
                                 /* this can be done quickly in assembly due to the quotient
                                  always being at most six bits */
-                                for(m = 0; m < partitions_per_word; m++) {
+                                for (m = 0; m < partitions_per_word; m++) {
                                     char div = partword[n][i + m];
                                     partword[n][i + m] = temp / div;
                                     temp -= partword[n][i + m] * div;
@@ -2356,20 +2364,15 @@ int32_t res_inverse(vorbis_info_residue_t *info, int32_t **in, int32_t *nonzero,
                         }
 
                         /* now we decode residual values for the partitions */
-                        for(k = 0; k < partitions_per_word && i < partvals; k++, i++) {
-                            for(j = 0; j < ch; j++) {
+                        for (k = 0; k < partitions_per_word && i < partvals; k++, i++) {
+                            for (j = 0; j < ch; j++) {
                                 uint32_t offset = info->begin + i * samples_per_partition;
-                                if(info->stagemasks[(int32_t)partword[j][i]] & (1 << s)) {
-                                    codebook_t *stagebook = s_codebooks + info->stagebooks[(partword[j][i] << 3) + s];
-                                    if(info->type) {
-                                        if(vorbis_book_decodev_add(stagebook, in[j] + offset,
-                                                                   samples_per_partition, -8) == -1)
-                                            goto eopbreak;
-                                    }
-                                    else {
-                                        if(vorbis_book_decodevs_add(stagebook, in[j] + offset,
-                                                                    samples_per_partition, -8) == -1)
-                                            goto eopbreak;
+                                if (info->stagemasks[(int32_t)partword[j][i]] & (1 << s)) {
+                                    codebook_t* stagebook = m_codebooks.get() + info->stagebooks[(partword[j][i] << 3) + s];
+                                    if (info->type) {
+                                        if (vorbis_book_decodev_add(stagebook, in[j] + offset, samples_per_partition, -8) == -1) goto eopbreak;
+                                    } else {
+                                        if (vorbis_book_decodevs_add(stagebook, in[j] + offset, samples_per_partition, -8) == -1) goto eopbreak;
                                     }
                                 }
                             }
@@ -2378,40 +2381,38 @@ int32_t res_inverse(vorbis_info_residue_t *info, int32_t **in, int32_t *nonzero,
                 }
             }
         }
-    }
-    else {
+    } else {
         uint32_t max = (pcmend * ch) >> 1;
         uint32_t end = (info->end < max ? info->end : max);
         uint32_t n = end - info->begin;
 
-        if(n > 0) {
+        if (n > 0) {
             uint32_t partvals = n / samples_per_partition;
             uint32_t partwords = (partvals + partitions_per_word - 1) / partitions_per_word;
 
-            char *partword = (char *)alloca(partwords * partitions_per_word * sizeof(*partword));
-            int32_t   beginoff = info->begin / ch;
+            char*   partword = (char*)alloca(partwords * partitions_per_word * sizeof(*partword));
+            int32_t beginoff = info->begin / ch;
 
             uint8_t i = 0;
-            for(i = 0; i < ch; i++)
-                if(nonzero[i]) break;
-            if(i == ch) return (0); /* no nonzero vectors */
+            for (i = 0; i < ch; i++)
+                if (nonzero[i]) break;
+            if (i == ch) return (0); /* no nonzero vectors */
 
             samples_per_partition /= ch;
 
-            for(s = 0; s < info->stages; s++) {
-                for(uint32_t i = 0; i < partvals;) {
-                    if(s == 0) {
+            for (s = 0; s < info->stages; s++) {
+                for (uint32_t i = 0; i < partvals;) {
+                    if (s == 0) {
                         int32_t temp;
                         partword[i + partitions_per_word - 1] = 1;
-                        for(k = partitions_per_word - 2; k >= 0; k--)
-                            partword[i + k] = partword[i + k + 1] * info->partitions;
+                        for (k = partitions_per_word - 2; k >= 0; k--) partword[i + k] = partword[i + k + 1] * info->partitions;
 
                         /* fetch the partition word */
                         temp = vorbis_book_decode(phrasebook);
-                        if(temp == -1) goto eopbreak;
+                        if (temp == -1) goto eopbreak;
 
                         /* this can be done quickly in assembly due to the quotient always being at most six bits */
-                        for(k = 0; k < partitions_per_word; k++) {
+                        for (k = 0; k < partitions_per_word; k++) {
                             char div = partword[i + k];
                             partword[i + k] = (char)temp / div;
                             temp -= partword[i + k] * div;
@@ -2419,12 +2420,10 @@ int32_t res_inverse(vorbis_info_residue_t *info, int32_t **in, int32_t *nonzero,
                     }
 
                     /* now we decode residual values for the partitions */
-                    for(k = 0; k < partitions_per_word && i < partvals; k++, i++)
-                        if(info->stagemasks[(int32_t)partword[i]] & (1 << s)) {
-                            codebook_t *stagebook = s_codebooks + info->stagebooks[(partword[i] << 3) + s];
-                            if(vorbis_book_decodevv_add(stagebook, in, i * samples_per_partition + beginoff, ch,
-                                                        samples_per_partition, -8) == -1)
-                                goto eopbreak;
+                    for (k = 0; k < partitions_per_word && i < partvals; k++, i++)
+                        if (info->stagemasks[(int32_t)partword[i]] & (1 << s)) {
+                            codebook_t* stagebook = m_codebooks.get() + info->stagebooks[(partword[i] << 3) + s];
+                            if (vorbis_book_decodevv_add(stagebook, in, i * samples_per_partition + beginoff, ch, samples_per_partition, -8) == -1) goto eopbreak;
                         }
                 }
             }
@@ -2434,70 +2433,68 @@ eopbreak:
 
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* decode vector / dim granularity guarding is done in the upper layer */
-int32_t vorbis_book_decodev_add(codebook_t *book, int32_t *a, int32_t n, int32_t point) {
-    if(book->used_entries > 0) {
-        int32_t *v = (int32_t *)alloca(sizeof(*v) * book->dim);
+int32_t VorbisDecoder::vorbis_book_decodev_add(codebook_t* book, int32_t* a, int32_t n, int32_t point) {
+    if (book->used_entries > 0) {
+        int32_t* v = (int32_t*)alloca(sizeof(*v) * book->dim);
         uint32_t i;
 
-        for(i = 0; i < n;) {
-            if(decode_map(book, v, point)) return -1;
-            for(uint8_t j = 0; i < n && j < book->dim; j++) a[i++] += v[j];
+        for (i = 0; i < n;) {
+            if (decode_map(book, v, point)) return -1;
+            for (uint8_t j = 0; i < n && j < book->dim; j++) a[i++] += v[j];
         }
     }
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* returns 0 on OK or -1 on eof */
 /* decode vector / dim granularity guarding is done in the upper layer */
-int32_t vorbis_book_decodevs_add(codebook_t *book, int32_t *a, int32_t n, int32_t point) {
-    if(book->used_entries > 0) {
-        int32_t      step = n / book->dim;
-        int32_t *v = (int32_t *)alloca(sizeof(*v) * book->dim);
-        int32_t      j;
+int32_t VorbisDecoder::vorbis_book_decodevs_add(codebook_t* book, int32_t* a, int32_t n, int32_t point) {
+    if (book->used_entries > 0) {
+        int32_t  step = n / book->dim;
+        int32_t* v = (int32_t*)alloca(sizeof(*v) * book->dim);
+        int32_t  j;
 
-        for(j = 0; j < step; j++) {
-            if(decode_map(book, v, point)) return -1;
-            for(uint8_t i = 0, o = j; i < book->dim; i++, o += step) a[o] += v[i];
+        for (j = 0; j < step; j++) {
+            if (decode_map(book, v, point)) return -1;
+            for (uint8_t i = 0, o = j; i < book->dim; i++, o += step) a[o] += v[i];
         }
     }
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t floor0_inverse2(vorbis_info_floor_t *i, int32_t *lsp, int32_t *out) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)i;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::floor0_inverse2(ps_ptr<vorbis_info_floor>& i, int32_t* lsp, int32_t* out) {
+    vorbis_info_floor* info = (vorbis_info_floor*)i.get();
 
-
-    if(lsp) {
+    if (lsp) {
         int32_t amp = lsp[info->order];
 
         /* take the coefficients back to a spectral envelope curve */
-        vorbis_lsp_to_curve(out, s_blocksizes[s_dsp_state->W] / 2, info->barkmap, lsp, info->order, amp, info->ampdB,
-                            info->rate >> 1);
+        vorbis_lsp_to_curve(out, m_blocksizes[m_dsp_state->W] / 2, info->barkmap, lsp, info->order, amp, info->ampdB, info->rate >> 1);
         return (1);
     }
-    memset(out, 0, sizeof(*out) * s_blocksizes[s_dsp_state->W] / 2);
+    memset(out, 0, sizeof(*out) * m_blocksizes[m_dsp_state->W] / 2);
     return (0);
 }
 
-//---------------------------------------------------------------------------------------------------------------------
-int32_t floor1_inverse2(vorbis_info_floor_t *in, int32_t *fit_value, int32_t *out) {
-    vorbis_info_floor_t *info = (vorbis_info_floor_t *)in;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::floor1_inverse2(ps_ptr<vorbis_info_floor>& in, int32_t* fit_value, int32_t* out) {
+    vorbis_info_floor* info = (vorbis_info_floor*)in.get();
 
-    int32_t               n = s_blocksizes[s_dsp_state->W] / 2;
-    int32_t               j;
+    int32_t n = m_blocksizes[m_dsp_state->W] / 2;
+    int32_t j;
 
-    if(fit_value) {
+    if (fit_value) {
         /* render the lines */
         int32_t hx = 0;
         int32_t lx = 0;
         int32_t ly = fit_value[0] * info->mult;
 
-        for(j = 1; j < info->posts; j++) {
+        for (j = 1; j < info->posts; j++) {
             int32_t current = info->forward_index[j];
             int32_t hy = fit_value[current] & 0x7fff;
-            if(hy == fit_value[current]) {
+            if (hy == fit_value[current]) {
                 hy *= info->mult;
                 hx = info->postlist[current];
 
@@ -2507,14 +2504,14 @@ int32_t floor1_inverse2(vorbis_info_floor_t *in, int32_t *fit_value, int32_t *ou
                 ly = hy;
             }
         }
-        for(j = hx; j < n; j++) out[j] *= ly; /* be certain */
+        for (j = hx; j < n; j++) out[j] *= ly; /* be certain */
         return (1);
     }
     memset(out, 0, sizeof(*out) * n);
     return (0);
 }
-//---------------------------------------------------------------------------------------------------------------------
-void render_line(int32_t n, int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t *d) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::render_line(int32_t n, int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t* d) {
     int32_t dy = y1 - y0;
     int32_t adx = x1 - x0;
     int32_t ady = abs(dy);
@@ -2524,57 +2521,31 @@ void render_line(int32_t n, int32_t x0, int32_t x1, int32_t y0, int32_t y1, int3
     int32_t y = y0;
     int32_t err = 0;
 
-    if(n > x1) n = x1;
+    if (n > x1) n = x1;
     ady -= abs(base * adx);
 
-    if(x < n){
-        d[x] = MULT31_SHIFT15(d[x], FLOOR_fromdB_LOOKUP[y]);
-    }
+    if (x < n) { d[x] = MULT31_SHIFT15(d[x], FLOOR_fromdB_LOOKUP[y]); }
 
-    while(++x < n) {
+    while (++x < n) {
         err = err + ady;
-        if(err >= adx) {
+        if (err >= adx) {
             err -= adx;
             y += sy;
+        } else {
+            y += base;
         }
-        else { y += base; }
         d[x] = MULT31_SHIFT15(d[x], FLOOR_fromdB_LOOKUP[y]);
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
-const uint16_t barklook[54] = {0,    51,    102,   154,   206,   258,   311,   365,   420,   477,  535,
-                               594,  656,   719,   785,   854,   926,   1002,  1082,  1166,  1256, 1352,
-                               1454, 1564,  1683,  1812,  1953,  2107,  2276,  2463,  2670,  2900, 3155,
-                               3440, 3756,  4106,  4493,  4919,  5387,  5901,  6466,  7094,  7798, 8599,
-                               9528, 10623, 11935, 13524, 15453, 17775, 20517, 23667, 27183, 31004};
-
-const uint8_t MLOOP_1[64] = {
-    0,  10, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-};
-
-
-const uint8_t MLOOP_2[64] = {
-    0, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-    9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-};
-
-const uint8_t MLOOP_3[8] = {0, 1, 2, 2, 3, 3, 3, 3};
-
-/* interpolated 1./sqrt(p) where .5 <= a < 1. (.100000... to .111111...) in 16.16 format returns in m.8 format */
-int32_t ADJUST_SQRT2[2] = {8192, 5792};
-
-//---------------------------------------------------------------------------------------------------------------------
-void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, int32_t m, int32_t amp, int32_t ampoffset,
-                         int32_t nyq) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::vorbis_lsp_to_curve(int32_t* curve, int32_t n, int32_t ln, int32_t* lsp, int32_t m, int32_t amp, int32_t ampoffset, int32_t nyq) {
     /* 0 <= m < 256 */
 
     /* set up for using all int32_t later */
-    int32_t      i;
-    int32_t      ampoffseti = ampoffset * 4096;
-    int32_t      ampi = amp;
-    int32_t *ilsp = (int32_t *)alloca(m * sizeof(*ilsp));
+    int32_t  i;
+    int32_t  ampoffseti = ampoffset * 4096;
+    int32_t  ampi = amp;
+    int32_t* ilsp = (int32_t*)alloca(m * sizeof(*ilsp));
     uint32_t imap = (1UL << 31) / ln;
     uint32_t tBnyq1 = toBARK(nyq) << 1;
 
@@ -2588,14 +2559,13 @@ void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, in
 
     uint32_t nextbark = MULT31(imap >> 1, tBnyq1);
 
-    int32_t nextf = barklook[nextbark >> 14] +
-                (((nextbark & 0x3fff) * (barklook[(nextbark >> 14) + 1] - barklook[nextbark >> 14])) >> 14);
+    int32_t nextf = barklook[nextbark >> 14] + (((nextbark & 0x3fff) * (barklook[(nextbark >> 14) + 1] - barklook[nextbark >> 14])) >> 14);
 
     /* lsp is in 8.24, range 0 to PI; coslook wants it in .16 0 to 1*/
-    for(i = 0; i < m; i++) {
+    for (i = 0; i < m; i++) {
         int32_t val = MULT32(lsp[i], 0x517cc2);
         /* safeguard against a malicious stream */
-        if(val < 0 || (val >> COS_LOOKUP_I_SHIFT) >= COS_LOOKUP_I_SZ) {
+        if (val < 0 || (val >> COS_LOOKUP_I_SHIFT) >= COS_LOOKUP_I_SZ) {
             memset(curve, 0, sizeof(*curve) * n);
             return;
         }
@@ -2604,8 +2574,8 @@ void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, in
     }
 
     i = 0;
-    while(i < n) {
-        int32_t      j;
+    while (i < n) {
+        int32_t  j;
         uint32_t pi = 46341; /* 2**-.5 in 0.16 */
         uint32_t qi = 46341;
         int32_t  qexp = 0, shift;
@@ -2616,28 +2586,28 @@ void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, in
         qi *= labs(ilsp[0] - wi);
         pi *= labs(ilsp[1] - wi);
 
-        for(j = 3; j < m; j += 2) {
-            if(!(shift = MLOOP_1[(pi | qi) >> 25]))
-                if(!(shift = MLOOP_2[(pi | qi) >> 19])) shift = MLOOP_3[(pi | qi) >> 16];
+        for (j = 3; j < m; j += 2) {
+            if (!(shift = MLOOP_1[(pi | qi) >> 25]))
+                if (!(shift = MLOOP_2[(pi | qi) >> 19])) shift = MLOOP_3[(pi | qi) >> 16];
 
             qi = (qi >> shift) * labs(ilsp[j - 1] - wi);
             pi = (pi >> shift) * labs(ilsp[j] - wi);
             qexp += shift;
         }
-        if(!(shift = MLOOP_1[(pi | qi) >> 25]))
-            if(!(shift = MLOOP_2[(pi | qi) >> 19])) shift = MLOOP_3[(pi | qi) >> 16];
+        if (!(shift = MLOOP_1[(pi | qi) >> 25]))
+            if (!(shift = MLOOP_2[(pi | qi) >> 19])) shift = MLOOP_3[(pi | qi) >> 16];
 
         /* pi,qi normalized collectively, both tracked using qexp */
 
-        if(m & 1) {
+        if (m & 1) {
             /* odd order filter; slightly assymetric */
             /* the last coefficient */
             qi = (qi >> shift) * labs(ilsp[j - 1] - wi);
             pi = (pi >> shift) << 14;
             qexp += shift;
 
-            if(!(shift = MLOOP_1[(pi | qi) >> 25]))
-                if(!(shift = MLOOP_2[(pi | qi) >> 19])) shift = MLOOP_3[(pi | qi) >> 16];
+            if (!(shift = MLOOP_1[(pi | qi) >> 25]))
+                if (!(shift = MLOOP_2[(pi | qi) >> 19])) shift = MLOOP_3[(pi | qi) >> 16];
 
             pi >>= shift;
             qi >>= shift;
@@ -2649,8 +2619,7 @@ void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, in
 
             pi *= (1 << 14) - ((wi * wi) >> 14);
             qi += pi >> 14;
-        }
-        else {
+        } else {
             /* even order filter; still symmetric */
             /* p*=p(1-w), q*=q(1+w), let normalization drift because it isn't     worth tracking step by step */
 
@@ -2670,12 +2639,11 @@ void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, in
         /* we've let the normalization drift because it wasn't important; however, for the lookup, things must be
      normalized again. We need at most one right shift or a number of left shifts */
 
-        if(qi & 0xffff0000) { /* checks for 1.xxxxxxxxxxxxxxxx */
+        if (qi & 0xffff0000) { /* checks for 1.VorbisDecoderVorbisDecoderVorbisDecoderVorbisDecoderVorbisDecoderx */
             qi >>= 1;
             qexp++;
-        }
-        else
-            while(qi && !(qi & 0x8000)) { /* checks for 0.0xxxxxxxxxxxxxxx or less*/
+        } else
+            while (qi && !(qi & 0x8000)) { /* checks for 0.0VorbisDecoderVorbisDecoderVorbisDecoderVorbisDecoderVorbisDecoder::or less*/
                 qi <<= 1;
                 qexp--;
             }
@@ -2687,79 +2655,79 @@ void vorbis_lsp_to_curve(int32_t *curve, int32_t n, int32_t ln, int32_t *lsp, in
 
         curve[i] = MULT31_SHIFT15(curve[i], amp);
 
-        while(++i < n) {
+        while (++i < n) {
             /* line plot to get new f */
             ferr += fdy;
-            if(ferr >= fdx) {
+            if (ferr >= fdx) {
                 ferr -= fdx;
                 f++;
             }
             f += fbase;
 
-            if(f >= nextf) break;
+            if (f >= nextf) break;
 
             curve[i] = MULT31_SHIFT15(curve[i], amp);
         }
 
-        while(1) {
+        while (1) {
             map++;
 
-            if(map + 1 < ln) {
+            if (map + 1 < ln) {
                 nextbark = MULT31((map + 1) * (imap >> 1), tBnyq1);
 
-                nextf = barklook[nextbark >> 14] +
-                        (((nextbark & 0x3fff) * (barklook[(nextbark >> 14) + 1] - barklook[nextbark >> 14])) >> 14);
-                if(f <= nextf) break;
-            }
-            else {
+                nextf = barklook[nextbark >> 14] + (((nextbark & 0x3fff) * (barklook[(nextbark >> 14) + 1] - barklook[nextbark >> 14])) >> 14);
+                if (f <= nextf) break;
+            } else {
                 nextf = 9999999;
                 break;
             }
         }
-        if(map >= ln) {
+        if (map >= ln) {
             map = ln - 1; /* guard against the approximation */
             nextf = 9999999;
         }
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* used in init only; interpolate the int32_t way */
-int32_t toBARK(int32_t n) {
+int32_t VorbisDecoder::toBARK(int32_t n) {
     int32_t i;
-    for(i = 0; i < 54; i++)
-        if(n >= barklook[i] && n < barklook[i + 1]) break;
+    for (i = 0; i < 54; i++)
+        if (n >= barklook[i] && n < barklook[i + 1]) break;
 
-    if(i == 54) { return 54 << 14; }
-    else { return (i << 14) + (((n - barklook[i]) * ((1UL << 31) / (barklook[i + 1] - barklook[i]))) >> 17); }
+    if (i == 54) {
+        return 54 << 14;
+    } else {
+        return (i << 14) + (((n - barklook[i]) * ((1UL << 31) / (barklook[i + 1] - barklook[i]))) >> 17);
+    }
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* interpolated lookup based cos function, domain 0 to PI only */
 /* a is in 0.16 format, where 0==0, 2^^16-1==PI, return 0.14 */
-int32_t vorbis_coslook_i(int32_t a) {
+int32_t VorbisDecoder::vorbis_coslook_i(int32_t a) {
     int32_t i = a >> COS_LOOKUP_I_SHIFT;
     int32_t d = a & COS_LOOKUP_I_MASK;
     return COS_LOOKUP_I[i] - ((d * (COS_LOOKUP_I[i] - COS_LOOKUP_I[i + 1])) >> COS_LOOKUP_I_SHIFT);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* interpolated half-wave lookup based cos function */
 /* a is in 0.16 format, where 0==0, 2^^16==PI, return .LSP_FRACBITS */
-int32_t vorbis_coslook2_i(int32_t a) {
+int32_t VorbisDecoder::vorbis_coslook2_i(int32_t a) {
     int32_t i = a >> COS_LOOKUP_I_SHIFT;
     int32_t d = a & COS_LOOKUP_I_MASK;
-    return ((COS_LOOKUP_I[i] << COS_LOOKUP_I_SHIFT) - d * (COS_LOOKUP_I[i] - COS_LOOKUP_I[i + 1])) >>
-           (COS_LOOKUP_I_SHIFT - LSP_FRACBITS + 14);
+    return ((COS_LOOKUP_I[i] << COS_LOOKUP_I_SHIFT) - d * (COS_LOOKUP_I[i] - COS_LOOKUP_I[i + 1])) >> (COS_LOOKUP_I_SHIFT - LSP_FRACBITS + 14);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* interpolated lookup based fromdB function, domain -140dB to 0dB only */
 /* a is in n.12 format */
 
-int32_t vorbis_fromdBlook_i(int32_t a) {
-    if(a > 0) return 0x7fffffff;
-    if(a < -573440) return 0;  // replacement for if(a < (-140 << 12)) return 0;
+int32_t VorbisDecoder::vorbis_fromdBlook_i(int32_t a) {
+    if (a > 0) return 0x7fffffff;
+    if (a < -573440) return 0; // replacement for if(a < (-140 << 12)) return 0;
     return FLOOR_fromdB_LOOKUP[((a + (140 << 12)) * 467) >> 20];
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t vorbis_invsqlook_i(int32_t a, int32_t e) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::vorbis_invsqlook_i(int32_t a, int32_t e) {
     int32_t i = (a & 0x7fff) >> (INVSQ_LOOKUP_I_SHIFT - 1);
     int32_t d = a & INVSQ_LOOKUP_I_MASK;                                /*  0.10 */
     int32_t val = INVSQ_LOOKUP_I[i] -                                   /*  1.16 */
@@ -2768,14 +2736,13 @@ int32_t vorbis_invsqlook_i(int32_t a, int32_t e) {
     e = (e >> 1) + 21;
     return (val >> e);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* partial; doesn't perform last-step deinterleave/unrolling. That can be done more efficiently during pcm output */
-void mdct_backward(int32_t n, int32_t *in) {
+void VorbisDecoder::mdct_backward(int32_t n, int32_t* in) {
     int32_t shift;
     int32_t step;
 
-    for(shift = 4; !(n & (1 << shift)); shift++)
-        ;
+    for (shift = 4; !(n & (1 << shift)); shift++);
     shift = 13 - shift;
     step = 2 << shift;
 
@@ -2785,12 +2752,12 @@ void mdct_backward(int32_t n, int32_t *in) {
     mdct_step7(in, n, step);
     mdct_step8(in, n, step);
 }
-//---------------------------------------------------------------------------------------------------------------------
-void presymmetry(int32_t *in, int32_t n2, int32_t step) {
-    int32_t       *aX;
-    int32_t       *bX;
-    const int32_t *T;
-    int32_t            n4 = n2 >> 1;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::presymmetry(int32_t* in, int32_t n2, int32_t step) {
+    int32_t*       aX;
+    int32_t*       bX;
+    const int32_t* T;
+    int32_t        n4 = n2 >> 1;
 
     aX = in + n2 - 3;
     T = sincos_lookup0;
@@ -2801,14 +2768,14 @@ void presymmetry(int32_t *in, int32_t n2, int32_t step) {
         XPROD31(r0, r2, T[0], T[1], &aX[0], &aX[2]);
         T += step;
         aX -= 4;
-    } while(aX >= in + n4);
+    } while (aX >= in + n4);
     do {
         int32_t r0 = aX[0];
         int32_t r2 = aX[2];
         XPROD31(r0, r2, T[1], T[0], &aX[0], &aX[2]);
         T -= step;
         aX -= 4;
-    } while(aX >= in);
+    } while (aX >= in);
 
     aX = in + n2 - 4;
     bX = in;
@@ -2825,25 +2792,25 @@ void presymmetry(int32_t *in, int32_t n2, int32_t step) {
 
         aX -= 4;
         bX += 4;
-    } while(aX >= in + n4);
+    } while (aX >= in + n4);
 }
-//---------------------------------------------------------------------------------------------------------------------
-void mdct_butterflies(int32_t *x, int32_t points, int32_t shift) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::mdct_butterflies(int32_t* x, int32_t points, int32_t shift) {
     int32_t stages = 8 - shift;
     int32_t i, j;
 
-    for(i = 0; --stages > 0; i++) {
-        for(j = 0; j < (1 << i); j++) mdct_butterfly_generic(x + (points >> i) * j, points >> i, 4 << (i + shift));
+    for (i = 0; --stages > 0; i++) {
+        for (j = 0; j < (1 << i); j++) mdct_butterfly_generic(x + (points >> i) * j, points >> i, 4 << (i + shift));
     }
 
-    for(j = 0; j < points; j += 32) mdct_butterfly_32(x + j);
+    for (j = 0; j < points; j += 32) mdct_butterfly_32(x + j);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* N/stage point generic N stage butterfly (in place, 2 register) */
-void mdct_butterfly_generic(int32_t *x, int32_t points, int32_t step) {
-    const int32_t *T = sincos_lookup0;
-    int32_t       *x1 = x + points - 4;
-    int32_t       *x2 = x + (points >> 1) - 4;
+void VorbisDecoder::mdct_butterfly_generic(int32_t* x, int32_t points, int32_t step) {
+    const int32_t* T = sincos_lookup0;
+    int32_t*       x1 = x + points - 4;
+    int32_t*       x2 = x + (points >> 1) - 4;
     int32_t        r0, r1, r2, r3;
 
     do {
@@ -2860,7 +2827,7 @@ void mdct_butterfly_generic(int32_t *x, int32_t points, int32_t step) {
         T += step;
         x1 -= 4;
         x2 -= 4;
-    } while(T < sincos_lookup0 + 1024);
+    } while (T < sincos_lookup0 + 1024);
     do {
         r0 = x1[0] - x1[1];
         x1[0] += x1[1];
@@ -2875,11 +2842,11 @@ void mdct_butterfly_generic(int32_t *x, int32_t points, int32_t step) {
         T -= step;
         x1 -= 4;
         x2 -= 4;
-    } while(T > sincos_lookup0);
+    } while (T > sincos_lookup0);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* 32 point butterfly (in place, 4 register) */
-void mdct_butterfly_32(int32_t *x) {
+void VorbisDecoder::mdct_butterfly_32(int32_t* x) {
     int32_t r0, r1, r2, r3;
 
     r0 = x[16] - x[17];
@@ -2933,9 +2900,9 @@ void mdct_butterfly_32(int32_t *x) {
     mdct_butterfly_16(x);
     mdct_butterfly_16(x + 16);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* 16 point butterfly (in place, 4 register) */
-void mdct_butterfly_16(int32_t *x) {
+void VorbisDecoder::mdct_butterfly_16(int32_t* x) {
     int32_t r0, r1, r2, r3;
 
     r0 = x[8] - x[9];
@@ -2967,9 +2934,9 @@ void mdct_butterfly_16(int32_t *x) {
     mdct_butterfly_8(x);
     mdct_butterfly_8(x + 8);
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* 8 point butterfly (in place) */
-void mdct_butterfly_8(int32_t *x) {
+void VorbisDecoder::mdct_butterfly_8(int32_t* x) {
     int32_t r0 = x[0] + x[1];
     int32_t r1 = x[0] - x[1];
     int32_t r2 = x[2] + x[3];
@@ -2988,19 +2955,19 @@ void mdct_butterfly_8(int32_t *x) {
     x[6] = r4 + r0;
     x[7] = r6 + r2;
 }
-//---------------------------------------------------------------------------------------------------------------------
-void mdct_bitreverse(int32_t *x, int32_t n, int32_t shift) {
-    int32_t      bit = 0;
-    int32_t *w = x + (n >> 1);
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::mdct_bitreverse(int32_t* x, int32_t n, int32_t shift) {
+    int32_t  bit = 0;
+    int32_t* w = x + (n >> 1);
 
     do {
         int32_t  b = bitrev12(bit++);
-        int32_t *xx = x + (b >> shift);
+        int32_t* xx = x + (b >> shift);
         int32_t  r;
 
         w -= 2;
 
-        if(w > xx) {
+        if (w > xx) {
             r = xx[0];
             xx[0] = w[0];
             w[0] = r;
@@ -3009,19 +2976,19 @@ void mdct_bitreverse(int32_t *x, int32_t n, int32_t shift) {
             xx[1] = w[1];
             w[1] = r;
         }
-    } while(w > x);
+    } while (w > x);
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t bitrev12(int32_t x) {
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::bitrev12(int32_t x) {
     uint8_t bitrev[16] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
     return bitrev[x >> 8] | (bitrev[(x & 0x0f0) >> 4] << 4) | (((int32_t)bitrev[x & 0x00f]) << 8);
 }
-//---------------------------------------------------------------------------------------------------------------------
-void mdct_step7(int32_t *x, int32_t n, int32_t step) {
-    int32_t       *w0 = x;
-    int32_t       *w1 = x + (n >> 1);
-    const int32_t *T = (step >= 4) ? (sincos_lookup0 + (step >> 1)) : sincos_lookup1;
-    const int32_t *Ttop = T + 1024;
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::mdct_step7(int32_t* x, int32_t n, int32_t step) {
+    int32_t*       w0 = x;
+    int32_t*       w1 = x + (n >> 1);
+    const int32_t* T = (step >= 4) ? (sincos_lookup0 + (step >> 1)) : sincos_lookup1;
+    const int32_t* Ttop = T + 1024;
     int32_t        r0, r1, r2, r3;
 
     do {
@@ -3041,7 +3008,7 @@ void mdct_step7(int32_t *x, int32_t n, int32_t step) {
         w1[1] = r3 - r1;
 
         w0 += 2;
-    } while(T < Ttop);
+    } while (T < Ttop);
     do {
         w1 -= 2;
 
@@ -3059,16 +3026,16 @@ void mdct_step7(int32_t *x, int32_t n, int32_t step) {
         w1[1] = r3 - r1;
 
         w0 += 2;
-    } while(w0 < w1);
+    } while (w0 < w1);
 }
-//---------------------------------------------------------------------------------------------------------------------
-void mdct_step8(int32_t *x, int32_t n, int32_t step) {
-    const int32_t *T;
-    const int32_t *V;
-    int32_t       *iX = x + (n >> 1);
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::mdct_step8(int32_t* x, int32_t n, int32_t step) {
+    const int32_t* T;
+    const int32_t* V;
+    int32_t*       iX = x + (n >> 1);
     step >>= 2;
 
-    switch(step) {
+    switch (step) {
         default:
             T = (step >= 4) ? (sincos_lookup0 + (step >> 1)) : sincos_lookup1;
             do {
@@ -3077,7 +3044,7 @@ void mdct_step8(int32_t *x, int32_t n, int32_t step) {
                 XPROD31(r0, r1, T[0], T[1], x, x + 1);
                 T += step;
                 x += 2;
-            } while(x < iX);
+            } while (x < iX);
             break;
 
         case 1: {
@@ -3101,7 +3068,7 @@ void mdct_step8(int32_t *x, int32_t n, int32_t step) {
                 XPROD31(r0, r1, v0, v1, x + 2, x + 3);
 
                 x += 4;
-            } while(x < iX);
+            } while (x < iX);
             break;
         }
 
@@ -3140,25 +3107,25 @@ void mdct_step8(int32_t *x, int32_t n, int32_t step) {
                 XPROD31(r0, r1, v0, v1, x + 5, x + 6);
 
                 x += 8;
-            } while(x < iX);
+            } while (x < iX);
             break;
         }
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* decode vector / dim granularity guarding is done in the upper layer */
-int32_t vorbis_book_decodevv_add(codebook_t *book, int32_t **a, int32_t offset, uint8_t ch, int32_t n, int32_t point) {
-    if(book->used_entries > 0) {
-        int32_t *v = (int32_t *)alloca(sizeof(*v) * book->dim);
+int32_t VorbisDecoder::vorbis_book_decodevv_add(codebook_t* book, int32_t** a, int32_t offset, uint8_t ch, int32_t n, int32_t point) {
+    if (book->used_entries > 0) {
+        int32_t* v = (int32_t*)alloca(sizeof(*v) * book->dim);
         int32_t  i;
         uint8_t  chptr = 0;
         int32_t  m = offset + n;
 
-        for(i = offset; i < m;) {
-            if(decode_map(book, v, point)) return -1;
-            for(uint8_t j = 0; i < m && j < book->dim; j++) {
+        for (i = offset; i < m;) {
+            if (decode_map(book, v, point)) return -1;
+            for (uint8_t j = 0; i < m && j < book->dim; j++) {
                 a[chptr++][i] += v[j];
-                if(chptr == ch) {
+                if (chptr == ch) {
                     chptr = 0;
                     i++;
                 }
@@ -3168,64 +3135,50 @@ int32_t vorbis_book_decodevv_add(codebook_t *book, int32_t **a, int32_t offset, 
 
     return 0;
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 /* pcm==0 indicates we just want the pending samples, no more */
-int32_t vorbis_dsp_pcmout(int16_t *outBuff, int32_t outBuffSize) {
-    if(s_dsp_state->out_begin > -1 && s_dsp_state->out_begin < s_dsp_state->out_end) {
-        int32_t n = s_dsp_state->out_end - s_dsp_state->out_begin;
+int32_t VorbisDecoder::vorbis_dsp_pcmout(int16_t* outBuff, int32_t outBuffSize) {
+    if (m_dsp_state->out_begin > -1 && m_dsp_state->out_begin < m_dsp_state->out_end) {
+        int32_t n = m_dsp_state->out_end - m_dsp_state->out_begin;
 
-        if(outBuff) {
+        if (outBuff) {
             int32_t i;
-            if(n > outBuffSize) {
+            if (n > outBuffSize) {
                 n = outBuffSize;
-                log_e("outBufferSize too small, must be min %i (int16_t) words", n);
+                VORBIS_LOG_ERROR("outBufferSize too small, must be min %i (int16_t) words", n);
             }
-            for(i = 0; i < s_vorbisChannels; i++){
-                mdct_unroll_lap(s_blocksizes[0], s_blocksizes[1],
-                                s_dsp_state->lW, s_dsp_state->W, s_dsp_state->work[i],
-                                s_dsp_state->mdctright[i], _vorbis_window(s_blocksizes[0] >> 1),
-                                _vorbis_window(s_blocksizes[1] >> 1),
-                                outBuff + i, s_vorbisChannels,
-                                s_dsp_state->out_begin,
-                                s_dsp_state->out_begin + n);
+            for (i = 0; i < m_vorbisChannels; i++) {
+                mdct_unroll_lap(m_blocksizes[0], m_blocksizes[1], m_dsp_state->lW, m_dsp_state->W, m_dsp_state->work[i].get(), m_dsp_state->mdctright[i].get(), _vorbis_window(m_blocksizes[0] >> 1),
+                                _vorbis_window(m_blocksizes[1] >> 1), outBuff + i, m_vorbisChannels, m_dsp_state->out_begin, m_dsp_state->out_begin + n);
             }
         }
         return (n);
     }
     return (0);
 }
-//---------------------------------------------------------------------------------------------------------------------
-int32_t *_vorbis_window(int32_t left) {
-    switch(left) {
-        case 32:
-            return (int32_t *)vwin64;
-        case 64:
-            return (int32_t *)vwin128;
-        case 128:
-            return (int32_t *)vwin256;
-        case 256:
-            return (int32_t *)vwin512;
-        case 512:
-            return (int32_t *)vwin1024;
-        case 1024:
-            return (int32_t *)vwin2048;
-        case 2048:
-            return (int32_t *)vwin4096;
-        case 4096:
-            return (int32_t *)vwin8192;
-        default:
-            return (0);
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t* VorbisDecoder::_vorbis_window(int32_t left) {
+    switch (left) {
+        case 32: return (int32_t*)vwin64;
+        case 64: return (int32_t*)vwin128;
+        case 128: return (int32_t*)vwin256;
+        case 256: return (int32_t*)vwin512;
+        case 512: return (int32_t*)vwin1024;
+        case 1024: return (int32_t*)vwin2048;
+        case 2048: return (int32_t*)vwin4096;
+        case 4096: return (int32_t*)vwin8192;
+        default: return (0);
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
-void mdct_unroll_lap(int32_t n0, int32_t n1, int32_t lW, int32_t W, int32_t *in, int32_t *right, const int32_t *w0, const int32_t *w1, int16_t *out,
-                     int32_t step, int32_t start, /* samples, this frame */
-                     int32_t end /* samples, this frame */) {
-    int32_t       *l = in + (W && lW ? n1 >> 1 : n0 >> 1);
-    int32_t       *r = right + (lW ? n1 >> 2 : n0 >> 2);
-    int32_t       *post;
-    const int32_t *wR = (W && lW ? w1 + (n1 >> 1) : w0 + (n0 >> 1));
-    const int32_t *wL = (W && lW ? w1 : w0);
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::mdct_unroll_lap(int32_t n0, int32_t n1, int32_t lW, int32_t W, int32_t* in, int32_t* right, const int32_t* w0, const int32_t* w1, int16_t* out, int32_t step,
+                                    int32_t start, /* samples, this frame */
+                                    int32_t end /* samples, this frame */) {
+    int32_t*       l = in + (W && lW ? n1 >> 1 : n0 >> 1);
+    int32_t*       r = right + (lW ? n1 >> 2 : n0 >> 2);
+    int32_t*       post;
+    const int32_t* wR = (W && lW ? w1 + (n1 >> 1) : w0 + (n0 >> 1));
+    const int32_t* wL = (W && lW ? w1 : w0);
 
     int32_t preLap = (lW && !W ? (n1 >> 2) - (n0 >> 2) : 0);
     int32_t halfLap = (lW && W ? (n1 >> 2) : (n0 >> 2));
@@ -3233,14 +3186,14 @@ void mdct_unroll_lap(int32_t n0, int32_t n1, int32_t lW, int32_t W, int32_t *in,
     int32_t n, off;
 
     /* preceeding direct-copy lapping from previous frame, if any */
-    if(preLap) {
+    if (preLap) {
         n = (end < preLap ? end : preLap);
         off = (start < preLap ? start : preLap);
         post = r - n;
         r -= off;
         start -= off;
         end -= n;
-        while(r > post) {
+        while (r > post) {
             *out = CLIP_TO_15((*--r) >> 9);
             out += step;
         }
@@ -3256,7 +3209,7 @@ void mdct_unroll_lap(int32_t n0, int32_t n1, int32_t lW, int32_t W, int32_t *in,
     wR -= off;
     wL += off;
     end -= n;
-    while(r > post) {
+    while (r > post) {
         l -= 2;
         *out = CLIP_TO_15((MULT31(*--r, *--wR) + MULT31(*l, *wL++)) >> 9);
         out += step;
@@ -3271,23 +3224,92 @@ void mdct_unroll_lap(int32_t n0, int32_t n1, int32_t lW, int32_t W, int32_t *in,
     end -= n;
     wR -= off;
     wL += off;
-    while(r < post) {
+    while (r < post) {
         *out = CLIP_TO_15((MULT31(*r++, *--wR) - MULT31(*l, *wL++)) >> 9);
         out += step;
         l += 2;
     }
 
     /* preceeding direct-copy lapping from previous frame, if any */
-    if(postLap) {
+    if (postLap) {
         n = (end < postLap ? end : postLap);
         off = (start < postLap ? start : postLap);
         post = l + n * 2;
         l += off * 2;
-        while(l < post) {
+        while (l < post) {
             *out = CLIP_TO_15((-*l) >> 9);
             out += step;
             l += 2;
         }
     }
 }
-//---------------------------------------------------------------------------------------------------------------------
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::MULT32(int32_t x, int32_t y) {
+    union magic magic;
+    magic.whole = (int64_t)x * y;
+    return magic.halves.hi;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::MULT31_SHIFT15(int32_t x, int32_t y) {
+    union magic magic;
+    magic.whole = (int64_t)x * y;
+    return ((uint32_t)(magic.halves.lo) >> 15) | ((magic.halves.hi) << 17);
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::MULT31(int32_t x, int32_t y) {
+    return MULT32(x, y) << 1;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::XPROD31(int32_t a, int32_t b, int32_t t, int32_t v, int32_t* x, int32_t* y) {
+    *x = MULT31(a, t) + MULT31(b, v);
+    *y = MULT31(b, t) - MULT31(a, v);
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void VorbisDecoder::XNPROD31(int32_t a, int32_t b, int32_t t, int32_t v, int32_t* x, int32_t* y) {
+    *x = MULT31(a, t) - MULT31(b, v);
+    *y = MULT31(b, t) + MULT31(a, v);
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::CLIP_TO_15(int32_t x) {
+    int32_t ret = x;
+    ret -= ((x <= 32767) - 1) & (x - 32767);
+    ret -= ((x >= -32768) - 1) & (x + 32768);
+    return (ret);
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::specialIndexOf(uint8_t* base, const char* str, int32_t baselen, bool exact) {
+    int32_t result = -1;                  // seek for str in buffer or in header up to baselen, not nullterninated
+    if (strlen(str) > baselen) return -1; // if exact == true seekstr in buffer must have "\0" at the end
+    for (int32_t i = 0; i < baselen - strlen(str); i++) {
+        result = i;
+        for (int32_t j = 0; j < strlen(str) + exact; j++) {
+            if (*(base + i + j) != *(str + j)) {
+                result = -1;
+                break;
+            }
+        }
+        if (result >= 0) break;
+    }
+    return result;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+int32_t VorbisDecoder::specialIndexOf_icase(uint8_t* base, const char* str, int32_t baselen, bool exact) {
+    int32_t result = -1;                  // seek for str in buffer or in header up to baselen, not nullterninated
+    if (strlen(str) > baselen) return -1; // if exact == true seekstr in buffer must have "\0" at the end
+    for (int32_t i = 0; i < baselen - strlen(str); i++) {
+        result = i;
+        for (int32_t j = 0; j < strlen(str) + exact; j++) {
+            if (tolower(*(base + i + j)) != tolower(*(str + j))) {
+                result = -1;
+                break;
+            }
+        }
+        if (result >= 0) break;
+    }
+    return result;
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+uint32_t VorbisDecoder::little_endian(uint8_t* data) {
+    return (uint32_t(data[0]) | (uint32_t(data[1]) << 8) | (uint32_t(data[2]) << 16) | (uint32_t(data[3]) << 24));
+}
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
