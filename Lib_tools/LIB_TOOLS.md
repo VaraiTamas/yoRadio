@@ -29,10 +29,12 @@ A közösség készített olyan ESP-IDF fordítást, amely javított hálózati 
 
 ## Hol találhatók az Arduino által használt ESP-IDF könyvtárak?
 
-Windows alatt az Arduino ESP32 Core 3.3.0 verziójához itt:
+Windows alatt:  
+    - Arduino ESP32 Core 3.3.0 esetén   
+    C:\Users<FELHASZNÁLÓNÉV>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\lib\  
+    - Arduino ESP32 Core 3.3.3 esetén   
+    C:\Users<FELHASZNÁLÓNÉV>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-f1a1df9b-v3\esp32s3\lib 
 
-C:\Users<FELHASZNÁLÓNÉV>\AppData\Local\Arduino15\packages\esp32
-tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\lib\  
 
 Itt többek között megtalálod a következőket:
 
@@ -62,13 +64,15 @@ Csak a két statikus könyvtár cseréje szükséges → kompatibilis marad az A
 ## Fájlok cseréje – lépésről lépésre
 
 ⚠️ Fontos:
-A javított libesp_netif.a és liblwip.a fájlok kifejezetten az Arduino ESP32 Core 3.3.0 verziójához készültek.
+A javított libesp_netif.a és liblwip.a fájlok kifejezetten az Arduino ESP32 Core 3.3.0 vagy 3.3.3 verziójához készültek.
 Más verziókkal nem kompatibilisek, és hibát vagy instabilitást okozhatnak.
 
 1. **Zárd be az Arduino IDE-t.**
-2. Navigálj ide (Windows):  
-C:\Users<FELHASZNÁLÓNÉV>\AppData\Local\Arduino15\packages\esp32
-tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\lib\  
+2. Navigálj ide (Windows), 
+    - Arduino ESP32 Core 3.3.0 esetén   
+    C:\Users<FELHASZNÁLÓNÉV>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\lib\  
+    - Arduino ESP32 Core 3.3.3 esetén   
+    C:\Users<FELHASZNÁLÓNÉV>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-f1a1df9b-v3\esp32s3\lib 
 3. **Készíts biztonsági másolatot** az eredeti fájlokról:
 - `libesp_netif.a`
 - `liblwip.a`
