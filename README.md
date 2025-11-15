@@ -31,11 +31,11 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
          // #define TS_CS    3
 
 - Nem támogatja az ESP32-t PSRAM memória nélkül.   
-- Az ESP32 board v.3.3.0 vagy újabb verziókra van szükség.  
+- Az Arduino-ESP32 Core 3.3.0 vagy újabb verziójú Espressif Arduino keretrendszerre van szükség.  
 - A partíció sémánál válaszd "8M with spiffs (3MB APP/1.5MB SPIFFS)" 
 - A memória szerkezete és a vele való munka teljesen megváltozott, az összes puffer és sok változó átkerült a PSRAM-ba. 
-- Megnövelt audio adatpuffer 655 KB-ra. Az I2S hangmintavételezéssel rendelkezik 48 kHz-ig.  
-- Nagyon fontos, hogy a data mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!
+- Nagyon fontos, hogy a data mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!  
+- Ha az IR (infrared) beállítása nem működik, [ olvasd el ezt!](PCB/IR/IR_power_filter.md)
 
 
 
