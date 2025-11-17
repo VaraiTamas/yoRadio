@@ -105,13 +105,17 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 
 ### Version history:
+### v7.8 
+   - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3v (2025. nov 16.) 
+   - A Title1 sor elején idegen karakterek hiba javítása 
+   - A Lib_tools mappa lib fájlok cseréje (libesp_netif.a, liblwip.a)
 ### v7.7
-   - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3 verzióra   
+   - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3r (2025. nov 12.)  
       https://github.com/schreibfaul1/ESP32-audioI2S.git
    - Kivezetésre került a VS1053 audio könyvtár
-   - META adatok javítása
+   - META adatok javítása  
 ### v7.6
-   - Visszakerült a programba az audioI2S régebbi verziója mely stabilabb lejátszást biztosít.  
+   - Visszakerült a programba az audioI2S régebbi verziója mely stabilabb lejátszást biztosít  
       Version 3.1.   
       Updated on: Feb 01.2025, Feb 09.2025 (Maleksm)  
       Author: Wolle (schreibfaul1)  
