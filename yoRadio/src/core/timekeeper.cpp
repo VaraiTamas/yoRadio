@@ -26,8 +26,8 @@
 #define WEATHER_SYNC_INTERVAL config.store.weatherSyncInterval * 60 * 1000
 
 #define SYNC_STACK_SIZE    1024 * 4
-#define SYNC_TASK_CORE     0
-#define SYNC_TASK_PRIORITY 3
+#define SYNC_TASK_CORE     0    // "core_set"
+#define SYNC_TASK_PRIORITY 3    // "task_prioritas"
 #define WEATHER_STRING_L   254
 
 #ifdef HEAP_DBG
@@ -145,9 +145,9 @@ bool TimeKeeper::loop1() {  // core1 (player)
     xTaskCreatePinnedToCore(
       _syncTask, "syncTask", SYNC_STACK_SIZE,
       NULL,  // Params
-      SYNC_TASK_PRIORITY,
+      SYNC_TASK_PRIORITY, // "task_prioritas"
       NULL,  // Descriptor
-      SYNC_TASK_CORE
+      SYNC_TASK_CORE  // "core_set"
     );
   }
 

@@ -25,7 +25,7 @@ Nextion nextion;
   #define CORE_STACK_SIZE 1024 * 4
 #endif
 #ifndef DSP_TASK_PRIORITY
-  #define DSP_TASK_PRIORITY 2
+  #define DSP_TASK_PRIORITY 2  //"task_prioritas"
 #endif
 #ifndef DSP_TASK_CORE_ID
   #define DSP_TASK_CORE_ID 0
@@ -67,7 +67,7 @@ static void loopDspTask(void *pvParameters) {
 }
 
 void Display::_createDspTask() {
-  xTaskCreatePinnedToCore(loopDspTask, "DspTask", CORE_STACK_SIZE, NULL, DSP_TASK_PRIORITY, NULL, DSP_TASK_CORE_ID);
+  xTaskCreatePinnedToCore(loopDspTask, "DspTask", CORE_STACK_SIZE, NULL, DSP_TASK_PRIORITY, NULL, DSP_TASK_CORE_ID); //"task_prioritas"
 }
 
 #ifndef DUMMYDISPLAY
