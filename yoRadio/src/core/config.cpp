@@ -246,7 +246,7 @@ bool Config::prepareForPlaying(uint16_t stationId){
   
   if(!loadStation(stationId)) return false;
   //setTitle(getMode()==PM_WEB?LANG::const_PlConnect:"[next track]");
-  setTitle(LANG::const_PlConnect); //ittvan
+  setTitle(LANG::const_PlConnect);  //ittvan
   station.bitrate=0;
   setBitrateFormat(BF_UNKNOWN);
   display.putRequest(DBITRATE);

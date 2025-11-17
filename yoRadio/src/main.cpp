@@ -44,10 +44,10 @@ void setupOTA(){
     .onStart([]() {
       player.sendCommand({PR_STOP, 0});
       display.putRequest(NEWMODE, UPDATING);
-      telnet.printf("Start OTA updating %s\n", ArduinoOTA.getCommand() == U_FLASH?"firmware":"filesystem");
+      telnet.printf("Start OTA updating %s\r\n", ArduinoOTA.getCommand() == U_FLASH?"firmware":"filesystem");
     })
     .onEnd([]() {
-      telnet.printf("\nEnd OTA update, Rebooting...\n");
+      telnet.printf("\nEnd OTA update, Rebooting...\r\n");
       ESP.restart();
     })
     .onProgress([](unsigned int progress, unsigned int total) {
@@ -56,15 +56,15 @@ void setupOTA(){
     .onError([](ota_error_t error) {
       telnet.printf("Error[%u]: ", error);
       if (error == OTA_AUTH_ERROR) {
-        telnet.printf("Auth Failed\n");
+        telnet.printf("Auth Failed\r\n");
       } else if (error == OTA_BEGIN_ERROR) {
-        telnet.printf("Begin Failed\n");
+        telnet.printf("Begin Failed\r\n");
       } else if (error == OTA_CONNECT_ERROR) {
-        telnet.printf("Connect Failed\n");
+        telnet.printf("Connect Failed\r\n");
       } else if (error == OTA_RECEIVE_ERROR) {
-        telnet.printf("Receive Failed\n");
+        telnet.printf("Receive Failed\r\n");
       } else if (error == OTA_END_ERROR) {
-        telnet.printf("End Failed\n");
+        telnet.printf("End Failed\r\n");
       }
     });
   ArduinoOTA.begin();

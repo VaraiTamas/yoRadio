@@ -184,18 +184,18 @@ void Telnet::on_connect(const char* str, uint8_t clientId) {
 }
 
 void Telnet::info() {
-  telnet.printf("##CLI.INFO#\n");
+  telnet.printf("##CLI.INFO#\r\n");
   strftime(config.tmpBuf, sizeof(config.tmpBuf), "%Y-%m-%dT%H:%M:%S+03:00", &network.timeinfo);
-  telnet.printf("##SYS.DATE#: %s\n", config.tmpBuf); //TODO timezone offset
-  telnet.printf("##CLI.NAMESET#: %d %s\n", config.lastStation(), config.station.name);
+  telnet.printf("##SYS.DATE#: %s\r\n", config.tmpBuf); //TODO timezone offset
+  telnet.printf("##CLI.NAMESET#: %d %s\r\n", config.lastStation(), config.station.name);
   if (player.status() == PLAYING) {
-    telnet.printf("##CLI.META#: %s\n",  config.station.title);
+    telnet.printf("##CLI.META#: %s\r\n",  config.station.title);
   }
-  telnet.printf("##CLI.VOL#: %d\n", config.store.volume);
+  telnet.printf("##CLI.VOL#: %d\r\n", config.store.volume);
   if (player.status() == PLAYING) {
-    telnet.printf("##CLI.PLAYING#\n");
+    telnet.printf("##CLI.PLAYING#\r\n");
   } else {
-    telnet.printf("##CLI.STOPPED#\n");
+    telnet.printf("##CLI.STOPPED#\r\n");
   }
   telnet.printf("> ");
 }
@@ -503,5 +503,5 @@ void Telnet::on_input(const char* str, uint8_t clientId) {
     WiFi.disconnect();
     return;
   }
-  telnet.printf(clientId, "##CMD_ERROR#\tunknown command <%s>\n> ", str);
+  telnet.printf(clientId, "##CMD_ERROR#\tunknown command <%s>\r\n> ", str);
 }

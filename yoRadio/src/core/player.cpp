@@ -90,7 +90,7 @@ void Player::stopInfo() {
 void Player::setError(){
   _hasError=true;
   config.setTitle(config.tmpBuf);
-  telnet.printf("##ERROR#:\t%s\n", config.tmpBuf);
+  telnet.printf("##ERROR#:\t%s\r\n", config.tmpBuf);
 }
 
 void Player::setError(const char *e){
@@ -242,7 +242,7 @@ void Player::_play(uint16_t stationId) {
     if (player_on_start_play) player_on_start_play();
     pm.on_start_play();
   }else{
-    telnet.printf("##ERROR#:\tError connecting to %.128s\n", config.station.url);
+    telnet.printf("##ERROR#:\tError connecting to %.128s\r\n", config.station.url);
     snprintf(config.tmpBuf, sizeof(config.tmpBuf), "Error connecting to %.128s", config.station.url); setError();
     _stop(true);
   };
@@ -266,7 +266,7 @@ void Player::browseUrl(){
     if (player_on_start_play) player_on_start_play();
     pm.on_start_play();
   }else{
-    telnet.printf("##ERROR#:\tError connecting to %.128s\n", burl);
+    telnet.printf("##ERROR#:\tError connecting to %.128s\r\n", burl);
     snprintf(config.tmpBuf, sizeof(config.tmpBuf), "Error connecting to %.128s", burl); setError();
     _stop(true);
   }

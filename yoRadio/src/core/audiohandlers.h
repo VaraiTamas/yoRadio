@@ -157,47 +157,54 @@ void audio_bitrate(const char *info) {
   netserver.requestOnChange(BITRATE, 0);
 }
 
-/************************************* */
+/***************************************/
 /*********** PRINTABLE *****************/
-/************************************* */
+/***************************************/
 bool printable(const char *info) {
-  if (!info) {
-    return false;
-  }
+  if (!info) return false;
+
   const unsigned char *p = (const unsigned char *)info;
+
   while (*p) {
     unsigned char c = *p;
-    // ASCII 0x20–0x7E között biztosan nyomtatható
+
+    // Kontroll karakterek tiltása (0x00–0x1F), TAB opcionálisan engedhető
+    if (c < 0x20) {
+      if (c != 0x09) return false;
+    }
+
+    // ASCII (nyomtatható)
     if (c >= 0x20 && c <= 0x7E) {
       p++;
       continue;
     }
-    // UTF-8 többbájtos karakterek vizsgálata
-    // 110xxxxx 10xxxxxx → 2 bájtos
-    // 1110xxxx 10xxxxxx 10xxxxxx → 3 bájtos
-    // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx → 4 bájtos
-    if ((c & 0xE0) == 0xC0) {  // 2 bájtos kezdő
-      if ((p[1] & 0xC0) != 0x80) {
+
+    // UTF-8 multi-byte validálás
+    // 2 bájtos
+    if ((c & 0xE0) == 0xC0) {
+      if ((p[1] & 0xC0) != 0x80)
         return false;
-      }
       p += 2;
       continue;
-    } else if ((c & 0xF0) == 0xE0) {  // 3 bájtos kezdő
-      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80) {
+    }
+
+    // 3 bájtos
+    if ((c & 0xF0) == 0xE0) {
+      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80)
         return false;
-      }
       p += 3;
       continue;
-    } else if ((c & 0xF8) == 0xF0) {  // 4 bájtos kezdő
-      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80 || (p[3] & 0xC0) != 0x80) {
-        return false;
-      }
-      p += 4;
-      continue;
     }
-    // Egyéb nem megengedett bájt
+
+    // 4 bájtos karakterek **tiltása** (nem akarod őket)
+    if ((c & 0xF8) == 0xF0) {
+      return false;
+    }
+
+    // Minden más hibás
     return false;
   }
+
   return true;
 }
 
@@ -231,7 +238,7 @@ void audio_showstreamtitle(const char *info) {
 
 void audio_error(const char *info) {
   player.setError(info);
-  telnet.printf("##ERROR#:\t%s\n", info);
+  telnet.printf("##ERROR#:\t%s\r\n", info);
 }
 
 void audio_id3artist(const char *info) {
@@ -246,8 +253,9 @@ void audio_id3artist(const char *info) {
    Ez hívja a 
    netserver.requestOnChange(TITLE, 0); // frissíti a WEB -et.
    netserver.loop();
-   display.putRequest(NEWTITLE); ami a display.ccp ben hívja
-   Display::_title() függvényt és frissíti a kijelzőt _title1 és _title2 scrollwidgeteket.
+   display.putRequest(NEWTITLE); ami a display.ccp ben hívja a
+   Display::_title() függvényt és szétválasztja a kötőjel mentén a _title1 és _title2 sorokat
+   és frissíti a scrollwidgeteket.
 */
 void audio_id3album(const char *info) {
   if (player.lockOutput) {
@@ -288,7 +296,7 @@ void audio_id3data(const char *info) {
   if (player.lockOutput) {
     return;
   }
-  telnet.printf("##AUDIO.ID3#: %s\n", info);
+  telnet.printf("##AUDIO.ID3#: %s\r\n", info);
 }
 
 void audio_eof_mp3(const char *info) {
