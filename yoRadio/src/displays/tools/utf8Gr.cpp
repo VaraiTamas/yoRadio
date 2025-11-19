@@ -172,6 +172,4 @@ if (c1 == 0xCF) {
 
     return outbuf;
 }
-
-
 #endif

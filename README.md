@@ -109,6 +109,7 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
    - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3v (2025. nov 16.) 
    - A Title1 sor elején idegen karakterek hiba javítása 
    - A Lib_tools mappa lib fájlok cseréje (libesp_netif.a, liblwip.a) [olvasd el ezt!](Lib_tools/LIB_TOOLS.md) 
+   - Görög nyelvi fájl frissítve  (by Antreas Mpokas)
 ### v7.7
    - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3r (2025. nov 12.)  
       https://github.com/schreibfaul1/ESP32-audioI2S.git
