@@ -6135,7 +6135,7 @@ void Audio::computeLimit() {    // is calculated when the volume or balance chan
     m_limit_left = l * v;
     m_limit_right = r * v;
 
-    // AUDIO_LOG_INFO("m_limit_left %f,  m_limit_right %f ",m_limit_left, m_limit_right);
+    AUDIO_LOG_INFO("m_limit_left %f,  m_limit_right %f ",m_limit_left, m_limit_right);
 }
 // —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 void Audio::Gain(int16_t* sample) {

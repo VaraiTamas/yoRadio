@@ -11,6 +11,7 @@ https://github.com/e2002/yoradio
 - [Nyelvek, területi beállítások](#nyelvek-teruleti-beallitasok)
 - [Névnapok megjelenítése](#nevnapok-megjelenitese)
 - [PCB nyomtatott áramkör](#pcb-nyomtatott-aramkor)
+- [3D nyomtatási tervek](#3d-nyomtatasi-tervek)
 - [Version history](#version-history)
 
 ---
@@ -38,16 +39,13 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
 - Ha az IR (infrared) beállítása nem működik, [ olvasd el ezt!](PCB/IR/ir_power_filter.md)
 - Ha nagy bitrátájú sztrimek lejátszásakor szakadozást tapasztalsz akkor [olvasd el ezt!](Lib_tools/LIB_TOOLS.md)
 
-
-
-
 Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd őket a könyvtárkezelővel vagy PlatformIO esetén használd a mellékelt platformio.ini fájlt.
 - Adafruit GFX Library  1.12.3  https://github.com/adafruit/Adafruit-GFX-Library.git
 - XPT2046_Touchscreen   1.4     https://github.com/PaulStoffregen/XPT2046_Touchscreen.git
 - RTCLib                2.1.4   https://github.com/adafruit/RTClib.git
 - Adafruit_ILI9341      1.6.2   https://github.com/adafruit/Adafruit_ILI9341.git   (szükség esetén)
 
-### Nyelvek, teruleti beallitasok:
+## Nyelvek, teruleti beallitasok:
 
 Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA nyelveken.   
 A myoptions.h fájlban az alábbi paranccsal állíthatod be.   
@@ -68,18 +66,15 @@ Ezek itt találhatóak a programban:
       yoRadio/locale/glcdfont/RU/glcdfont.c
       yoRadio/locale/glcdfont/UA/glcdfont.c
 
-
-
 A myoptions.h fájlban beállított pin-ek ajánlottak a helyes működéshez és a mellékelt PCB 
 alaplap szerint van konfigurálva.
 Itt tovább alakítható.
-https://trip5.github.io/ehRadio_myoptions/generator.html
+https://trip5.github.io/ehRadio_myoptions/generator.html 
 
-Az ESP modulról itt olvasható:
-esp32-S3-devkit-C1 44 pins https://randomnerdtutorials.com/esp32-s3-devkitc-pinout-guide
+Az ESP modulról itt olvasható:   
+esp32-S3-devkit-C1 44 pins https://randomnerdtutorials.com/esp32-s3-devkitc-pinout-guide 
 
-
-### Nevnapok megjelenitese:
+## Nevnapok megjelenitese:
 A program képes megjeleníteni a HU, PL, GR nyelvű névnapokat.
 A myoptions.h fájlban az alábbi paranccsal lehet bekapcsolni és beállítani a kívánt nyelvet.
 
@@ -97,14 +92,14 @@ Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort,
 // #define NAMEDAYS_FILE HU   
 vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
-
-### PCB nyomtatott aramkor:
+## PCB nyomtatott aramkor:
 - A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, és egyéb információ a [PCB](PCB) mappában található.   
 - Építési javaslatok [PCB_2025.06.14. oldalon láthatóak.](PCB/BCP_2025_06_14/PCB.md) 
----
 
+## 3D nyomtatasi tervek
+- https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
-### Version history:
+## Version history:
 ### v7.8 
    - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3v (2025. nov 16.) 
    - A Title1 sor elején idegen karakterek hiba javítása 

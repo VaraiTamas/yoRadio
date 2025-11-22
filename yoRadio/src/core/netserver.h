@@ -53,6 +53,7 @@ document.getElementById("version").innerHTML=` | v${yoVersion}`;
 </script>
 </html>
 )";
+// index.html
 const char index_html[] PROGMEM = R"(
 <!DOCTYPE html>
 <html>

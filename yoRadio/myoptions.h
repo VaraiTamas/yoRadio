@@ -83,6 +83,7 @@ Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not fil
 
 /* DS CARD */
 #define SDC_CS 18
+#define SDSPISPEED      4000000     /* 4MHz - Slower speed to prevent display flicker on shared SPI bus */
 
 /* Az inaktív szegmens megjelenítése az óra számaiban true -> engedélyez, false -> nem engedélyez. 
    Inactive segments of the clock, true or false. */
