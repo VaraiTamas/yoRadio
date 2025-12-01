@@ -13,8 +13,8 @@
   #include "../tools/psframebuffer.h"
   #include "Arduino.h"
   #include "widgets.h"
-
 // clang-format on
+
 /************************
       FILL WIDGET
  ************************/
@@ -170,6 +170,7 @@ bool ScrollWidget::_checkIsScrollNeeded() {
 }
 
 void ScrollWidget::setText(const char *txt) {
+  //Serial.printf("widget.cpp -> setText() -> txt %s\r\n", txt);
   strlcpy(_text, utf8To(txt, _uppercase), _buffsize - 1);
   if (strcmp(_oldtext, _text) == 0) {
     return;
@@ -413,6 +414,7 @@ void VuWidget::init(WidgetConfig wconf, VUBandsConfig bands, uint16_t vumaxcolor
   _vumidcolor = vumidcolor;  // Módosítás új sor.
   _vumincolor = vumincolor;
   _bands = bands;
+
     //  _canvas = new Canvas(_bands.width * 2 + _bands.space, _bands.height);
     // _canvas = new Canvas(_bands.width, _bands.height * 2 + _bands.space);
     #ifndef BOOMBOX_STYLE
@@ -435,7 +437,7 @@ void VuWidget::setLabelsDrawn(bool value) {  // Saját
 bool VuWidget::isLabelsDrawn() {  // Saját
   return _labelsDrawn;
 }
-
+/**************************** VU widget DRAW ********************************/
 void VuWidget::_draw() {
   if (!_active || _locked) {
     return;
@@ -446,13 +448,9 @@ void VuWidget::_draw() {
   static uint16_t measL, measR;
   uint16_t bandColor;
   uint16_t dimension = _config.align ? _bands.width : _bands.height;
-  uint16_t vulevel = player.getVUlevel();  // "audio_change" nem kell paraméter
+  uint16_t vulevel = player.getVUlevel(dimension);  //"audio_change" nem kell paraméter
   uint8_t vuLeft = (vulevel >> 8) & 0xFF;
   uint8_t vuRight = vulevel & 0xFF;
-  uint8_t maxVU = 150 ;
-  config.vuThreshold = maxVU;
-  uint8_t L = map(vuLeft, config.vuThreshold, 0, 0, dimension);
-  uint8_t R = map(vuRight, config.vuThreshold, 0, 0, dimension);
   uint8_t refresh_time = 30;  // A VU rajzolás frissítési ideje.
   static uint32_t last_draw_time;
     #ifdef VU_PEAK
@@ -472,8 +470,8 @@ void VuWidget::_draw() {
   bool played = player.isRunning();
   if (played) {
     // Szintek tárolása a visszatörléshez.
-    measL = (L >= measL) ? measL + _bands.fadespeed : L;  // Ennyit töröl vissza a teljes L sávból
-    measR = (R >= measR) ? measR + _bands.fadespeed : R;  // Ennyit töröl vissza a teljes R sávból
+    measL = (vuLeft >= measL) ? measL + _bands.fadespeed : vuLeft;    // Ennyit töröl vissza a teljes L sávból
+    measR = (vuRight >= measR) ? measR + _bands.fadespeed : vuRight;  // Ennyit töröl vissza a teljes R sávból
 
       // --- Csúcs logika ---
     #ifdef VU_PEAK
@@ -491,7 +489,6 @@ void VuWidget::_draw() {
       peakL_time = now;
     } else if (now - peakL_time > peak_hold_ms) {  //&& peakL >= 0
       peakL = (peakL < dimension) ? peakL + peak_decay_step : dimension;
-      // Serial.printf("ki peakL : %d, measL : %d, peak_decay_step : %d \n", peakL, measL, peak_decay_step);
     }
       #endif
 

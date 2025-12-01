@@ -751,8 +751,10 @@ void Display::_title() {
   if (strlen(config.station.title) > 0) {
     char tmpbuf[strlen(config.station.title) + 1];
     strlcpy(tmpbuf, config.station.title, sizeof(tmpbuf));
+     //Serial.printf("display.cpp -> _title(be) -> tmpbuf %s\r\n", tmpbuf);
     // <<< FONTOS: hibás UTF-8 takarítása még a split előtt!
     _utf8_clean(tmpbuf);
+    // Serial.printf("display.cpp -> _title(ki) -> tmpbuf %s\r\n", tmpbuf);
     char *stitle = split(tmpbuf, " - ");
     if (stitle && _title2) {
       _title1->setText(tmpbuf);
@@ -775,43 +777,35 @@ void Display::_title() {
   pm.on_track_change();
 }
 
-void Display::_utf8_clean(char *s) {
-  char *in = s;
-  char *out = s;
+void Display::_utf8_clean(char *s)
+{
+    char *in = s;
+    char *out = s;
 
-  while (*in) {
-    unsigned char c = (unsigned char)*in;
+    while (*in) {
+        unsigned char c = (unsigned char)*in;
 
-    // --- ZERO-WIDTH karakterek kiszűrése ---
-    if (c == 0xE2 && (unsigned char)in[1] == 0x80 && ((unsigned char)in[2] == 0x8B || (unsigned char)in[2] == 0x8C || (unsigned char)in[2] == 0x8D)) {
-      in += 3;
-      continue;
+        // --- ZERO-WIDTH karakterek kiszűrése ---
+        if (c == 0xE2 && (unsigned char)in[1] == 0x80 &&
+           ((unsigned char)in[2] == 0x8B || 
+            (unsigned char)in[2] == 0x8C || 
+            (unsigned char)in[2] == 0x8D)) {
+            in += 3;
+            continue;
+        }
+
+        // Soft hyphen
+        if (c == 0xC2 && (unsigned char)in[1] == 0xAD) {
+            in += 2;
+            continue;
+        }
+
+        // --- MINDEN UTF-8 maradjon érintetlen ---
+        // Csak másoljuk byte-onként
+        *out++ = *in++;
     }
-    if (c == 0xC2 && (unsigned char)in[1] == 0xAD) {
-      in += 2;
-      continue;
-    }
 
-    // --- Normál UTF-8 ellenőrzés ASCII / Latin-2 kompatibilis ---
-    if (c <= 0x7F) {
-      *out++ = *in++;
-    } else if ((c & 0xE0) == 0xC0 && (in[1] & 0xC0) == 0x80) {
-      uint16_t code = ((c & 0x1F) << 6) | (in[1] & 0x3F);
-      if (code >= 0xA0 && code <= 0xFF) {
-        *out++ = (char)code;  // Latin-2 kompatibilis karakter
-      }
-      // Ha nem kompatibilis → **csak átugorjuk, nem írunk ?-t**
-      in += 2;
-    } else if ((c & 0xF0) == 0xE0 && (in[1] & 0xC0) == 0x80 && (in[2] & 0xC0) == 0x80) {
-      in += 3;  // 3 bájtos UTF-8 → kihagyjuk
-    } else if ((c & 0xF8) == 0xF0 && (in[1] & 0xC0) == 0x80 && (in[2] & 0xC0) == 0x80 && (in[3] & 0xC0) == 0x80) {
-      in += 4;  // 4 bájtos UTF-8 → kihagyjuk
-    } else {
-      in++;  // hibás byte → kihagyjuk
-    }
-  }
-
-  *out = '\0';
+    *out = '\0';
 }
 
 void Display::_time(bool redraw) {

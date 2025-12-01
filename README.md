@@ -1,4 +1,4 @@
-# yoRadio VTom
+# yoRadio V-Tom
 <img src="images/front_radio.png" alt="Projekt logó" width="800">
 
 ### A program alapja a ёRadio v0.9.720 https://github.com/e2002/yoradio
@@ -6,7 +6,7 @@ Ezt mindenképpen olvasd végig.
 https://github.com/e2002/yoradio
 
 ---
-## yoRadio VTom
+## yoRadio V-Tom
 - [Telepítési tanácsok](#telepitesi-tanacsok)
 - [Nyelvek, területi beállítások](#nyelvek-teruleti-beallitasok)
 - [Névnapok megjelenítése](#nevnapok-megjelenitese)
@@ -100,6 +100,12 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v7.9
+   - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3zd (2025. nov 27.) 
+   - Az SD lejátszó működési hibáinak javítása
+   - Az SD lejátszásnál nem írta ki a META adatokat a képernyőre hiba javítása
+   - Az audio balance web UI állítója fordítva működött hiba javítása
+   - Lejátszási lista mentésénél üres lista jelent meg a web UI -on hiba javítása
 ### v7.8 
    - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3v (2025. nov 16.) 
    - A Title1 sor elején idegen karakterek hiba javítása 

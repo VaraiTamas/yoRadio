@@ -140,7 +140,7 @@ class Audio {
     uint32_t         getAudioCurrentTime();
     uint32_t         getAudioFilePosition();
     bool             setAudioFilePosition(uint32_t pos);
-    uint16_t         getVUlevel();
+    uint16_t         getVUlevel(uint16_t dimension);  //"módosítás"
     uint32_t         inBufferFilled();  // returns the number of stored bytes in the inputbuffer
     uint32_t         inBufferFree();    // returns the number of free bytes in the inputbuffer
     uint32_t         getInBufferSize(); // returns the size of the inputbuffer in bytes
@@ -234,12 +234,13 @@ class Audio {
     bool         readMetadata(uint16_t b, uint16_t* readedBytes, bool first = false);
     int32_t      getChunkSize(uint16_t* readedBytes, bool first = false);
     bool         readID3V1Tag();
-    int32_t      newInBuffStart(int32_t m_resumeFilePos);
+    int32_t      newInBuffStart(int32_t resumeFilePos);
     boolean      streamDetection(uint32_t bytesAvail);
     uint32_t     m4a_correctResumeFilePos();
     uint32_t     ogg_correctResumeFilePos();
     int32_t      flac_correctResumeFilePos();
     int32_t      mp3_correctResumeFilePos();
+    int32_t      wav_correctResumeFilePos();
     uint8_t      determineOggCodec();
     void         strlower(char* str);
     void         trim(char* str);
@@ -290,6 +291,7 @@ class Audio {
         M4A_STSZ = 15,
         M4A_META = 16,
         M4A_MDHD = 17,
+        M4A_CHPL = 18,
         M4A_AMRDY = 99,
         M4A_OKAY = 100,
     };
@@ -321,6 +323,7 @@ class Audio {
 
     SemaphoreHandle_t mutex_playAudioData;
     SemaphoreHandle_t mutex_audioTask;
+    SemaphoreHandle_t mutex_audioTaskIsDecoding;
     TaskHandle_t      m_audioTaskHandle = nullptr;
 
 #pragma GCC diagnostic push
@@ -361,6 +364,7 @@ class Audio {
     uint32_t       m_avr_bitrate = 0;       // average bitrate, median calculated by VBR
     uint32_t       m_nominal_bitrate = 0;   // given br from header
     uint32_t       m_audioFilePosition = 0; // current position, counts every readed byte
+    uint32_t       m_audioDataReadPtr = 0;  // used in playAudioData
     uint32_t       m_audioFileSize = 0;     // local and web files
     int            m_readbytes = 0;         // bytes read
     uint32_t       m_metacount = 0;         // counts down bytes between metadata
@@ -385,6 +389,8 @@ class Audio {
     uint8_t  m_filterType[2];                // lowpass, highpass
     uint8_t  m_streamType = ST_NONE;
     uint8_t  m_ID3Size = 0; // lengt of ID3frame - ID3header
+    uint8_t  vuLeft = 0;                   // average value of samples, left channel "módosítás"
+    uint8_t  vuRight = 0;                  // average value of samples, right channel "módosítás"
     uint8_t  m_vuLeft = 0;  // average value of samples, left channel
     uint8_t  m_vuRight = 0; // average value of samples, right channel
     uint8_t  m_audioTaskCoreId = 1;

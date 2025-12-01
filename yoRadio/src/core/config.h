@@ -177,6 +177,7 @@ class Config {
     uint8_t ssidsCount;
     uint16_t sleepfor;
     uint32_t sdResumePos;
+    uint16_t stopedSdStationId = -1; // "módosítás" új változó a player.stop ad neki értéket.
     bool     emptyFS;
     uint16_t vuThreshold;
     uint16_t screensaverTicks;

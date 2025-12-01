@@ -44,7 +44,7 @@ input[type=text],input[type=password]{width:170px;background:#272727;color:#e3d2
 </div>
 </section>
 <p><a href="/emergency">emergency firmware uploader</a></p>
-<div id="copy">powered by <a target="_blank" href="https://github.com/e2002/yoradio/">ёRadio</a><span id="version"></span></div>
+<div id="copy">powered by <a target="_blank" href="https://github.com/VaraiTamas/yoRadio">ёRadio_V-Tom</a><span id="version"></span></div>
 </body>
 <script>
 document.wifiform.action = `/${formAction}`;

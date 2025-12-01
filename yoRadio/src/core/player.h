@@ -22,7 +22,7 @@ class Player: public Audio {
   private:
     uint32_t    _volTicks;   /* delayed volume save  */
     bool        _volTimer;   /* delayed volume save  */
-    uint32_t    _resumeFilePos;
+   // uint32_t    _resumeFilePos;
     plStatus_e  _status;
     //char        _plError[PLERR_LN];
   private:
@@ -61,7 +61,7 @@ class Player: public Audio {
     uint8_t volToI2S(uint8_t volume);
     void stopInfo();
     void setOutputPins(bool isPlaying);
-    void setResumeFilePos(uint32_t pos) { _resumeFilePos = pos; }
+   // void setResumeFilePos(uint32_t pos) { _resumeFilePos = pos; }
 };
 
 extern Player player;

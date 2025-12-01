@@ -16,6 +16,7 @@ static int clock_tts_fade_volume = -1;
 static unsigned long clock_lastTTSMillis = 0;
 static bool clock_ttsActive = false;
 static int clock_lastMinute = -1;
+static int clock_tts_saved_station = -1;
 
 // Konfigurációs változók
 static bool clock_tts_enabled = CLOCK_TTS_ENABLED;
@@ -105,6 +106,7 @@ void clock_tts_loop() {
       clock_tts_fade_timer = nowMillis;
     }
     if (clock_tts_fade_volume <= 0) {
+      clock_tts_saved_station = config.lastStation();
       delay(150);
       char buf[48];
       clock_tts_announcement(buf, sizeof(buf), tm_struct->tm_hour, tm_struct->tm_min, clock_tts_language);
@@ -148,9 +150,7 @@ void clock_tts_loop() {
       return;
     }
     if (clock_ttsActive && (nowMillis - clock_lastTTSMillis > 4500)) {
-
-      player.sendCommand({PR_PLAY, config.lastStation()});
-
+      player.sendCommand({PR_PLAY, clock_tts_saved_station});
       clock_tts_fading_up = true;
       clock_tts_fade_timer = nowMillis;
       clock_ttsActive = false;

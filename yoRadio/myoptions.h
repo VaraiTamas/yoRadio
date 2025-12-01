@@ -102,7 +102,7 @@ Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not fil
 */
 #define CLOCK_TTS_ENABLED          true  // Enabled (true) or disabled (false)
 #define CLOCK_TTS_LANGUAGE         "HU"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
-#define CLOCK_TTS_INTERVAL_MINUTES 30     // Hány percenként mondja be. - How many times a minute does it say.
+#define CLOCK_TTS_INTERVAL_MINUTES 30    // Hány percenként mondja be. - How many times a minute does it say.
 
 /* Ezzel a beállítással nincs görgetés az időjárás sávon.
    With this setting there is no scrolling on the weather bar.

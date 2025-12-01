@@ -14,10 +14,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifndef BUFLEN
-#define BUFLEN 256
-#endif
-
 // Ensure this matches your class signature. The original used DspCore::utf8Rus.
 // If you don't compile inside that class, remove 'DspCore::' and use plain function.
 char* utf8To(const char* str, bool uppercase)

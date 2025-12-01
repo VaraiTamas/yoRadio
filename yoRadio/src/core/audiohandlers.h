@@ -4,22 +4,21 @@
 #pragma once
 
 #include <Arduino.h>
-#include "../audioI2S/Audio.h"  // helyes útvonal a projektedben
+#include "../audioI2S/Audio.h"
 #include "../displays/tools/l10n.h"
 
 #ifdef USE_NEXTION
 extern decltype(nextion) nextion;  // helyettesd
 #endif
-//extern Stream &telnet; // vagy a megfelelő típus, ha más
 
-// Bufferméretek
-#ifndef BUFLEN
-  #define BUFLEN 512
-#endif
-
+// Globális vagy osztály szintű változók
+String currentArtist = "";
+String currentTitle = "";
+uint16_t currentStationId = -1;
 // Prototípusok (a header elérhetővé teszi a függvényeket más fájlok számára)
 void my_audio_info(Audio::msg_t m);
 //void audio_info(const char *info);
+void processID3(const char *msg);
 void audio_bitrate(const char *info);
 bool printable(const char *info);
 void audio_showstation(const char *info);
@@ -30,9 +29,9 @@ void audio_id3album(const char *info);
 void audio_icy_description(const char *info);
 void audio_beginSDread();
 void audio_id3data(const char *info);
-void audio_eof_mp3(const char *info);
-void audio_eof_stream(const char *info);
+void audio_eof();
 void audio_progress(uint32_t startpos, uint32_t endpos);
+void seekSD();
 
 static void safeStrCopy(char *dst, const char *src, size_t dstSize) {
   if (!dst || dstSize == 0) {
@@ -59,9 +58,9 @@ void my_audio_info(Audio::msg_t m) {
 
   // Az üzenet típusától függően hívjuk meg a megfelelő feldolgozót
 
-  if (strcmp(m.s, "info") == 0) {
+  if (strcmp(m.s, "info") == 0) {  // Ha egyezik
     // Formátum felismerés
-    if (strstr(m.msg, "MPEG-1 Layer III") != NULL) {
+    if (strstr(m.msg, "MPEG-1 Layer III") != NULL) {  // Ha tartalmazza.
       config.setBitrateFormat(BF_MP3);
       display.putRequest(DBITRATE);
     } else if (strstr(m.msg, "AAC") != NULL) {
@@ -79,12 +78,39 @@ void my_audio_info(Audio::msg_t m) {
     } else if (strstr(m.msg, "OPUS") != NULL) {
       config.setBitrateFormat(BF_OPU);
       display.putRequest(DBITRATE);
+    } else if (strstr(m.msg, "stream ready") != NULL) {
+      seekSD();
+    } else if (strstr(m.msg, "Audio-Data-Start:") != NULL) {  // Audio-Data-Start feldolgozás
+      player.sd_min = atoi(m.msg + strlen("Audio-Data-Start:"));
+    } else if (strstr(m.msg, "Audio-Length:") != NULL) {  // Audio-Length feldolgozás. A WEB fájlpozíció sliderhez kell.
+      uint32_t audioLength = atoi(m.msg + strlen("Audio-Length:"));
+      player.sd_max = player.sd_min + audioLength;  // A teljes audio fájl hossza.
+      // A slider tartomány küldése a webnek.
+      netserver.requestOnChange(SDLEN, 0);
     }
   }
 
+  /****  MP3 ****/
+  if (strcmp(m.s, "id3data") == 0) {
+    if (strstr(m.msg, "Track:") != NULL) {
+      currentStationId = atoi(m.msg + strlen("Track:"));
+    }
+    if (strstr(m.msg, "Artist") != NULL) {
+      if (printable(m.msg)) {
+        processID3(m.msg);
+      }
+    } else if (strstr(m.msg, "Title") != NULL) {
+      if (printable(m.msg)) {
+        processID3(m.msg);
+      }
+    }
+  }
+
+  // Ha nincs meta adat akkor a mentett állomás nevét írja ki.
   if (strstr(m.msg, "skip metadata") != NULL) {
     config.setTitle(config.station.name);
   }
+
   if (strstr(m.msg, "Account already in use") != NULL || strstr(m.msg, "HTTP/1.0 401") != NULL) {
     player.setError(m.msg);
   }
@@ -125,12 +151,10 @@ void my_audio_info(Audio::msg_t m) {
   }
   // Zenei stílus kiolvasása POP stb. ✅
   if (strcmp(m.s, "icy-genre") == 0) {
-    if (config.store.audioinfo) {
-    }
+    if (config.store.audioinfo) {}
   }
   if (strcmp(m.s, "icy_url") == 0 || strcmp(m.s, "icy-url") == 0) {  //✅
-    if (config.store.audioinfo) {
-    }
+    if (config.store.audioinfo) {}
   }
   if (strcmp(m.s, "icy_description") == 0) {  // ✅
     if (config.store.audioinfo) {
@@ -139,12 +163,47 @@ void my_audio_info(Audio::msg_t m) {
   }
 }
 
+void seekSD() {
+  if (config.getMode() == PM_SDCARD && config.sdResumePos > 0) {
+    if (currentStationId == config.stopedSdStationId) {
+      uint32_t offset = 0;
+      if (config.sdResumePos > player.sd_min) {
+        offset = config.sdResumePos - player.sd_min;
+      }
+      player.setAudioFilePosition(offset);
+    }
+  }
+}
+
+void processID3(const char *msg) {
+  bool updated = false;
+
+  if (strstr(msg, "Artist") != NULL) {
+    currentArtist = String(msg).substring(8);  // "Artist: " hossz = 8
+    updated = true;
+  } else if (strstr(msg, "Title") != NULL) {
+    currentTitle = String(msg).substring(7);  // "Title: " hossz = 7
+    updated = true;
+  }
+  // Ha volt frissítés, küldjük el a jelenlegi állapotot
+  if (updated) {
+    String info;
+    if (currentArtist.length() > 0 && currentTitle.length() > 0) {
+      info = currentArtist + " - " + currentTitle;
+    } else if (currentArtist.length() > 0) {
+      info = currentArtist + " -  ";  // cím még nincs
+    }
+    if (info.length() > 0) {
+      config.setTitle(info.c_str());
+    }
+  }
+}
+
 /************************************* */
 /*************** BITRATE ***************/
 /************************************* */
 void audio_bitrate(const char *info) {
-  if (config.store.audioinfo) {
-  }
+  if (config.store.audioinfo) {}
   uint32_t br = atoi(info);
   if (br > 3000) {
     br = br / 1000;
@@ -161,41 +220,40 @@ void audio_bitrate(const char *info) {
 /*********** PRINTABLE *****************/
 /***************************************/
 bool printable(const char *info) {
-  if (!info) return false;
-
+  if (!info) {
+    return false;
+  }
   const unsigned char *p = (const unsigned char *)info;
-
   while (*p) {
     unsigned char c = *p;
-
     // Kontroll karakterek tiltása (0x00–0x1F), TAB opcionálisan engedhető
     if (c < 0x20) {
-      if (c != 0x09) return false;
+      if (c != 0x09) {
+        return false;
+      }
     }
-
     // ASCII (nyomtatható)
     if (c >= 0x20 && c <= 0x7E) {
       p++;
       continue;
     }
-
     // UTF-8 multi-byte validálás
     // 2 bájtos
     if ((c & 0xE0) == 0xC0) {
-      if ((p[1] & 0xC0) != 0x80)
+      if ((p[1] & 0xC0) != 0x80) {
         return false;
+      }
       p += 2;
       continue;
     }
-
     // 3 bájtos
     if ((c & 0xF0) == 0xE0) {
-      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80)
+      if ((p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80) {
         return false;
+      }
       p += 3;
       continue;
     }
-
     // 4 bájtos karakterek **tiltása** (nem akarod őket)
     if ((c & 0xF8) == 0xF0) {
       return false;
@@ -204,7 +262,6 @@ bool printable(const char *info) {
     // Minden más hibás
     return false;
   }
-
   return true;
 }
 
@@ -292,6 +349,7 @@ void audio_beginSDread() {
   config.setTitle("");
 }
 
+
 void audio_id3data(const char *info) {
   if (player.lockOutput) {
     return;
@@ -299,22 +357,9 @@ void audio_id3data(const char *info) {
   telnet.printf("##AUDIO.ID3#: %s\r\n", info);
 }
 
-void audio_eof_mp3(const char *info) {
+void audio_eof() {
   config.sdResumePos = 0;
   player.next();
-}
-
-void audio_eof_stream(const char *info) {
-  player.sendCommand({PR_STOP, 0});
-  if (!player.resumeAfterUrl) {
-    return;
-  }
-  if (config.getMode() == PM_WEB) {
-    player.sendCommand({PR_PLAY, config.lastStation()});
-  } else {
-    player.setResumeFilePos(config.sdResumePos == 0 ? 0 : config.sdResumePos - player.sd_min);
-    player.sendCommand({PR_PLAY, config.lastStation()});
-  }
 }
 
 void audio_progress(uint32_t startpos, uint32_t endpos) {

@@ -23,7 +23,7 @@ struct ID3Hdr_t { // used only in readID3header()
     size_t                id3Size = {};
     size_t                totalId3Size = {}; // if we have more header, id3_1_size + id3_2_size + ....
     size_t                remainingHeaderBytes = {};
-    size_t                universal_tmp = {};
+    size_t                v22_tag_length = {};
     uint8_t               ID3version = {};
     uint8_t               ID3revision = {};
     uint8_t               flags = {};
@@ -94,9 +94,11 @@ struct m4aHdr_t { // used in read_M4A_Header
     size_t   sizeof_mp4a;
     size_t   sizeof_udta;
     size_t   sizeof_meta;
+    size_t   sizeof_chpl;
     size_t   audioDataPos;
     size_t   cnt;
     size_t   offset;
+    uint32_t mdat_startPos;
     uint32_t picPos;
     uint32_t picLen;
     uint32_t ilst_pos;
@@ -115,6 +117,7 @@ struct m4aHdr_t { // used in read_M4A_Header
     uint32_t stsz_table_pos;
     bool     progressive; // Progressive (moov before mdat)
     bool     version_flags;
+    bool     mdat_seen;
 };
 
 struct plCh_t { // used in playChunk
