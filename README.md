@@ -47,7 +47,7 @@ Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd 
 
 ## Nyelvek, teruleti beallitasok:
 
-Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA nyelveken.   
+Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA, DE nyelveken.   
 A myoptions.h fájlban az alábbi paranccsal állíthatod be.   
 #define L10N_LANGUAGE HU
 
@@ -61,7 +61,7 @@ Ezek itt találhatóak a programban:
 
       yoRadio/locale/glcdfont/EN, NL, CZ/glcdfont.c
       yoRadio/locale/glcdfont/GR/glcdfont.c
-      yoRadio/locale/glcdfont/HU/glcdfont.c
+      yoRadio/locale/glcdfont/HU, DE/glcdfont.c
       yoRadio/locale/glcdfont/PL, SK/glcdfont.c
       yoRadio/locale/glcdfont/RU/glcdfont.c
       yoRadio/locale/glcdfont/UA/glcdfont.c
@@ -75,7 +75,7 @@ Az ESP modulról itt olvasható:
 esp32-S3-devkit-C1 44 pins https://randomnerdtutorials.com/esp32-s3-devkitc-pinout-guide 
 
 ## Nevnapok megjelenitese:
-A program képes megjeleníteni a HU, PL, GR nyelvű névnapokat.
+A program képes megjeleníteni a HU, PL, GR, DE nyelvű névnapokat.
 A myoptions.h fájlban az alábbi paranccsal lehet bekapcsolni és beállítani a kívánt nyelvet.
 
 #define NAMEDAYS_FILE HU
@@ -84,7 +84,8 @@ A névnapok tárolása az alábbi fájlokban történik.
 
       local/namedays/namedays_HU.h
       local/namedays/namedays_PL.h
-      local/namedays/namedays_GR.h
+      local/namedays/namedays_GR.h  
+      local/namedays/namedays_DE.h
 
 Ha más nyelven szeretnéd használni vedd fel velem a kapcsolatot.
 
@@ -100,6 +101,13 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v7.10
+   - Ha le akarod tíltani a META adatokat és helyette a tárolt rádiónevet szeretnéd a kijelzőn látni, 
+     akkor a lejátszási listában a beírt név elé tegyél egy pontot.
+   - Német nyelv és névnapok hozzáadása. (by Schmid Christian) 
+   - Ezzel a beállítással a szél sebessége km/h lesz. #define WIND_SPEED_IN_KMH  
+   - META megjelenítés javítások.   
+
 ### v7.9
    - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3zd (2025. nov 27.) 
    - Az SD lejátszó működési hibáinak javítása

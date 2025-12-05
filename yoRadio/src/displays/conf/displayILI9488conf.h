@@ -63,7 +63,7 @@ const BitrateConfig fullbitrateConf PROGMEM = {{10, 142, 2, WA_RIGHT}, 60};
 #ifdef BOOMBOX_STYLE
 const VUBandsConfig bandsConf PROGMEM = {200, 7, 4, 2, 20, 12}; // 29
 #else
-const VUBandsConfig bandsConf PROGMEM = {300, 7, 3, 2, 30, 8}; // saját  {400, 7, 3, 2, 8, 29}; 
+const VUBandsConfig bandsConf PROGMEM = {300, 7, 3, 2, 30, 7}; // saját  {400, 7, 3, 2, 8, 29}; 
 #endif
 
 /* STRINGS  */

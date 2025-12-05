@@ -39,7 +39,6 @@ Player::Player() : Audio(true, I2S_DAC_CHANNEL_BOTH_EN) {}
 void Player::init() {
   Serial.print("##[BOOT]#\tplayer.init\t");
   playerQueue = NULL;
-  //_resumeFilePos = 0;
   _hasError = false;
   playerQueue = xQueueCreate(5, sizeof(playerRequestParams_t));
   setOutputPins(false);

@@ -397,6 +397,10 @@ bool _getWeather() {
             }
             // press = press / 1.333;
             // press = press / 0.973; //Módosítva hPa kijelzéshez. "weather"
+            #ifdef WIND_SPEED_IN_KMH
+              wind_speed *= 3.6f;
+            #endif
+
 
             if (!result) {
               return;

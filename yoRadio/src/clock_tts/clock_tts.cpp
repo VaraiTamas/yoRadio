@@ -65,7 +65,7 @@ static void clock_tts_announcement(char *buf, size_t buflen, int hour, int min, 
   } else if (strncmp(lang, "RU", 2) == 0) {
     snprintf(buf, buflen, "Сейчас %d:%02d.", hour, min);
   } else if (strncmp(lang, "DE", 2) == 0) {
-    snprintf(buf, buflen, "Es ist %d:%02d Uhr.", hour, min);
+    snprintf(buf, buflen, "Es ist %d Uhr %02d.", hour, min);
   } else if (strncmp(lang, "FR", 2) == 0) {
     snprintf(buf, buflen, "Il est %d:%02d.", hour, min);
   } else if (strncmp(lang, "GR", 2) == 0) {
@@ -106,7 +106,8 @@ void clock_tts_loop() {
       clock_tts_fade_timer = nowMillis;
     }
     if (clock_tts_fade_volume <= 0) {
-      clock_tts_saved_station = config.lastStation();
+      clock_tts_saved_station = config.lastStation();  // Aktuális állomás mentése
+      config.isClockTTS = true;
       delay(150);
       char buf[48];
       clock_tts_announcement(buf, sizeof(buf), tm_struct->tm_hour, tm_struct->tm_min, clock_tts_language);
@@ -117,6 +118,7 @@ void clock_tts_loop() {
       clock_ttsActive = true;
       clock_lastMinute = tm_struct->tm_min;
       clock_tts_fade_volume = -1;
+      config.isClockTTS = false;
     }
     return;
   }

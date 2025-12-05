@@ -3,6 +3,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
+// clang-format off
 /*************************************************************************************
     HOWTO:
     Copy this file to yoRadio/locale/displayL10n_custom.h
@@ -73,16 +74,22 @@ const char        apNameTxt[]    PROGMEM = "NOME AP";
 const char        apPassTxt[]    PROGMEM = "PASSWORD";
 const char       bootstrFmt[]    PROGMEM = "Connessione a %s";
 const char        apSettFmt[]    PROGMEM = "PAGINA IMPOSTAZIONI SU: HTTP://%s/";
+// clang-format on
 #ifdef WEATHER_FMT_SHORT
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
-#else	 
-#if EXT_WEATHER
-const char       weatherFmt[]    PROGMEM = "%s, %.1f\011C \007 PERCEPITA: %.1f\011C \007 PRESSIONE: %d hPa \007 UMIDITA: %d%% \007 VENTO: %.1f m/s [%s]";
 #else
-const char       weatherFmt[]    PROGMEM = "%s, %.1f\011C \007 PRESSIONE: %d hPa \007 UMIDITA: %d%%";
+  #if EXT_WEATHER
+    #ifdef WIND_SPEED_IN_KMH
+      #define WIND_UNIT "km/h"
+    #else
+      #define WIND_UNIT "m/s"
+    #endif
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 PERCEPITA: %.1f\011C \007 PRESSIONE: %d hPa \007 UMIDITA: %d%% \007 VENTO: %.1f " WIND_UNIT " [%s]";
+  #else
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 PRESSIONE: %d hPa \007 UMIDITA: %d%%";
+  #endif
 #endif
-#endif
-const char     weatherUnits[]    PROGMEM = "metric";   /* standard, metric, imperial */
-const char      weatherLang[]    PROGMEM = "it";       /* https://openweathermap.org/current#multi */
+const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
+const char weatherLang[] PROGMEM = "it";      /* https://openweathermap.org/current#multi */
 
 #endif

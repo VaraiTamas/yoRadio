@@ -3,6 +3,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
+// clang-format off
 /*************************************************************************************
     HOWTO:
     Copy this file to yoRadio/locale/displayL10n_custom.h
@@ -73,17 +74,22 @@ const char        apNameTxt[]    PROGMEM = "Nazov AP";
 const char        apPassTxt[]    PROGMEM = "HESLO";
 const char       bootstrFmt[]    PROGMEM = "Pripája sa %s";
 const char        apSettFmt[]    PROGMEM = "Stránka s nastaveniami: HTTP://%s/";
-
+// clang-format on
 #ifdef WEATHER_FMT_SHORT
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
 #else
-#if EXT_WEATHER
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 pocitová: %.1f\011C \007 Tlak: %d hPa \007 Vlhkosť: %d%% \007 Vietor: %.1f m/s [%s]";
-#else
+  #if EXT_WEATHER
+    #ifdef WIND_SPEED_IN_KMH
+      #define WIND_UNIT "km/h"
+    #else
+      #define WIND_UNIT "m/s"
+    #endif
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 pocitová: %.1f\011C \007 Tlak: %d hPa \007 Vlhkosť: %d%% \007 Vietor: %.1f " WIND_UNIT " [%s]";
+  #else
 const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 Tlak: %d hPa \007 vlhkosť: %d%%";
+  #endif
 #endif
-#endif
-const char     weatherUnits[]    PROGMEM = "metric";   /* standard, metric, imperial */
-const char      weatherLang[]    PROGMEM = "sk";       /* https://openweathermap.org/current#multi */
+const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
+const char weatherLang[] PROGMEM = "sk";      /* https://openweathermap.org/current#multi */
 
 #endif

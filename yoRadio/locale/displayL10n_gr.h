@@ -3,6 +3,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
+// clang-format off
 /*************************************************************************************
     HOWTO:
     Copy this file to yoRadio/locale/displayL10n_custom.h
@@ -73,16 +74,23 @@ const char        apNameTxt[]    PROGMEM = "ΟΝΟΜΑ AP";
 const char        apPassTxt[]    PROGMEM = "ΚΩΔΙΚΟΣ";
 const char       bootstrFmt[]    PROGMEM = "σύνδεση με %s";
 const char        apSettFmt[]    PROGMEM = "ΣΕΛΙΔΑ ΡΥΘΜΙΣΕΩΝ: HTTP://%s/";
+// clang-format on
 #ifdef WEATHER_FMT_SHORT  // Módosítás
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
 #else
-#if EXT_WEATHER
-const char       weatherFmt[]    PROGMEM = "%s, %.1f\011C \007 αίσθηση θερμοκρασίας: %.1f\011C \007 πίεση: %d hPa \007 υγρασία: %d%% \007 άνεμος: %.1f m/s [%s]";
-#else
-const char       weatherFmt[]    PROGMEM = "%s, %.1f\011C \007 Πίεση: %d hPa \007 Υγρασία: %d%%";
+  #if EXT_WEATHER
+    #ifdef WIND_SPEED_IN_KMH
+      #define WIND_UNIT "km/h"
+    #else
+      #define WIND_UNIT "m/s"
+    #endif
+const char weatherFmt[] PROGMEM =
+  "%s, %.1f\011C \007 αίσθηση θερμοκρασίας: %.1f\011C \007 πίεση: %d hPa \007 υγρασία: %d%% \007 άνεμος: %.1f " WIND_UNIT " [%s]";
+  #else
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 Πίεση: %d hPa \007 Υγρασία: %d%%";
+  #endif
 #endif
-#endif
-const char     weatherUnits[]    PROGMEM = "metric";   /* standard, metric, imperial */
-const char      weatherLang[]    PROGMEM = "el";       /* https://openweathermap.org/current#multi */
+const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
+const char weatherLang[] PROGMEM = "el";      /* https://openweathermap.org/current#multi */
 
 #endif

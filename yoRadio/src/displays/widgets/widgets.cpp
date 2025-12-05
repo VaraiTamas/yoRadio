@@ -13,7 +13,6 @@
   #include "../tools/psframebuffer.h"
   #include "Arduino.h"
   #include "widgets.h"
-// clang-format on
 
 /************************
       FILL WIDGET
@@ -451,12 +450,12 @@ void VuWidget::_draw() {
   uint16_t vulevel = player.getVUlevel(dimension);  //"audio_change" nem kell paraméter
   uint8_t vuLeft = (vulevel >> 8) & 0xFF;
   uint8_t vuRight = vulevel & 0xFF;
-  uint8_t refresh_time = 30;  // A VU rajzolás frissítési ideje.
+  uint8_t refresh_time = 36;  // A VU rajzolás frissítési ideje.
   static uint32_t last_draw_time;
     #ifdef VU_PEAK
   static uint16_t peakL = 0, peakR = 0;            // Csúcsértékek
   static uint32_t peakL_time = 0, peakR_time = 0;  // Csúcs időbélyeg
-  const uint8_t peak_decay_step = 3;               // A csúcs bomlása pixelben
+  const uint8_t peak_decay_step = 2;               // A csúcs bomlása pixelben
   const uint16_t peak_hold_ms = 200;               // Csúcs tartási idő
     #endif
   uint32_t now = millis();
@@ -1118,6 +1117,12 @@ void ClockWidget::_formatDate() {
     _tmp, "%s, %d %s %2d року", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
     network.timeinfo.tm_year + 1900
   );
+    #elif L10N_LANGUAGE == DE
+  sprintf(
+    _tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
+    network.timeinfo.tm_year + 1900
+  );
+
     #endif
 }
 

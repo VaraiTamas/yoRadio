@@ -402,8 +402,9 @@ void Display::_swichMode(displayMode_e newmode) {
     _meta->moveBack();
   #endif
     _meta->setAlign(metaConf.widget.align);
-    _meta->setText(config.station.name);
-    _nums->setText("");
+    //_meta->setText(config.station.name);
+   // _nums->setText("");
+    _station();
     config.isScreensaver = false;
     _pager->setPage(pages[PG_PLAYER]);
     config.setDspOn(config.store.dspon, false);
@@ -730,7 +731,10 @@ void Display::_setRSSI(int rssi) {
 
 void Display::_station() {
   _meta->setAlign(metaConf.widget.align);
-  _meta->setText(config.station.name);
+  if (config.station.name[0] == '.') {
+    _meta->setText(config.station.name +1);
+  }else _meta->setText(config.station.name);
+  
   /*#ifdef USE_NEXTION
   nextion.newNameset(config.station.name);
   nextion.bitrate(config.station.bitrate);
@@ -748,13 +752,13 @@ char *split(char *str, const char *delim) {
 }
 
 void Display::_title() {
+  // Ha üres a title, használja a playlistben tárolt nevet.
+  if(strlen(config.station.title) == 0){
+    strlcpy(config.station.title, config.station.name, sizeof(config.station.title));
+  }
   if (strlen(config.station.title) > 0) {
     char tmpbuf[strlen(config.station.title) + 1];
     strlcpy(tmpbuf, config.station.title, sizeof(tmpbuf));
-     //Serial.printf("display.cpp -> _title(be) -> tmpbuf %s\r\n", tmpbuf);
-    // <<< FONTOS: hibás UTF-8 takarítása még a split előtt!
-    _utf8_clean(tmpbuf);
-    // Serial.printf("display.cpp -> _title(ki) -> tmpbuf %s\r\n", tmpbuf);
     char *stitle = split(tmpbuf, " - ");
     if (stitle && _title2) {
       _title1->setText(tmpbuf);
@@ -775,37 +779,6 @@ void Display::_title() {
     player_on_track_change();
   }
   pm.on_track_change();
-}
-
-void Display::_utf8_clean(char *s)
-{
-    char *in = s;
-    char *out = s;
-
-    while (*in) {
-        unsigned char c = (unsigned char)*in;
-
-        // --- ZERO-WIDTH karakterek kiszűrése ---
-        if (c == 0xE2 && (unsigned char)in[1] == 0x80 &&
-           ((unsigned char)in[2] == 0x8B || 
-            (unsigned char)in[2] == 0x8C || 
-            (unsigned char)in[2] == 0x8D)) {
-            in += 3;
-            continue;
-        }
-
-        // Soft hyphen
-        if (c == 0xC2 && (unsigned char)in[1] == 0xAD) {
-            in += 2;
-            continue;
-        }
-
-        // --- MINDEN UTF-8 maradjon érintetlen ---
-        // Csak másoljuk byte-onként
-        *out++ = *in++;
-    }
-
-    *out = '\0';
 }
 
 void Display::_time(bool redraw) {

@@ -13,6 +13,8 @@
   #include "../../locale/namedays/namedays_NL.h"
 #elif NAMEDAYS_FILE == UA
   #include "../../locale/namedays/namedays_UA.h"  
+#elif NAMEDAYS_FILE == DE
+  #include "../../locale/namedays/namedays_DE.h"    
 #else
   #error "Unsupported NAMEDAYS_FILE"
 #endif

@@ -2,7 +2,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
-
+// clang-format off
 const char mon[] PROGMEM = "пн";
 const char tue[] PROGMEM = "вт";
 const char wed[] PROGMEM = "ср";
@@ -68,18 +68,23 @@ const char        apNameTxt[]    PROGMEM = "ТОЧКА ДОСТУПУ";
 const char        apPassTxt[]    PROGMEM = "ГАСЛО";
 const char       bootstrFmt[]    PROGMEM = "З'єднуюсь з %s";
 const char        apSettFmt[]    PROGMEM = "НАЛАШТУВАННЯ: HTTP://%s/";
-
+// clang-format on
 #ifdef WEATHER_FMT_SHORT
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
 #else
-#if EXT_WEATHER
-const char       weatherFmt[]    PROGMEM = "%s, %.1f\011C \007 відчувається: %.1f\011C \007 тиск: %d hPa \007 вологість: %d%% \007 вітер: %.1f м/с [%s]";
-#else
-const char       weatherFmt[]    PROGMEM = "%s, %.1f\011C \007 тиск: %d hPa \007 вологість: %d%%";
-#endif
+  #if EXT_WEATHER
+    #ifdef WIND_SPEED_IN_KMH
+      #define WIND_UNIT "км/ч"
+    #else
+      #define WIND_UNIT "M/с"
+    #endif
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 відчувається: %.1f\011C \007 тиск: %d hPa \007 вологість: %d%% \007 вітер: %.1f " WIND_UNIT " [%s]";
+  #else
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 тиск: %d hPa \007 вологість: %d%%";
+  #endif
 #endif
 
-const char     weatherUnits[]    PROGMEM = "metric";   /* standard, metric, imperial */
-const char      weatherLang[]    PROGMEM = "ua";       /* https://openweathermap.org/current#multi */
+const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
+const char weatherLang[] PROGMEM = "ua";      /* https://openweathermap.org/current#multi */
 
 #endif

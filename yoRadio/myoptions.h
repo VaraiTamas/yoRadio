@@ -16,11 +16,11 @@
 
 /* Itt tudod beállítani a program nyelvét 
    You can set the program language here. 
-   Supported languages: HU NL PL RU EN GR SK . */
+   Supported languages: HU NL PL RU EN GR SK DE. */
 #define L10N_LANGUAGE HU
 
 /* -- Névnapok megjelenítése -- Display name days -- 
-Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not filled in.) */
+Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not filled in.) */
 #define NAMEDAYS_FILE HU
 
 #define USE_BUILTIN_LED false /* The RGB LED does not turn on.. */
@@ -48,8 +48,8 @@ Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not fil
 */
 
 /* Touch */
-#define TS_MODEL TS_MODEL_XPT2046
-#define TS_CS    3
+//#define TS_MODEL TS_MODEL_XPT2046
+//#define TS_CS    3
 
 // #define NEXTION_RX			15
 // #define NEXTION_TX			16
@@ -109,6 +109,18 @@ Supported languages: HU, PL, NL, GR, (UA Local/namedays/namedays_UA.h is not fil
 */
 #define WEATHER_FMT_SHORT
 
+/* Ezzel a beállítással a teljes időjárás jelentés megjelenik.
+   With this setting, the full weather report is displayed.
+*/
+//#define EXT_WEATHER  true
+
+
+/* Ezzel a beállítással a szél sebessége km/h lesz.
+   With this setting, the wind speed will be km/h.
+*/
+//#define WIND_SPEED_IN_KMH
+
+
 /* A VU méter két fajta kijelzési módot támogat.
 BOOMBOX_STYLE stílusa, amikor középről két oldalra leng ki a kijelző. Azt itt tudod beállítani.
 Ha a sor elején ott van // jel akkor az alap VU méter működik ami balról jobbra leng ki.
@@ -133,4 +145,4 @@ change when you exit. (By Zsigmond Becskehazi) */
  How long to return to the main screen from the station list. (seconds) */
 #define STATIONS_LIST_RETURN_TIME 2
 
-#endif
+#endif  //myoptions_h

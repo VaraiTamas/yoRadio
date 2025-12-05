@@ -3,6 +3,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
+// clang-format off
 /*************************************************************************************
     HOWTO:
     Copy this file to yoRadio/locale/displayL10n_custom.h
@@ -73,15 +74,21 @@ const char apNameTxt[] PROGMEM = "WiFi AP";
 const char apPassTxt[] PROGMEM = "wachtwoord";
 const char bootstrFmt[] PROGMEM = "verbinden met: %s";
 const char apSettFmt[] PROGMEM = "instellingen: HTTP://%s/";
-
-#ifdef WEATHER_FMT_SHORT  // Módosítás
+// clang-format on
+#ifdef WEATHER_FMT_SHORT
 const char weatherFmt[] PROGMEM = "temp:%.1f\011C\007 druk:%d hPa\007 hum:%d%% RH";
 #else
-#if EXT_WEATHER
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 gevoelstemperatuur: %.1f\011C \007 luchtdruk: %d hPa \007 luchtvochtigheid: %d%% \007 wind: %.1f m/s [%s]";
-#else
+  #if EXT_WEATHER
+    #ifdef WIND_SPEED_IN_KMH
+      #define WIND_UNIT "km/h"
+    #else
+      #define WIND_UNIT "m/s"
+    #endif
+const char weatherFmt[] PROGMEM =
+  "%s, %.1f\011C \007 gevoelstemperatuur: %.1f\011C \007 luchtdruk: %d hPa \007 luchtvochtigheid: %d%% \007 wind: %.1f " WIND_UNIT " [%s]";
+  #else
 const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 %d hPa \007 %d%%";
-#endif
+  #endif
 #endif
 
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */

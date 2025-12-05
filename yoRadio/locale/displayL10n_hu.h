@@ -3,7 +3,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
-
+// clang-format off
 const char mon[] PROGMEM = "hé";
 const char tue[] PROGMEM = "ke";
 const char wed[] PROGMEM = "sz";
@@ -69,15 +69,21 @@ const char apNameTxt[] PROGMEM = "WiFi AP";
 const char apPassTxt[] PROGMEM = "Jelszó";
 const char bootstrFmt[] PROGMEM = "Csatlakozás: %s";
 const char apSettFmt[] PROGMEM = "A rádió elérhetősége: HTTP://%s/";
-
+// clang-format on
 #ifdef WEATHER_FMT_SHORT
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
 #else
-#if EXT_WEATHER
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 hőérzet: %.1f\011C \007 légnyomás: %d hPa \007 páratartalom: %d%% \007 szélsebesség: %.1f m/s [%s]";
-#else
+  #if EXT_WEATHER
+    #ifdef WIND_SPEED_IN_KMH
+      #define WIND_UNIT "km/h"
+    #else
+      #define WIND_UNIT "m/s"
+    #endif
+const char weatherFmt[] PROGMEM =
+  "%s, %.1f\011C \007 hőérzet: %.1f\011C \007 légnyomás: %d hPa \007 páratartalom: %d%% \007 szélsebesség: %.1f " WIND_UNIT " [%s]";
+  #else
 const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 %d hPa \007 %d%%";
-#endif
+  #endif
 #endif
 
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
