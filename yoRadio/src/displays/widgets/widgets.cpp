@@ -450,7 +450,7 @@ void VuWidget::_draw() {
   uint16_t vulevel = player.getVUlevel(dimension);  //"audio_change" nem kell paraméter
   uint8_t vuLeft = (vulevel >> 8) & 0xFF;
   uint8_t vuRight = vulevel & 0xFF;
-  uint8_t refresh_time = 36;  // A VU rajzolás frissítési ideje.
+  uint8_t refresh_time = 24 ;//36;  // A VU rajzolás frissítési ideje.
   static uint32_t last_draw_time;
     #ifdef VU_PEAK
   static uint16_t peakL = 0, peakR = 0;            // Csúcsértékek
@@ -466,11 +466,18 @@ void VuWidget::_draw() {
     last_draw_time = now;
   }
 
+  //if(vuRight < 50 || vuRight < 50){ 
+   // vuLeft = 0;
+   // vuRight = 0;
+  // }
+
   bool played = player.isRunning();
   if (played) {
     // Szintek tárolása a visszatörléshez.
     measL = (vuLeft >= measL) ? measL + _bands.fadespeed : vuLeft;    // Ennyit töröl vissza a teljes L sávból
     measR = (vuRight >= measR) ? measR + _bands.fadespeed : vuRight;  // Ennyit töröl vissza a teljes R sávból
+
+    //Serial.printf("cuLeft: %d, vuRight: %d -- vuLeft: %d, vuRight: %d\n", measL, measR, vuLeft, vuRight);
 
       // --- Csúcs logika ---
     #ifdef VU_PEAK
