@@ -62,7 +62,7 @@ const char* const wind[]    PROGMEM = { wn_N, wn_NNE, wn_NE, wn_ENE, wn_E, wn_ES
 
 const char    const_PlReady[]    PROGMEM = "[pripravené]";
 const char  const_PlStopped[]    PROGMEM = "[zastavené]";
-const char  const_PlConnect[]    PROGMEM = "[pripája sa]";
+const char  const_PlConnect[]    PROGMEM = "--> pripája sa";
 const char  const_DlgVolume[]    PROGMEM = "hlasitosť";
 const char    const_DlgLost[]    PROGMEM = "* stratený signál *";
 const char  const_DlgUpdate[]    PROGMEM = "* obnova *";

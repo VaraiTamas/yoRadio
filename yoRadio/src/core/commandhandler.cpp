@@ -17,7 +17,7 @@
 CommandHandler cmd;
 
 bool CommandHandler::exec(const char *command, const char *value, uint8_t cid) {
-  Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %lu \n", command, value, cid);
+ // Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %lu \n", command, value, cid);
   if (strEquals(command, "start")) {
     //Serial.printf("commandhandler.cpp--> START \n");
     player.sendCommand({PR_PLAY, config.lastStation()});
@@ -69,7 +69,7 @@ bool CommandHandler::exec(const char *command, const char *value, uint8_t cid) {
   }
   //if (strEquals(command, "ballance")) { config.setBalance(atoi(value)); return true; }
   if (strEquals(command, "playstation") || strEquals(command, "play")) {
-    Serial.printf("commandhandlers.cpp--> command: %s\n", command);
+    //Serial.printf("commandhandler.cpp--> command: %s\n", command);
     int id = atoi(value);
     if (id < 1) {
       id = 1;

@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include "../audioI2S/Audio.h"
 #include "../displays/tools/l10n.h"
+#include "audiohelpers.h"
 
 #ifdef USE_NEXTION
 extern decltype(nextion) nextion;  // Nextion kijelző objektum (extern)
@@ -33,7 +34,6 @@ void audio_id3data(const char *info);
 void audio_eof();
 void audio_progress(uint32_t startpos, uint32_t endpos);
 void seekSD();
-void hexDump(const char *label, const char *s);
 void removeBOM(char *s);
 bool cleanMeta(const char *src, char *dst, size_t dstSize);
 void _utf8_clean(char *s);
@@ -135,7 +135,6 @@ void my_audio_info(Audio::msg_t m) {
           config.setTitle(config.station.name);
         }
       }
-
     } break;
 
     // ----- Bitráta esemény -----
@@ -145,14 +144,17 @@ void my_audio_info(Audio::msg_t m) {
       audio_bitrate(msg);
     } break;
 
-    // ----- Stream title (ICY) -----
+      // ----- Stream title (ICY) -----
     case Audio::evt_streamtitle:
     {
+      //Serial.println();
+      //hexDump("Eredeti: ", msg);
       char metaBuf[BUFLEN];
       if (!metaOff && cleanMeta(msg, metaBuf, sizeof(metaBuf))) {
-        // Nálad a stream cím egy az egyben Title-ként megy tovább
         audio_setTitleSafe(metaBuf);
       }
+      //Serial.println();
+      //hexDump("cleanMeta után: ", metaBuf);
     } break;
 
     // ----- ID3 metaadatok (MP3) -----
@@ -476,10 +478,10 @@ void audio_progress(uint32_t startpos, uint32_t endpos) {
   player.sd_max = endpos;
   netserver.requestOnChange(SDLEN, 0);
 }
-
+// Az audiohelpers.h fájlban van deklarálva.
+// Hexadecimális kiiratás debug használatra.
 void hexDump(const char *label, const char *s) {
-  Serial.printf("%s (len=%u): ", label, strlen(s));
-
+  Serial.printf("%s (len=%u): %s --> ", label, strlen(s), s);
   const unsigned char *p = (const unsigned char *)s;
   while (*p) {
     Serial.printf("%02X ", *p);
