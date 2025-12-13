@@ -101,64 +101,68 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
-### v7.10
+### v0.7.11
+   - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.4c (2025. dec 11.) frissítés
+   - A VU kijelző a lejátszások között nem ment nullára hiba javítása és ujrahangolása 
+
+### v0.7.10
    - Ha le akarod tíltani a META adatokat és helyette a tárolt rádiónevet szeretnéd a kijelzőn látni, 
      akkor a lejátszási listában a beírt név elé tegyél egy pontot.
    - Német nyelv és névnapok hozzáadása. (by Schmid Christian) 
    - Ezzel a beállítással a szél sebessége km/h lesz. #define WIND_SPEED_IN_KMH  
    - META megjelenítés javítások.   
 
-### v7.9
-   - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3zd (2025. nov 27.) 
+### v0.7.9
+   - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3zd (2025. nov 27.) frissítés
    - Az SD lejátszó működési hibáinak javítása
    - Az SD lejátszásnál nem írta ki a META adatokat a képernyőre hiba javítása
    - Az audio balance web UI állítója fordítva működött hiba javítása
    - Lejátszási lista mentésénél üres lista jelent meg a web UI -on hiba javítása
-### v7.8 
+### v0.7.8 
    - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3v (2025. nov 16.) 
    - A Title1 sor elején idegen karakterek hiba javítása 
    - A Lib_tools mappa lib fájlok cseréje (libesp_netif.a, liblwip.a) [olvasd el ezt!](Lib_tools/LIB_TOOLS.md) 
    - Görög nyelvi fájl frissítve  (by Antreas Mpokas)
-### v7.7
-   - Frissítésre került az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3r (2025. nov 12.)  
+### 0.7.7
+   - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.3r (2025. nov 12.) frissítés
       https://github.com/schreibfaul1/ESP32-audioI2S.git
    - Kivezetésre került a VS1053 audio könyvtár
    - META adatok javítása  
-### v7.6
+### v0.7.6
    - Visszakerült a programba az audioI2S régebbi verziója mely stabilabb lejátszást biztosít  
       Version 3.1.   
       Updated on: Feb 01.2025, Feb 09.2025 (Maleksm)  
       Author: Wolle (schreibfaul1)  
       https://github.com/schreibfaul1/ESP32-audioI2S.git
-### v7.5
+### v0.7.5
    - AM/PM 12 órás időformátum hozzáadva. myoptions.h -> #define AM_PM_STYLE
    - Szlovák dátum kiegészítése a nap nevével
    - Clock TTS lengyel nyelvi javítás (by Mirosław Bubka)
    - Görög nyev karakterek javítása (by Antreas Mpokas)
 
-### v7.4
+### v0.7.4
    - Ukrán(UA) nyelv hozzáadva (by Vadim Poljakovszkij)
    - A dátum kifejezés meghosszabítva 38 karakterre
    
-### v7.3
+### v0.7.3
    - Elérhetővé váltak a görög névnapok és görög nyelv. (by Antreas Mpokas)
    - Beállítható az eredeti hét szegmenses óra betűtípus a myoptions.h -ban. #define CLOCKFONT VT_DIGI_OLD
    - A területi beállításokhoz tartozó fájlok glcdfont, displayL10n, namedays egységesen a local mappába kerültek.
    - Lengyel nyelv és névnapok javítása. (by Andrzej Jaroszuk)
    - [Új WEB kereső hozzáadva 2.0 (by Mirosław Bubka)](images/MB_2.0/MB_search.md)
 
-### v7.2
+### v0.7.2
    - IR hangerő túlfutott a 0-100 tartományon, ez lett javítva. 
    - Új beállítási lehtőség a myoptions.h fájlban
    - #define DIRECT_CHANNEL_CHANGE
       Az állomások listájából való választásnál nem kell megnyomni a rotary encoder gombját, kilépéskor autómatikusan átvált a csatorna. (by Zsigmond Becskeházi)
    - #define STATIONS_LIST_RETURN_TIME 2  
       Mennyi idő múlva lépjen vissza a főképernyőre az állomások listájából. (másodperc) Eredeti érték: 30 másodperc. 
-### v7.1
+### v0.7.1
    - Amikor a weben ki-be kapcsoljuk a névnapokat, akkor a teljes képernyő frissült és
    nem csak a bitrateWidget. Ez lett javítva.
-### v6.0
+### v0.6.0
    - bekerült a Maleksm audio könyvtár (csak PSRAM -al működik) https://github.com/schreibfaul1/ESP32-audioI2S.git    
-### v5.0
+### v0.5.0
    - Két formátumú kivezérlésmérő   
 

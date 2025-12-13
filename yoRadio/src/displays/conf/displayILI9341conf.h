@@ -52,10 +52,10 @@ const BitrateConfig fullbitrateConf PROGMEM = {{8, 114, 1, WA_LEFT}, 41 }; // le
 /* BANDS  */                             
 #ifdef BOOMBOX_STYLE
 const WidgetConfig  vuConf        PROGMEM = { 24, 190, 1, WA_CENTER }; // center fektetett, "align" nincs használva
-const VUBandsConfig bandsConf     PROGMEM = { 130, 5, 4, 2, 20, 6 }; /* { onebandwidth, onebandheight, bandsHspace, bandsVspace, numofbands, fadespeed } */
+const VUBandsConfig bandsConf     PROGMEM = { 130, 5, 4, 2, 20, 5 }; /* { onebandwidth, onebandheight, bandsHspace, bandsVspace, numofbands, fadespeed } */
 #else
 const WidgetConfig  vuConf        PROGMEM = { 33, 190, 1, WA_CENTER }; // center fektetett, "align" nincs használva
-const VUBandsConfig bandsConf     PROGMEM = { 200, 6, 2, 2, 40, 3 }; /* { onebandwidth, onebandheight, bandsHspace, bandsVspace, numofbands, fadespeed } */
+const VUBandsConfig bandsConf     PROGMEM = { 200, 6, 2, 2, 30, 4 }; /* { onebandwidth, onebandheight, bandsHspace, bandsVspace, numofbands, fadespeed } */
 #endif
 /* STRINGS  */
 const char         numtxtFmt[]    PROGMEM = "%d";

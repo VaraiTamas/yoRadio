@@ -179,7 +179,7 @@ public:
   uint16_t stopedSdStationId = -1;  // "módosítás" új változó a player.stop ad neki értéket.
   bool isClockTTS;  // "módosítás" Ha aktív a clockTTS
   bool emptyFS;
-  uint16_t vuThreshold;
+  uint16_t vuRefLevel;
   uint16_t screensaverTicks;
   uint16_t screensaverPlayingTicks;
   bool isScreensaver;

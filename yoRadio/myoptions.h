@@ -33,8 +33,8 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define HTTP_PASS ""               /* HTTP basic authentication password */
 
 /* LCD */
-#define DSP_MODEL DSP_ILI9488
-//#define DSP_MODEL DSP_ILI9341
+//#define DSP_MODEL DSP_ILI9488
+#define DSP_MODEL DSP_ILI9341
 //#define DSP_MODEL DSP_ST7796
 #define TFT_DC         9
 #define TFT_CS         10
@@ -127,12 +127,12 @@ Ha a sor elején ott van // jel akkor az alap VU méter működik ami balról jo
 BOOMBOX_STYLE is the style when the display swings out from the center to two sides. You can set it here.
 If there is a // sign at the beginning of the line, the basic VU meter is working, swinging out from left to right. 
 */
-#define BOOMBOX_STYLE
+//#define BOOMBOX_STYLE
 
 /* A VU méter végén megjelenik egy fehér csík a csúcsértékeknél, ha ezt bekapcsolod. A sor elején a // jel letíltja.
  A white bar will appear at the end of the VU meter at the peak values ​​if you enable this. The // at the beginning of the line will disable it.
 */
-#define VU_PEAK
+//#define VU_PEAK
 
 /* Az állomások listájából való választásnál nem kell megnyomni a rotary encoder gombját, kilépéskor autómatikusan
 átvált a csatorna. (Zsigmond Becskeházi által)

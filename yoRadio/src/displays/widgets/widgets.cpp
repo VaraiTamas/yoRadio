@@ -444,247 +444,271 @@ void VuWidget::_draw() {
   if (!config.store.vumeter) {
     return;
   }
-  static uint16_t measL, measR;
   uint16_t bandColor;
-  uint16_t dimension = _config.align ? _bands.width : _bands.height;
-  uint16_t vulevel = player.getVUlevel(dimension);  //"audio_change" nem kell paraméter
-  uint8_t vuLeft = (vulevel >> 8) & 0xFF;
-  uint8_t vuRight = vulevel & 0xFF;
-  uint8_t refresh_time = 24 ;//36;  // A VU rajzolás frissítési ideje.
+  static uint16_t measLpx = 0;
+  static uint16_t measRpx = 0;
+  const uint8_t vu_decay_step = _bands.fadespeed;
+  const uint16_t dimension = _config.align ? _bands.width : _bands.height;  //vízszintes vagy függőleges
   static uint32_t last_draw_time;
+  uint8_t refresh_time = 33;  // A VU rajzolás frissítési ideje (millis)
     #ifdef VU_PEAK
   static uint16_t peakL = 0, peakR = 0;            // Csúcsértékek
   static uint32_t peakL_time = 0, peakR_time = 0;  // Csúcs időbélyeg
-  const uint8_t peak_decay_step = 2;               // A csúcs bomlása pixelben
+  const uint8_t peak_decay_step = 1;               // A csúcs bomlása pixelben
   const uint16_t peak_hold_ms = 200;               // Csúcs tartási idő
     #endif
   uint32_t now = millis();
-
   if (last_draw_time + refresh_time > now) {
     return;
   } else {
     last_draw_time = now;
   }
-
-  //if(vuRight < 50 || vuRight < 50){ 
-   // vuLeft = 0;
-   // vuRight = 0;
-  // }
-
+  uint16_t vulevel = player.getVUlevel();
+  uint8_t vuLeft = (vulevel >> 8) & 0xFF;
+  uint8_t vuRight = vulevel & 0xFF;
+  // A maximális VU érték begyűjtése. Fájlonként nullázódik, és 2 másodpercenként -10 -el csökken.
+  uint16_t maxVU = max(vuLeft, vuRight);
+  if (maxVU > config.vuRefLevel) {
+    config.vuRefLevel = maxVU;
+  }
+  // Minimális érték a kezdeti számításokhoz.
+  if (config.vuRefLevel < 50) {
+    config.vuRefLevel = 50;
+  }
+  // VU értéket pixel pozícióra skalázás
+  uint16_t vuLpx = map(vuLeft, 0, config.vuRefLevel, 0, _bands.width);
+  uint16_t vuRpx = map(vuRight, 0, config.vuRefLevel, 0, _bands.width);
   bool played = player.isRunning();
   if (played) {
-    // Szintek tárolása a visszatörléshez.
-    measL = (vuLeft >= measL) ? measL + _bands.fadespeed : vuLeft;    // Ennyit töröl vissza a teljes L sávból
-    measR = (vuRight >= measR) ? measR + _bands.fadespeed : vuRight;  // Ennyit töröl vissza a teljes R sávból
-
-    //Serial.printf("cuLeft: %d, vuRight: %d -- vuLeft: %d, vuRight: %d\n", measL, measR, vuLeft, vuRight);
-
+    // BAL csatorna
+    if (vuLpx > measLpx) {
+      measLpx = vuLpx;  // gyors felfutás L
+    } else {
+      measLpx = (measLpx > vu_decay_step) ? measLpx - vu_decay_step : 0;  // lassított lebomlás L
+    }
+    // JOBB csatorna
+    if (vuRpx > measRpx) {
+      measRpx = vuRpx;  // gyors felfutás R
+    } else {
+      measRpx = (measRpx > vu_decay_step) ? measRpx - vu_decay_step : 0;  // lassított lebomlás R
+    }
       // --- Csúcs logika ---
     #ifdef VU_PEAK
-      #ifndef BOOMBOX_STYLE
-    if (dimension - measL > peakL) {
-      peakL = dimension - measL;
+    // BAL csatorna
+    if (measLpx > peakL) {
+      peakL = measLpx;  // L - csúcs meghatározás
       peakL_time = now;
     } else if (now - peakL_time > peak_hold_ms && peakL > 0) {
-      peakL = (peakL > peak_decay_step) ? peakL - peak_decay_step : 0;
+      peakL = (peakL > peak_decay_step) ? peakL - peak_decay_step : 0;  // L - csúcs lebomlás
     }
-      #else
-    // Serial.printf("peakL : %d, measL : %d, peak_decay_step : %d , dimension : %d \n", peakL, measL, peak_decay_step, dimension);
-    if (measL < peakL) {
-      peakL = measL;
-      peakL_time = now;
-    } else if (now - peakL_time > peak_hold_ms) {  //&& peakL >= 0
-      peakL = (peakL < dimension) ? peakL + peak_decay_step : dimension;
-    }
-      #endif
-
-    if (dimension - measR > peakR) {
-      peakR = dimension - measR;
+    // JOBB csatorna
+    if (measRpx > peakR) {
+      peakR = measRpx;  // R - csúcs meghatározás
       peakR_time = now;
     } else if (now - peakR_time > peak_hold_ms && peakR > 0) {
-      peakR = (peakR > peak_decay_step) ? peakR - peak_decay_step : 0;
+      peakR = (peakR > peak_decay_step) ? peakR - peak_decay_step : 0;  // R - csúcs lebomlás
     }
     #endif  // VU_PEAK
-  } else {
-    if (measL < dimension) {
-      measL += _bands.fadespeed;
-    }
-    if (measR < dimension) {
-      measR += _bands.fadespeed;
-    }
-  }
-
-  // Clamp védelem
-  if (measL > dimension) {
-    measL = dimension;
-  }
-  if (measR > dimension) {
-    measR = dimension;
-  }
-
-    #ifndef BOOMBOX_STYLE
-  // két VU egymás alatt
-  _canvas->fillRect(0, 0, _bands.width, _bands.height * 2 + _bands.space, _bgcolor);  // sáv törlése
-    #else
-  // két VU egymás mellett
-  _canvas->fillRect(0, 0, _bands.width * 2 + _bands.space, _bands.height, _bgcolor);  // sáv törlése
-    #endif
-
-  // --- LED-sáv rajzolása színátmenettel ---
-  int green_end = (_bands.width * 65) / 100;   // 70%-nál vége a zöldnek
-  int yellow_end = (_bands.width * 85) / 100;  // 85%-nál vége a sárgának, onnantól piros
-
-  uint8_t h = (dimension / _bands.perheight) - _bands.vspace;
-  for (int i = 0; i < dimension; i++) {
-    if (i % (dimension / _bands.perheight) == 0) {
-      if (i < green_end) {
+    /*************************************  A VU sávok rajzolása  ***************************************/
+    #ifdef BOOMBOX_STYLE
+    // ===================== BOOMBOX_STYLE =====================
+    // Két VU egymás mellett – TELJES TÖRLÉS kell a ghosting ellen!
+    _canvas->fillRect(0, 0, _bands.width * 2 + _bands.space, _bands.height, _bgcolor);
+    // --- LED színek határai ---
+    int green_end = (_bands.width * 65) / 100;
+    int yellow_end = (_bands.width * 85) / 100;
+    // --- VU méretezés ---
+    uint8_t ledWidth = (dimension / _bands.perheight) - _bands.vspace;
+    uint16_t step = dimension / _bands.perheight;
+    uint16_t litCountL = measLpx / step;
+    uint16_t litCountR = measRpx / step;
+    const int MID_GAP = 6;             // teljes hézag a két kijelző között
+    const int MID_HALF = MID_GAP / 2;  // 3 pixel balra + 3 pixel jobbra
+    // === BAL csatorna (balra indul a középtől) ===
+    for (int led = 0; led < litCountL; led++) {
+      int x = _bands.width - MID_HALF - (led * step) - ledWidth;
+      if (x < 0) {
+        break;
+      }
+      if (led * step < green_end) {
         bandColor = _vumincolor;
-      } else if (i < yellow_end) {
+      } else if (led * step < yellow_end) {
         bandColor = _vumidcolor;
       } else {
         bandColor = _vumaxcolor;
       }
-    #ifndef BOOMBOX_STYLE
-      // bandColor = (i > _bands.width - (_bands.width / _bands.perheight) * 4) ? _vumaxcolor : _vumincolor;
-      _canvas->fillRect(i, 0, h, _bands.height, bandColor);  //
-      _canvas->fillRect(i, _bands.height + _bands.space, h, _bands.height, bandColor);
-    #else  // Ha BOMBOX_STYLE van.
-      /* Bal sáv színezése vörös - sárga - zöld */
-      if (i < _bands.width - yellow_end) {
-        bandColor = _vumaxcolor;
-      } else if (i < _bands.width - green_end) {
-        bandColor = _vumidcolor;
-      } else {
-        bandColor = _vumincolor;
-      }
-      _canvas->fillRect(i, 0, h, _bands.height, bandColor);  // bal csatorna
-      /* Jobb sáv színezése zöld - sárga - vörös */
-      if (i < green_end) {
-        bandColor = _vumincolor;
-      } else if (i < yellow_end) {
-        bandColor = _vumidcolor;
-      } else {
-        bandColor = _vumaxcolor;
-      }
-      _canvas->fillRect(i + _bands.width + _bands.space, 0, h, _bands.height, bandColor);  // jobb csatorna
-    #endif
+      _canvas->fillRect(x, 0, ledWidth, _bands.height, bandColor);
     }
-  }
-    #ifndef BOOMBOX_STYLE
-  // --- Visszatörlés a pillanatnyi szint alapján ---
-  _canvas->fillRect(_bands.width - measL, 0, measL, _bands.height, _bgcolor);
-  _canvas->fillRect(_bands.width - measR, _bands.height + _bands.space, measR, _bands.height, _bgcolor);
-
+    // === JOBB csatorna (jobbra indul a középtől) ===
+    for (int led = 0; led < litCountR; led++) {
+      int x = _bands.width + MID_HALF + (led * step);
+      if (x > (int)_bands.width * 2) {
+        break;
+      }
+      if (led * step < green_end) {
+        bandColor = _vumincolor;
+      } else if (led * step < yellow_end) {
+        bandColor = _vumidcolor;
+      } else {
+        bandColor = _vumaxcolor;
+      }
+      _canvas->fillRect(x, 0, ledWidth, _bands.height, bandColor);
+    }
       #ifdef VU_PEAK
-  // --- Csúcsok rajzolása ---
-  const uint16_t peak_color = 0xFFFF;
-  const uint16_t peak_bright = 0xF7FF;
-  int peak_width = 1;
-
-  // Bal csatorna
-  if (peakL >= 2 && peakL < (int)_bands.width - peak_width) {
-    _canvas->fillRect(peakL - 1, 0, peak_width + 2, _bands.height, peak_bright);
-    _canvas->fillRect(peakL, 0, peak_width, _bands.height, peak_color);
-  }
-
-  // Jobb csatorna
-  if (peakR >= 2 && peakR < (int)_bands.width - peak_width) {
-    _canvas->fillRect(peakR - 1, _bands.height + _bands.space, peak_width + 2, _bands.height, peak_bright);
-    _canvas->fillRect(peakR, _bands.height + _bands.space, peak_width, _bands.height, peak_color);
-  }
+    const uint16_t peak_color = 0xFFFF;
+    const uint16_t peak_bright = 0xF7FF;
+    const int peak_width = 1;
+    // --- BAL peak ---
+    {
+      int pxL = _bands.width - MID_HALF - peakL;
+      // clamp hogy sose fusson ki balra
+      if (pxL < 0) {
+        pxL = 0;
+      }
+      _canvas->fillRect((pxL - 1 < 0 ? 0 : pxL - 1), 0, peak_width + 2, _bands.height, peak_bright);
+      _canvas->fillRect(pxL, 0, peak_width, _bands.height, peak_color);
+    }
+    // --- JOBB peak ---
+    {
+      int pxR = _bands.width + MID_HALF + peakR;
+      // clamp védelem, de jobbra
+      int maxX = (_bands.width * 2 + MID_GAP) - peak_width - 1;
+      if (pxR > maxX) {
+        pxR = maxX;
+      }
+      _canvas->fillRect(pxR - 1, 0, peak_width + 2, _bands.height, peak_bright);
+      _canvas->fillRect(pxR, 0, peak_width, _bands.height, peak_color);
+    }
       #endif  // VU_PEAK
-
-  // --- Végső kirajzolás ---
-  dsp.drawRGBBitmap(_config.left, _config.top, _canvas->getBuffer(), _bands.width, _bands.height * 2 + _bands.space);
-
+    // --- KIJELZŐRE KÜLDÉS ---
+    dsp.startWrite();
+    dsp.setAddrWindow(_config.left + 4, _config.top + 10, _bands.width * 2 + _bands.space, _bands.height);
+    dsp.writePixels((uint16_t *)_canvas->getBuffer(), (_bands.width * 2 + _bands.space) * _bands.height);
+    dsp.endWrite();
+        // ===================== BOOMBOX_STYLE vége =====================
     #else
-  // --- Visszatörlés a pillanatnyi szint alapján ---
-  _canvas->fillRect(0, 0, _bands.width - (_bands.width - measL), _bands.width, _bgcolor);
-  _canvas->fillRect(_bands.width * 2 + _bands.space - measR, 0, measR, _bands.width, _bgcolor);
+    // ===================== NEM BOOMBOX_STYLE ======================
+    // Háttér törlése – két VU egymás alatt
+    _canvas->fillRect(0, 0, _bands.width, _bands.height * 2 + _bands.space, _bgcolor);
+    // --- LED-sáv rajzolása színátmenettel ---
+    int green_end = (_bands.width * 65) / 100;
+    int yellow_end = (_bands.width * 85) / 100;
+    // --- VU méretezés ---
+    uint8_t ledWidth = (dimension / _bands.perheight) - _bands.vspace;
+    uint16_t step = dimension / _bands.perheight;  // step pixelben
+    uint16_t litCountL = measLpx / step;
+    uint16_t litCountR = measRpx / step;
+    // Bal
+    for (int led = 0; led < litCountL; led++) {
+      int x = led * step;
+      if (x < green_end) {
+        bandColor = _vumincolor;
+      } else if (x < yellow_end) {
+        bandColor = _vumidcolor;
+      } else {
+        bandColor = _vumaxcolor;
+      }
+      _canvas->fillRect(x, 0, ledWidth, _bands.height, bandColor);
+    }
+    // Jobb
+    for (int led = 0; led < litCountR; led++) {
+      int x = led * step;
+      if (x < green_end) {
+        bandColor = _vumincolor;
+      } else if (x < yellow_end) {
+        bandColor = _vumidcolor;
+      } else {
+        bandColor = _vumaxcolor;
+      }
+      _canvas->fillRect(x, _bands.height + _bands.space, ledWidth, _bands.height, bandColor);
+    }
       #ifdef VU_PEAK
-  // --- Csúcsok rajzolása ---
-  const uint16_t peak_color = 0xFFFF;
-  const uint16_t peak_bright = 0xF7FF;
-  int peak_width = 1;
-  // Bal csatorna
-
-  if (peakL >= 2 && peakL < (int)_bands.width - peak_width) {
-    //Serial.printf("peakL : %d, measL : %d \n", peakL, measL);
-    _canvas->fillRect(peakL - 1, 0, peak_width + 2, _bands.height, peak_bright);
-    _canvas->fillRect(peakL, 0, peak_width, _bands.height, peak_color);
-  }
-  // Jobb csatorna
-  if (peakR >= 2 && peakR < (int)_bands.width - peak_width) {
-    _canvas->fillRect(_bands.width + _bands.space + peakR - 1, 0, peak_width + 2, _bands.height, peak_bright);
-    _canvas->fillRect(_bands.width + _bands.space + peakR, 0, peak_width, _bands.height, peak_color);
-  }
+    const uint16_t peak_color = 0xFFFF;
+    const uint16_t peak_bright = 0xF7FF;
+    const int peak_width = 1;
+    // Peak bal
+    if (peakL > _bands.width - 2) {
+      peakL -= 2;
+    }
+    if (peakL > 1 && peakL <= (int)_bands.width) {
+      _canvas->fillRect(peakL - 1, 0, peak_width + 2, _bands.height, peak_bright);
+      _canvas->fillRect(peakL, 0, peak_width, _bands.height, peak_color);
+    }
+    // Peak jobb
+    if (peakR > _bands.width - 2) {
+      peakR -= 2;
+    }
+    if (peakR > 1 && peakR <= (int)_bands.width) {
+      _canvas->fillRect(peakR - 1, _bands.height + _bands.space, peak_width + 2, _bands.height, peak_bright);
+      _canvas->fillRect(peakR, _bands.height + _bands.space, peak_width, _bands.height, peak_color);
+    }
       #endif  // VU_PEAK
-  dsp.startWrite();
-  dsp.setAddrWindow(_config.left + 4, _config.top + 10, _bands.width * 2 + _bands.space, _bands.height);
-  dsp.writePixels((uint16_t *)_canvas->getBuffer(), (_bands.width * 2 + _bands.space) * _bands.height);
-  dsp.endWrite();
-    #endif
-
-    // --- L/R címkék rajzolása ---
-    #ifndef BOOMBOX_STYLE
-  if (played && !_labelsDrawn) {
-    // Serial.println("L/R rajzolás");
-    int label_width = _bands.height + 15;
-    int label_height = _bands.height + 4;
-    int label_offset = label_width + 4;
-    int label_left = _config.left - label_offset;
-    if (label_left >= 0) {
-      dsp.fillRect(label_left, _config.top - 4, label_width, label_height, 0x7BEF);
-      dsp.fillRect(label_left, _config.top + _bands.height + _bands.space, label_width, label_height - 1, 0x7BEF);
+    // Kirajzolás
+    int drawWidth = _bands.width;
+    int drawHeight = _bands.height * 2 + _bands.space;
+    dsp.startWrite();
+    dsp.setAddrWindow(_config.left, _config.top, drawWidth, drawHeight);
+    dsp.writePixels((uint16_t *)_canvas->getBuffer(), drawWidth * drawHeight);
+    dsp.endWrite();
+    #endif    // BOOMBOX_STYLE
+    /********************************** --- L/R címkék rajzolása --- **********************************/
+    #ifdef BOOMBOX_STYLE
+    if (played && !_labelsDrawn) {
+      // Serial.println("L/R rajzolás");
+      int label_width = _bands.height + 15;
+      int label_height = _bands.height + 4;
+      // teljes szélesség (két címke + 6px hézag)
+      int total_width = 2 * label_width + 6;
+      // bal széle a középre igazított blokk
+      int center_left = (dsp.width() - total_width) / 2;
+      // bal és jobb címke pozíció
+      int label_left_L = center_left;
+      int label_left_R = center_left + label_width + 6;
+      // Bal (L) téglalap
+      dsp.fillRect(label_left_L, _config.top - 4, label_width, label_height, 0x7BEF);
       dsp.setTextSize(1);
       dsp.setFont();
       dsp.setTextColor(0xFFFF);
-      int text_x = label_left + (label_width - 6) / 2;
-      int text_y_L = (_config.top - 2) + (label_height - 10) / 2;
-      int text_y_R = _config.top + _bands.height + _bands.space + (label_height - 8) / 2;
-      dsp.setCursor(text_x, text_y_L);
+      int text_x_L = label_left_L + (label_width - 6) / 2;
+      #if DSP_MODEL == DSP_ILI9341
+      int text_y = ((_config.top - 2) + (label_height - 10) / 2) - 1;
+      #else
+      int text_y = (_config.top - 2) + (label_height - 10) / 2;
+      #endif
+      dsp.setCursor(text_x_L, text_y);
       dsp.print("L");
-      dsp.setCursor(text_x, text_y_R);
+      // Jobb (R) téglalap
+      dsp.fillRect(label_left_R, _config.top - 4, label_width, label_height, 0x7BEF);
+      int text_x_R = label_left_R + (label_width - 6) / 2;
+      dsp.setCursor(text_x_R, text_y);
       dsp.print("R");
       _labelsDrawn = true;
     }
+    #else   //  NEM BOOMBOX_STYLE
+    if (played && !_labelsDrawn) {
+      // Serial.println("L/R rajzolás");
+      int label_width = _bands.height + 15;
+      int label_height = _bands.height + 4;
+      int label_offset = label_width + 4;
+      int label_left = _config.left - label_offset;
+      if (label_left >= 0) {
+        dsp.fillRect(label_left, _config.top - 4, label_width, label_height, 0x7BEF);
+        dsp.fillRect(label_left, _config.top + _bands.height + _bands.space, label_width, label_height - 1, 0x7BEF);
+        dsp.setTextSize(1);
+        dsp.setFont();
+        dsp.setTextColor(0xFFFF);
+        int text_x = label_left + (label_width - 6) / 2;
+        int text_y_L = (_config.top - 2) + (label_height - 10) / 2;
+        int text_y_R = _config.top + _bands.height + _bands.space + (label_height - 8) / 2;
+        dsp.setCursor(text_x, text_y_L);
+        dsp.print("L");
+        dsp.setCursor(text_x, text_y_R);
+        dsp.print("R");
+        _labelsDrawn = true;
+      }
+    }
+    #endif  // BOOMBOX_STYLE
   }
-    #else
-  if (played && !_labelsDrawn) {
-    // Serial.println("L/R rajzolás");
-    int label_width = _bands.height + 15;
-    int label_height = _bands.height + 4;
-    // teljes szélesség (két címke + 6px hézag)
-    int total_width = 2 * label_width + 6;
-    // bal széle a középre igazított blokk
-    int center_left = (dsp.width() - total_width) / 2;
-    // bal és jobb címke pozíció
-    int label_left_L = center_left;
-    int label_left_R = center_left + label_width + 6;
-
-    // Bal (L) téglalap
-    dsp.fillRect(label_left_L, _config.top - 4, label_width, label_height, 0x7BEF);
-    dsp.setTextSize(1);
-    dsp.setFont();
-    dsp.setTextColor(0xFFFF);
-    int text_x_L = label_left_L + (label_width - 6) / 2;
-      #if DSP_MODEL == DSP_ILI9341
-    int text_y = ((_config.top - 2) + (label_height - 10) / 2) - 1;
-      #else
-    int text_y = (_config.top - 2) + (label_height - 10) / 2;
-      #endif
-    dsp.setCursor(text_x_L, text_y);
-    dsp.print("L");
-
-    // Jobb (R) téglalap
-    dsp.fillRect(label_left_R, _config.top - 4, label_width, label_height, 0x7BEF);
-    int text_x_R = label_left_R + (label_width - 6) / 2;
-    dsp.setCursor(text_x_R, text_y);
-    dsp.print("R");
-
-    _labelsDrawn = true;
-  }
-    #endif
 }
 
 void VuWidget::loop() {

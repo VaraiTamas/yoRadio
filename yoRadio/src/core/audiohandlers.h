@@ -212,6 +212,7 @@ void my_audio_info(Audio::msg_t m) {
     // ----- Fájl vége (SD mód) -----
     case Audio::evt_eof:
     {
+      config.vuRefLevel =0;
       // audio_eof(); // TODO Nem mindig érkezik meg az eof.
     } break;
 

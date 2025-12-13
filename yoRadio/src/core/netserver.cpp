@@ -317,7 +317,7 @@ void NetServer::processQueue() {
           wsBuf,
           "{\"sst\":%d,\"aif\":%d,\"vu\":%d,\"softr\":%d,\"vut\":%d,\"mdns\":\"%s\",\"ipaddr\":\"%s\", \"abuff\": %d, \"telnet\": %d, \"watchdog\": %d, "
           "\"nameday\": %d }",  // "nameday"
-          config.store.smartstart != 2, config.store.audioinfo, config.store.vumeter, config.store.softapdelay, config.vuThreshold, config.store.mdnsname,
+          config.store.smartstart != 2, config.store.audioinfo, config.store.vumeter, config.store.softapdelay, config.vuRefLevel, config.store.mdnsname,
           config.ipToStr(WiFi.localIP()), config.store.abuff, config.store.telnet, config.store.watchdog, config.store.nameday
         );
         Serial.printf("netserver-> config.store.nameday %d \n", config.store.nameday);
