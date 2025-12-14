@@ -227,7 +227,7 @@ void Player::loop() {
   Audio::loop();
   if (!isRunning() && _status == PLAYING) {
     _stop(true);
-     if (config.getMode() == PM_SDCARD) {
+    if (config.getMode() == PM_SDCARD) {
       if (player.getAudioFilePosition() == 0) {  // Csak akkor next(), ha a fájl ténylegesen lejárt
         next();
       }
@@ -400,4 +400,27 @@ void Player::setVol(uint8_t volume) {
   _volTicks = millis();
   _volTimer = true;
   player.sendCommand({PR_VOL, volume});
+}
+
+// A WEB UI a hangszínt -16 - +16 között adja, de az Audio osztály setTone()
+// függvénye -40 és +6 (dB) közötti értéket kér, ezért mepelni kell.
+int8_t Player::uiToDb(int8_t uiVal) {
+  if (uiVal == 0) {
+    return 0;
+  }
+  if (uiVal > 0) {
+    // 0..+16  →  0..+6 dB
+    float db = (uiVal / 16.0f) * 6.0f;
+    return (int8_t)roundf(db);
+  } else {
+    // -16..0  →  -20..0 dB
+    float db = (uiVal / 16.0f) * 20.0f;  // uiVal negatív!
+    return (int8_t)roundf(db);
+  }
+
+}
+
+void Player::setTone(int8_t bass, int8_t mid, int8_t treble) {
+ // Serial.printf("EQ UI: %d %d %d  →  DSP: %d %d %d\n", bass, mid, treble, uiToDb(bass), uiToDb(mid), uiToDb(treble));
+  Audio::setTone(uiToDb(bass), uiToDb(mid), uiToDb(treble));
 }

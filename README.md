@@ -101,6 +101,9 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.7.12
+   - A hangszínszabályzó hibájának javítása.
+
 ### v0.7.11
    - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.4c (2025. dec 11.) frissítés
    - A VU kijelző a lejátszások között nem ment nullára hiba javítása és ujrahangolása 

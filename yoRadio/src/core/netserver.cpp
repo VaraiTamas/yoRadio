@@ -480,6 +480,7 @@ void NetServer::onWsMessage(void *arg, uint8_t *data, size_t len, uint8_t client
         websocket.text(clientId, "{\"pong\": 1}");
         return;
       }
+       int8_t valb = atoi(_wsval);
       if (strcmp(_wscmd, "trebble") == 0) {
         int8_t valb = atoi(_wsval);
         config.setTone(config.store.bass, config.store.middle, valb);
