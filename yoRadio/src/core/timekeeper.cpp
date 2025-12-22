@@ -202,7 +202,7 @@ void TimeKeeper::_upScreensaver() {
   if (!display.ready()) {
     return;
   }
-  if (config.store.screensaverEnabled && display.mode() == PLAYER && !player.isRunning()) {
+  if (config.store.screensaverEnabled && display.mode() == PLAYER && (!player.isRunning() || config.store.volume==0)) {
     config.screensaverTicks++;
     if (config.screensaverTicks > config.store.screensaverTimeout + SCREENSAVERSTARTUPDELAY) {
       if (config.store.screensaverBlank) {
