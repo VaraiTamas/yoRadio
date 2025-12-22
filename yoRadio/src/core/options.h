@@ -516,6 +516,10 @@ The connection tables are located here https://github.com/e2002/yoradio#connecti
   #define STATIONS_LIST_RETURN_TIME 30
 #endif
 
+/* Ampli power */
+#ifndef PWR_AMP
+  #define PWR_AMP                255
+#endif
 
 #include <SPI.h>
 #if !defined(CONFIG_IDF_TARGET_ESP32)
