@@ -209,6 +209,9 @@ void TimeKeeper::_upScreensaver() {
         display.putRequest(NEWMODE, SCREENBLANK);
       } else {
         display.putRequest(NEWMODE, SCREENSAVER);
+        #if PWR_AMP!=255
+          digitalWrite(PWR_AMP,LOW);
+        #endif
       }
       config.screensaverTicks = SCREENSAVERSTARTUPDELAY;
     }
