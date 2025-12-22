@@ -205,13 +205,13 @@ void TimeKeeper::_upScreensaver() {
   if (config.store.screensaverEnabled && display.mode() == PLAYER && (!player.isRunning() || config.store.volume==0)) {
     config.screensaverTicks++;
     if (config.screensaverTicks > config.store.screensaverTimeout + SCREENSAVERSTARTUPDELAY) {
+      #if PWR_AMP!=255
+        digitalWrite(PWR_AMP,LOW);
+      #endif
       if (config.store.screensaverBlank) {
         display.putRequest(NEWMODE, SCREENBLANK);
       } else {
         display.putRequest(NEWMODE, SCREENSAVER);
-        #if PWR_AMP!=255
-          digitalWrite(PWR_AMP,LOW);
-        #endif
       }
       config.screensaverTicks = SCREENSAVERSTARTUPDELAY;
     }
