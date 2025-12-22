@@ -144,4 +144,7 @@ change when you exit. (By Zsigmond Becskehazi) */
  How long to return to the main screen from the station list. (seconds) */
 #define STATIONS_LIST_RETURN_TIME 2
 
+/*This pin controls the amplifier's power supply. When music is playing, the pin is set to HIGH to control the relay. When music is not playing (stopped or volume is 0), the pin is set to LOW. This change occurs when the screensaver is running. */
+#define PWR_AMP 2
+
 #endif  //myoptions_h
