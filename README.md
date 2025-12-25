@@ -26,11 +26,11 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
 - Amennyiben mindig a hangerő jelenik meg ellenőrízd a következőket:
    - Az LCD kijelzőn nem szabad bekötni a MISO_13 vezetéket, mert arra nincs szökség!
    - Ha nem használsz touch funkciót, akkor ne definiáld a myoptions.h fájlban, kommenteld ki!  
-
-         /* Touch */
-         // #define TS_MODEL TS_MODEL_XPT2046
-         // #define TS_CS    3
-
+```cpp
+/* Touch */
+// #define TS_MODEL TS_MODEL_XPT2046
+// #define TS_CS    3
+```
 - Nem támogatja az ESP32-t PSRAM memória nélkül.   
 - Az Arduino-ESP32 Core 3.3.0 vagy újabb verziójú Espressif Arduino keretrendszerre van szükség.  
 - A partíció sémánál válaszd "8M with spiffs (3MB APP/1.5MB SPIFFS)" 
@@ -77,8 +77,9 @@ esp32-S3-devkit-C1 44 pins https://randomnerdtutorials.com/esp32-s3-devkitc-pino
 ## Nevnapok megjelenitese:
 A program képes megjeleníteni a HU, PL, GR, DE nyelvű névnapokat.
 A myoptions.h fájlban az alábbi paranccsal lehet bekapcsolni és beállítani a kívánt nyelvet.
-
+```cpp
 #define NAMEDAYS_FILE HU
+```   
 
 A névnapok tárolása az alábbi fájlokban történik.
 
