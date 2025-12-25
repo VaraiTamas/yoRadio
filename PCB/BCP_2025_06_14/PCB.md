@@ -55,9 +55,9 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
 A PWS_DAC, PWS_LCD, PWS_I2C jumperek tesztelési célt szolgálnak
 Ha a modul rendelkezik saját 3.3 V stabilizátorral, választható az 5 V táp
 
-5V_ESP32 zárása → az ESP a saját 3.3 V stabilizátorát használja
+- 5V_ESP32 zárása → az ESP a saját 3.3 V stabilizátorát használja
 
-3.3V_ESP32 zárása → az ESP-t az alaplapi stabilizátor táplálja
+- 3.3V_ESP32 zárása → az ESP-t az alaplapi stabilizátor táplálja        
 Ajánlás: csak az 5V_ESP32 ágat zárd
 
 ### Erősítő ki -be kapcsolása a képernyővédő és hangerő függvényében [olvasd el ezt!](../../docs/pwr_amp.md)
