@@ -1,4 +1,4 @@
-/* https://trip5.github.io/ehRadio_myoptions/generator.html
+/* https://trip5.github.io/ehRadio_myoptions/generator.html?b=ESP32-S3-DevKitC-1_44Pin&r=72,1,2,4,5,6,76,7,8,31,42,43,54,55,58,60,63,65,77&i=1,2,3,4,15,16,17,28,29,30,31,32,33,34,39,48,49&v=9,10,-1,14,4,5,6,40,41,39,48,47,21,3,18,8,7
    https://github.com/e2002/yoradio
    Használat előtt olvasd el!!! - Read the before use !!!
    https://github.com/VaraiTamas/yoRadio/blob/main/README.md !!! 
