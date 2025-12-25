@@ -71,9 +71,9 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define ENC2_INTERNALPULLUP	true
 
 /* CLOCK MODUL RTC DS3132 */
-// #define RTC_SCL			     7
-// #define RTC_SDA			     8
-// #define RTC_MODULE DS3231
+ #define RTC_SCL			     7
+ #define RTC_SDA			     8
+ #define RTC_MODULE DS3231
 
 /* REMOTE CONTROL INFRARED RECEIVER */
 #define IR_PIN 38
@@ -101,7 +101,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 #define CLOCK_TTS_ENABLED          true  // Enabled (true) or disabled (false)
 #define CLOCK_TTS_LANGUAGE         "HU"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
-#define CLOCK_TTS_INTERVAL_MINUTES 30    // Hány percenként mondja be. - How many times a minute does it say.
+#define CLOCK_TTS_INTERVAL_MINUTES 5    // Hány percenként mondja be. - How many times a minute does it say.
 
 /* Ezzel a beállítással nincs görgetés az időjárás sávon.
    With this setting there is no scrolling on the weather bar.
@@ -143,5 +143,12 @@ change when you exit. (By Zsigmond Becskehazi) */
 /* Mennyi idő múlva lépjen vissza a főképernyőre az állomások listájából. (másodperc)
  How long to return to the main screen from the station list. (seconds) */
 #define STATIONS_LIST_RETURN_TIME 2
+
+/* Az itt beállított pin vezérelheti egy audio erősítő tápellátását. Zenelejátszás közben a pin HIGH (magas) állapotban van ami meghúzza az
+erősítő tápellátását kapcsoló relét. Amikor nincs zenelejátszás (STOP vagy a hangerő 0), a pin LOW (alacsony) állapotban van. 
+Ez a változás akkor történik, amikor a képernyővédő "while not playing" üzemmódban bekapcsol. 
+This pin controls the amplifier's power supply. When music is playing, the pin is set to HIGH to control the relay. 
+When music is not playing (stopped or volume is 0), the pin is set to LOW. This change occurs when the screensaver is running. */
+//#define PWR_AMP 2
 
 #endif  //myoptions_h

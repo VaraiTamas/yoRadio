@@ -62,7 +62,7 @@ Ezek itt találhatóak a programban:
       yoRadio/locale/glcdfont/EN, NL, CZ/glcdfont.c
       yoRadio/locale/glcdfont/GR/glcdfont.c
       yoRadio/locale/glcdfont/HU, DE/glcdfont.c
-      yoRadio/locale/glcdfont/PL, SK/glcdfont.c
+      yoRadio/locale/glcdfont/PL, SK, DE/glcdfont.c
       yoRadio/locale/glcdfont/RU/glcdfont.c
       yoRadio/locale/glcdfont/UA/glcdfont.c
 
@@ -101,6 +101,10 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.7.13
+   - Erősítő vezérlése képernyővédővel és hangerővel ( by Łukasz Antoszewski ) [olvasd el ezt!](docs/pwr_amp.md)
+   - PL, SK, DE glcdfont.c nyelvi fájl frissítve. (by Andrzej Jaroszuk) 
+
 ### v0.7.12
    - A hangszínszabályzó hibájának javítása.
 

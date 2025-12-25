@@ -1,4 +1,3 @@
-// v0.9.555
 #ifndef dsp_full_loc
 #define dsp_full_loc
 #include <pgmspace.h>
