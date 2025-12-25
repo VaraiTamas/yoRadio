@@ -5,10 +5,13 @@
 - A `GPIO_1`, `GPIO_2`, `GPIO_42`, `GPIO_17` kivezetések nem használt PIN-ek
 - Az **R3–R6** ellenállások a nem használt pinek felhúzóellenállásai  
   Csak szükség esetén kell beforrasztani őket.
+- A MISO 13 vezetéket nem kell a kijelzőre bekötni. A kijelző nem küld információt az ESP irányába és folyamatos hangerő képernyő megjelenést okoz!
+- A T.IRQ jumpert nem kell összezárni.
+### Forgó jeleadó - rotary encoder
 - Az ENCODER-hez tartozó alkatrészek:
   - R7–R12: **10 kΩ**
   - C5–C8: **100 nF**
-  - Beültetésük csak akkor szükséges, ha **nem ENCODER-modult** használsz (a modul ezeket tartalmazza)
+  - Beültetésük csak akkor szükséges, ha **nem a képen látható kék ENCODER-modult** használsz (a modul ezeket tartalmazza már!)
 
 ![](../../Rotary_encoder/rotary_encoder_modul_wire_diagram.png)
 
@@ -27,8 +30,6 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
 #define ENC2_BTNB 21  // KEY
 // #define ENC2_INTERNALPULLUP true
 ```
-- A MISO 13 vezetéket nem kell a kijelzőre bekötni. A kijelző nem küld információt az ESP irányába és folyamatos hangerő képernyő megjelenést okoz!
-- A T.IRQ jumpert nem kell összezárni.
 ### Érintő képernyő
 - A T.CK, T.CS, T-MISO, T.MOSI érintkezők az LCD modulon az érintőképernyő SPI vezetékei. Használat esetén mindegyiket be kell kötni. Amennyiben nem akarsz használni érintő kijelzőt és nem kötöd be ezeket, úgy a myoptions.h fájlban kommenteld ki a sor elejére helyezett // jellel az ide vonatkozó definíciókat. Ellenkező esetben mindig a hangerő képernyő jelenhet meg.
 ```cpp
