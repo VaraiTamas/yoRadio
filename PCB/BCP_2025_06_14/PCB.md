@@ -27,9 +27,9 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
 #define ENC2_BTNB 21  // KEY
 // #define ENC2_INTERNALPULLUP true
 ```
-- A PWS_DAC, PWS_LCD, PWS_I2C power select jumperek csak tesztelési céllal kerültek fel. Amennyiben a modul tartalmaz saját 3.3V -os stabilizátor IC -t, úgy lehet választani az 5V -os táplálást.
-- Az 5V_ESP32 jumper összezárása esetén az ESP modul a saját 3.3V -os stabilizátor IC -jét használja. A 3.3V_ESP32 jumperainak összezárása esetén az alaplapi stabilizátor IC táplálja az ESP modult. Ajánlott csak az 5V_ESP32 kapcsait összezárni.
-- A MISO 13 vezetéket nem kell a kijelzőre bekötni, a kijelző nem küld információt az ESP irányába és folyamatos hangerő képernyő megjelenést okoz!
+- A MISO 13 vezetéket nem kell a kijelzőre bekötni. A kijelző nem küld információt az ESP irányába és folyamatos hangerő képernyő megjelenést okoz!
+- A T.IRQ jumpert nem kell összezárni.
+### Érintő képernyő
 - A T.CK, T.CS, T-MISO, T.MOSI érintkezők az LCD modulon az érintőképernyő SPI vezetékei. Használat esetén mindegyiket be kell kötni. Amennyiben nem akarsz használni érintő kijelzőt és nem kötöd be ezeket, úgy a myoptions.h fájlban kommenteld ki a sor elejére helyezett // jellel az ide vonatkozó definíciókat. Ellenkező esetben mindig a hangerő képernyő jelenhet meg.
 ```cpp
 /* Touch */
@@ -37,12 +37,13 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
 // #define TS_CS    3
 ```
 
-- A T.IRQ jumpert nem kell összezárni.
+### SD kártya
 - Az FSPI csatlakozóhoz lehet bekötni az SD kártya olvasót. Használata esetén a myoptions.h fájlban be kell kapcsolni a definíciókat.
 ```cpp
         /* DS CARD */
         #define SDC_CS 18
 ```
+### RTC óramodul
 - Az I2C csatlakozó alkalmas közvetlenül óramodul RTC DS3132 fogadására. Használata esetén a myoptions.h fájlban be kell kapcsolni a definíciókat.
 ```cpp
         /* CLOCK MODUL RTC DS3132 */
@@ -50,10 +51,8 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
         #define RTC_SDA			     8
         #define RTC_MODULE DS3231
 ```
-### Power-select jumperek
-
-A PWS_DAC, PWS_LCD, PWS_I2C jumperek tesztelési célt szolgálnak
-Ha a modul rendelkezik saját 3.3 V stabilizátorral, választható az 5 V táp
+### Power-select jumperek       
+A PWS_DAC, PWS_LCD, PWS_I2C power select jumperek csak tesztelési céllal kerültek fel. Amennyiben a modul tartalmaz saját 3.3V -os stabilizátor IC -t, úgy lehet választani az 5V -os táplálást.
 
 - 5V_ESP32 zárása → az ESP a saját 3.3 V stabilizátorát használja
 
