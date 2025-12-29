@@ -6,142 +6,13 @@
 
 
 // Polish chars: ąćęłńóśźż ĄĆĘŁŃÓŚŹŻ
-
-// ============================================================================
-// Naprawia zniekształcone znaki UTF-8 z Shoutcast / Icecast
-//   – naprawia tylko błędnie zakodowane znaki
-//   – nie modyfikuje prawidłowych znaków UTF-8
-//   – obsługuje polskie i słowackie znaki
-// ============================================================================
-String fixSlovakUTF8(const String &in)
-{
-    String s = in;
-
-    // ==========================
-    // Ogólne naprawy UTF8 → latin
-    // ==========================
-    s.replace("Ã¡", "á");   s.replace("Ã\x81", "Á");
-    s.replace("Ã©", "é");   s.replace("Ã‰", "É");
-    s.replace("Ãí", "í");   s.replace("Ã\x8D", "Í");
-    s.replace("Ã³", "ó");   s.replace("Ã\x93", "Ó");
-    s.replace("Ãº", "ú");   s.replace("Ãš", "Ú");
-    s.replace("Ã¼", "ü");   s.replace("Ãœ", "Ü");
-    s.replace("Ã¶", "ö");   s.replace("Ã–", "Ö");
-    
-    // Swedish characters
-    s.replace("Ã¥", "å");   s.replace("Ã…", "Å");
-    s.replace("Ã¤", "ä");   s.replace("Ã„", "Ä");
-    
-
-    // ==========================
-    // Polskie/Słowackie podstawowe błędy
-    // ==========================
-
-    // ý / Ý
-    s.replace("Ã½", "ý");
-    s.replace("Ã ", "Ý");
-
-    // ž / Ž
-    s.replace("Å¾", "ž");
-    s.replace("Å½", "Ž");
-
-    // š / Š — różne zniekształcone formy
-    s.replace("Å¡", "š");       // małe
-    s.replace("Å ", "Š");       // wielkie Š zniekształcone (C3 85 20)
-    s.replace("Å\xa0", "Š");    // wariant NBSP
-    s.replace("Ã… ", "Š");      // podwójne kodowanie
-    s.replace("Ã…", "Š");
-
-    // Specjalne zniekształcone wzorce Ši
-    s.replace("Åi", "Ši");
-    s.replace("Å i", "Ši");
-
-    // ť / Ť
-    s.replace("Å¥", "ť");
-    s.replace("Å¤", "Ť");
-
-    // ľ / Ľ
-    s.replace("Ä¾", "ľ");
-    s.replace("Ä½", "Ľ");
-
-    // č / Č — różne zniekształcone formy
-    s.replace("Ä ", "č");            // podstawowa błędna forma
-    s.replace("Ä\u008D", "č");       // C4 8D
-    s.replace("Ã„\u008D", "č");      // podwójne błędne
-    s.replace("Äč", "č");            // fallback
-    s.replace("ÄŒ", "Č");            // błędne wielkie Č
-    s.replace("\xC4\x8C", "Č");      // czyste UTF-8 Č też obsługiwane
-
-    // ň / Ň
-    s.replace("Åˆ", "ň");
-    s.replace("Å‡", "Ň");
-
-    // ď / Ď
-    s.replace("Ä?", "ď");            // częste zniekształcenie
-    s.replace("ÄŽ", "Ď");
-
-    // ==========================
-    // Polskie specjalne zniekształcenia
-    // ==========================
-
-    // ą / Ą
-    s.replace("Ä…", "ą");
-    s.replace("Ä„", "Ą");
-
-    // ć / Ć
-    s.replace("Ä‡", "ć");
-    s.replace("Ä†", "Ć");
-
-    // ę / Ę
-    s.replace("Ä™", "ę");
-    s.replace("Ä˜", "Ę");
-
-    // ł / Ł
-    s.replace("Å‚", "ł");
-    s.replace("Å ", "Ł");
-
-    // ń / Ń
-    s.replace("Å„", "ń");
-    s.replace("Åƒ", "Ń");
-
-    // ś / Ś
-    s.replace("Å›", "ś");
-    s.replace("Åš", "Ś");
-
-    // ź / Ź
-    s.replace("Åº", "ź");
-    s.replace("Å¹", "Ź");
-
-    // ż / Ż
-    s.replace("Å¼", "ż");
-    s.replace("Å»", "Ż");
-
-    // ==========================
-    // Rusyn / Słowackie specjalne zniekształcenia
-    // ==========================
-
-    // buÄka → bučka
-    s.replace("Äa", "ča");           // stara zniekształcona forma
-    s.replace("Ã„a", "ča");          // podwójna konwersja
-    s.replace("Ä\u008Dka", "čka");   // C4 8D + ka
-    s.replace("Ä\u008D", "č");       // samodzielne č
-
-    // usuwanie combining caron (ˇ)
-    s.replace("ˇ", "");
-    s.replace("\xCC\x8C", "");       // combining caron
-    s.replace("\xCB\x86", "");       // inna forma
-
-    return s;
-}
+// Execution of special characters PL, SK, DE, RO, S = A. Jaroszuk
 
 #ifndef DSP_LCD
 char* utf8To(const char* str, bool uppercase) {
-  // ← NOWE: najpierw naprawiamy zniekształcone znaki UTF-8
-  String fixed = fixSlovakUTF8(str);
-
   int index = 0;
   static char strn[BUFLEN];
-  strlcpy(strn, fixed.c_str(), BUFLEN); 
+  strlcpy(strn, str, BUFLEN); 
 
 if(L10N_LANGUAGE==EN)  return strn;
   while (strn[index])
@@ -734,37 +605,15 @@ if (strn[index] == 0xC3)
       }
 	}
 
-// Wstaw tutaj swoją korektę na dalsze czcionki...
-
-// Konwersja pojedynczych bajtów ISO-8859-1/Windows-1252 (nie-UTF-8)
-// dla znaków szwedzkich å/Å, ä/Ä, ö/Ö
-    if ((unsigned char)strn[index] == 0xE5) {  // å (ISO-8859-1)
-      strn[index] = 0x86;
-    } else if ((unsigned char)strn[index] == 0xC5) {  // Å (ISO-8859-1)
-      strn[index] = 0x8F;
-    } else if ((unsigned char)strn[index] == 0xE4) {  // ä (ISO-8859-1)
-      strn[index] = 0x84;
-    } else if ((unsigned char)strn[index] == 0xC4) {  // Ä (ISO-8859-1)
-      strn[index] = 0x8E;
-    } else if ((unsigned char)strn[index] == 0xF6) {  // ö (ISO-8859-1)
-      strn[index] = 0x94;
-    } else if ((unsigned char)strn[index] == 0xD6) {  // Ö (ISO-8859-1)
-      strn[index] = 0x99;
-    }
-
     index++;
   }
 
-  // Normalizuj wielkość liter ASCII (po konwersji UTF-8)
-  for (int i = 0; strn[i] != '\0'; i++) {
-    // Konwertuj tylko znaki ASCII a-z lub A-Z, nie dotykaj zakodowanych znaków specjalnych
-    if (uppercase) {
+  // Konwertuj ASCII na wielkie litery gdy uppercase=true
+  // NIE konwertuj na małe gdy uppercase=false (zachowaj oryginał)
+  if (uppercase) {
+    for (int i = 0; strn[i] != '\0'; i++) {
       if (strn[i] >= 'a' && strn[i] <= 'z') {
         strn[i] = toupper(strn[i]);
-      }
-    } else {
-      if (strn[i] >= 'A' && strn[i] <= 'Z') {
-        strn[i] = tolower(strn[i]);
       }
     }
   }
