@@ -79,9 +79,9 @@ const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
     #else
       #define WIND_UNIT "m/s"
     #endif
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 feels like: %.1f\011C \007 pressure: %d hPa \007 humidity: %d%% \007 wind: %.1f " WIND_UNIT " [%s]";
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 sensación térmica: %.1f\011C \007 'presion': %d hPa \007 humedad: %d%% \007 viento: %.1f " WIND_UNIT " [%s]";
   #else
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 pressure: %d hPa \007 humidity: %d%%";
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 'presion': %d hPa \007 humedad: %d%%";
   #endif
 #endif
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
