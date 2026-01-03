@@ -22,6 +22,8 @@ namespace LANG{
 #define L10N_PATH "../../../locale/displayL10n_ua.h"
 #elif L10N_LANGUAGE == DE
 #define L10N_PATH "../../../locale/displayL10n_de.h"
+#elif L10N_LANGUAGE == ES
+#define L10N_PATH "../../../locale/displayL10n_es.h"
 #endif
 
 #if __has_include("../../../locale/displayL10n_custom.h")
