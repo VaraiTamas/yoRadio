@@ -1317,8 +1317,11 @@ bool Audio::connecttospeech(const char *speech, const char *lang) {
   req.append(host);
   req.append("\r\n");
   req.append("User-Agent: Mozilla/5.0 \r\n");
+  //req.append("Accept-Encoding: identity\r\n");
+  //req.append("Accept: text/html\r\n");
+  req.append("Accept: audio/mpeg\r\n");        // "módosítás"
   req.append("Accept-Encoding: identity\r\n");
-  req.append("Accept: text/html\r\n");
+
   req.append("Connection: close\r\n\r\n");
 
   m_client = static_cast<NetworkClient *>(&client);
@@ -5754,13 +5757,15 @@ bool Audio::parseHttpResponseHeader() {  // this is the response to a GET / requ
       vTaskDelay(5);
       continue;
     }
-
+// <-- IDE
+    // Serial.printf("HDR: %s\n", rhl.get()); // módosítás
     // rhl.println();
     if (rhl.starts_with_icase("icy-")) {
       m_phreh.f_icy_data = true;  // is webstrean
     }
 
     if (rhl.starts_with_icase("HTTP/")) {  // HTTP status error code
+      // Serial.printf("STATUS: %s\n", rhl.get()); // módosítás
       char statusCode[5];
       statusCode[0] = rhl[9];
       statusCode[1] = rhl[10];
@@ -5772,6 +5777,7 @@ bool Audio::parseHttpResponseHeader() {  // this is the response to a GET / requ
         goto exit;
       }
     } else if (rhl.starts_with_icase("content-type:")) {  // content-type: text/html; charset=UTF-8
+     // Serial.printf("CT: %s\n", rhl.get()); // módosítás
       int idx = rhl.index_of(';', 13);
       if (idx > 0) {
         rhl[idx] = '\0';
@@ -5785,6 +5791,7 @@ bool Audio::parseHttpResponseHeader() {  // this is the response to a GET / requ
     }
 
     else if (rhl.starts_with_icase("location:")) {
+     // Serial.printf("REDIR: %s\n", rhl.get());  // módosítás
       int pos = rhl.index_of_icase("http", 0);
       if (pos >= 0) {
         const char *c_host = (rhl.get() + pos);
@@ -5885,6 +5892,7 @@ bool Audio::parseHttpResponseHeader() {  // this is the response to a GET / requ
     }
 
     else if (rhl.starts_with_icase("content-length:")) {
+     // Serial.printf("LEN: %s \n", rhl.get()); // módosítás
       const char *c_cl = (rhl.get() + 15);
       int32_t i_cl = atoi(c_cl);
       m_audioFileSize = i_cl;
@@ -5944,6 +5952,7 @@ exit:  // termination condition
   m_dataMode = AUDIO_NONE;
   stopSong();
   return false;
+  //Serial.printf("HEADER END  chunked=%d  len=%ld  tts=%d \n",  m_f_chunked, m_audioFileSize, m_f_tts); // módosítás
 
 lastToDo:
   m_streamType = ST_WEBSTREAM;

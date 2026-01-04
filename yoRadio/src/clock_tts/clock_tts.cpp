@@ -151,7 +151,7 @@ void clock_tts_loop() {
       clock_tts_fade_timer = nowMillis;
       return;
     }
-    if (clock_ttsActive && (nowMillis - clock_lastTTSMillis > 4500)) {
+    if (clock_ttsActive && (nowMillis - clock_lastTTSMillis > 5000)) {
       player.sendCommand({PR_PLAY, clock_tts_saved_station});
       clock_tts_fading_up = true;
       clock_tts_fade_timer = nowMillis;
