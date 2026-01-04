@@ -6,410 +6,618 @@
 
 
 // Polish chars: ąćęłńóśźż ĄĆĘŁŃÓŚŹŻ
+// Execution of special characters PL, SK, DE, RO, S = A. Jaroszuk
 
 #ifndef DSP_LCD
 char* utf8To(const char* str, bool uppercase) {
-int index = 0;
+  int index = 0;
   static char strn[BUFLEN];
   strlcpy(strn, str, BUFLEN); 
- 
-  if (uppercase) { // Przełącz wielkie i małe litery
-  for (char *iter = strn; *iter != '\0'; ++iter)
-  *iter = toupper(*iter); 
-  }
 
 if(L10N_LANGUAGE==EN)  return strn;
   while (strn[index])
   { 
-    if (strn[index] == 0xC5) // Jeśli pierwszym bajtem znaków UTF-8 jest C5, umieść je wszystkie w tej grupie!
+    bool converted = false;
+    // ========================================================================
+    // BLOK C5: Polski + Słowacki/Czeski
+    // ========================================================================
+    if (strn[index] == 0xC5)
     {
       switch (strn[index + 1]) {
+        // ----------------------------------------------------------------
+        // POLSKI (PL)
+        // ----------------------------------------------------------------
         case 0x82: {    
 			if (!uppercase){ 
-			strn[index] = 0xCf;} // *ł
+			strn[index] = 0xCf;} // ł
 			else {
-			strn[index] = 0xD0;} // *Ł
+			strn[index] = 0xD0;} // Ł
+            converted = true;
             break;
         }
 			case 0x81: { 
-			strn[index] = 0xD0; // *Ł
+			strn[index] = 0xD0; // Ł
+            converted = true;
             break;
             } 
 
 		case 0x84: {
 			if (!uppercase){ 
-			strn[index] = 0xC0;} // *ń
+			strn[index] = 0xC0;} // ń
 			else {
-			strn[index] = 0xC1;} // *Ń
-              break;
+			strn[index] = 0xC1;} // Ń
+            converted = true;
+            break;
 		}
 			case 0x83: { 
-			strn[index] = 0xC1; // *Ń
+			strn[index] = 0xC1; // Ń
+            converted = true;
             break;
             } 
 			
 		case 0x9B: { 
 			if (!uppercase){ 
-			strn[index] = 0xCB;} // *ś
+			strn[index] = 0xCB;} // ś
 			else {
-			strn[index] = 0xCC;} // *Ś
+			strn[index] = 0xCC;} // Ś
+            converted = true;
             break;
         }
 			case 0x9A: { 
-			strn[index] = 0xCC; // *Ś
+			strn[index] = 0xCC; // Ś
+            converted = true;
             break;
             } 
 			
 		case 0xBA: { 
 			if (!uppercase){ 
-			strn[index] = 0xBB;} // *ź
+			strn[index] = 0xBB;} // ź
 			else {
-			strn[index] = 0xBC;} // *Ź
+			strn[index] = 0xBC;} // Ź
+            converted = true;
             break;
         }
 			case 0xB9: { 
-			strn[index] = 0xBC; // *Ź
+			strn[index] = 0xBC; // Ź
+            converted = true;
             break;
             } 
 
 		case 0xBC: { 
 			if (!uppercase){ 
-			strn[index] = 0xB9;} // *ż
+			strn[index] = 0xB9;} // ż
 			else {
-			strn[index] = 0xBA;} // *Ż
+			strn[index] = 0xBA;} // Ż
+            converted = true;
             break;
         }
 			case 0xBB: { 
-			strn[index] = 0xBA; // *Ż
+			strn[index] = 0xBA; // Ż
+            converted = true;
             break;
             } 
-//slovakia
+
+        // ----------------------------------------------------------------
+        // SŁOWACKI / CZESKI (SK/CZ)
+        // ----------------------------------------------------------------
         case 0x88: {    
 			if (!uppercase){ 
-			strn[index] = 0xB4;} // *ň
+			strn[index] = 0xB4;} // ň
 			else {
-			strn[index] = 0xB3;} // *Ň
+			strn[index] = 0xB3;} // Ň
+            converted = true;
             break;
         }
 			case 0x87: { 
-			strn[index] = 0xB3; // *Ň
+			strn[index] = 0xB3; // Ň
+            converted = true;
             break;
             } 
 
 		case 0x95: {
 			if (!uppercase){ 
-			strn[index] = 0xB6;} // *ř
+			strn[index] = 0xB6;} // ř
 			else {
-			strn[index] = 0xB5;} // *Ŕ
-              break;
+			strn[index] = 0xB5;} // Ŕ
+            converted = true;
+            break;
 		}
 			case 0x94: { 
-			strn[index] = 0xB5; // *Ŕ
+			strn[index] = 0xB5; // Ŕ
+            converted = true;
             break;
             } 
 			
 		case 0xA1: { 
 			if (!uppercase){ 
-			strn[index] = 0xC3;} // *š
+			strn[index] = 0xC3;} // š
 			else {
-			strn[index] = 0xC2;} // *Š
+			strn[index] = 0xC2;} // Š
+            converted = true;
             break;
         }
 			case 0xA0: { 
-			strn[index] = 0xC2; // *Š
+			strn[index] = 0xC2; // Š
+            converted = true;
             break;
             } 
 			
 		case 0xA5: { 
+            // Uwaga: 0xC5 0xA5 może być zarówno ť (czeski/słowacki) lub źle zakodowane å (szwedzki)
+            // Sprawdźmy kontekst lub domyślnie użyjmy ť dla zgodności
 			if (!uppercase){ 
-			strn[index] = 0xC6;} // *ť
+			strn[index] = 0xC6;} // ť
 			else {
-			strn[index] = 0xC5;} // *Ť
+			strn[index] = 0xC5;} // Ť
+            converted = true;
             break;
         }
 			case 0xA4: { 
-			strn[index] = 0xC5; // *Ť
+			strn[index] = 0xC5; // Ť
+            converted = true;
             break;
             } 
 
 		case 0xBE: { 
 			if (!uppercase){ 
-			strn[index] = 0xC8;} // *ž
+			strn[index] = 0xC8;} // ž
 			else {
-			strn[index] = 0xC7;} // *Ž
+			strn[index] = 0xC7;} // Ž
+            converted = true;
             break;
         }
 			case 0xBD: { 
-			strn[index] = 0xC7; // *Ž
+			strn[index] = 0xC7; // Ž
+            converted = true;
             break;
             } 
 
 		case 0xAE: { 
 			if (!uppercase){ 
-			strn[index] = 0xE8;} // *ů
+			strn[index] = 0xE8;} // ů
 			else {
-			strn[index] = 0x9D;} // *Ů
+			strn[index] = 0x9D;} // Ů
+            converted = true;
             break;
         }
 		    case 0xAF: { 
-			strn[index] = 0x9D; // *Ů
+			strn[index] = 0x9D; // Ů
+            converted = true;
             break;
             } 
 			 	
 	  }
+	  if (converted) {
 		int sind = index + 2;
 		while (strn[sind]) {
         strn[sind - 1] = strn[sind];
         sind++;
       }
     strn[sind - 1] = 0;
+      }
     }
 
-if (strn[index] == 0xC4)  // Jeśli pierwszym bajtem znaków UTF-8 jest C4, umieść je wszystkie w tej grupie!
+    // ========================================================================
+    // BLOK C4: Polski + Słowacki/Czeski + Rumuński
+    // ========================================================================
+if (strn[index] == 0xC4)
     {
+      converted = false;
 	  switch (strn[index + 1]) {
-
+        // ----------------------------------------------------------------
+        // POLSKI (PL)
+        // ----------------------------------------------------------------
 		case 0x85: {
 			if (!uppercase){ 
-			strn[index] = 0xB8;} // *ą
+			strn[index] = 0xB8;} // ą
 			else {
-			strn[index] = 0xB7;} // *Ą
-              break;
+			strn[index] = 0xB7;} // Ą
+            converted = true;
+            break;
 		}
 			case 0x84	: { 
-			strn[index] = 0xB7; // *Ą
+			strn[index] = 0xB7; // Ą
+            converted = true;
             break;
             } 
 		
 		case 0x87: {
 			if (!uppercase){ 
-			strn[index] = 0xBD;} // *ć
+			strn[index] = 0xBD;} // ć
 			else {
-			strn[index] = 0xC4;} // *Ć
-              break;
+			strn[index] = 0xC4;} // Ć
+            converted = true;
+            break;
 		}
 			case 0x86: { 
-			strn[index] = 0xC4; // *Ć
+			strn[index] = 0xC4; // Ć
+            converted = true;
             break;
             } 
 
     case 0x99: {
 			if (!uppercase){ 
-			strn[index] = 0xD6;} // *ę
+			strn[index] = 0xD6;} // ę
 			else {
-			strn[index] = 0xD7;} // *Ę
-              break;
+			strn[index] = 0xD7;} // Ę
+            converted = true;
+            break;
 		}
 			case 0x98: { 
-			strn[index] = 0xD7; // *Ę
+			strn[index] = 0xD7; // Ę
+            converted = true;
             break;
             } 
-// Slovakia chars:
+
+        // ----------------------------------------------------------------
+        // SŁOWACKI / CZESKI (SK/CZ)
+        // ----------------------------------------------------------------
         case 0x8D: {
 			if (!uppercase){ 
-			strn[index] = 0xCA;} // *č
+			strn[index] = 0xCA;} // č
 			else {
-			strn[index] = 0xC9;} // *Č
-              break;
+			strn[index] = 0xC9;} // Č
+            converted = true;
+            break;
 		}
 			case 0x8C: { 
-			strn[index] = 0xC9; // *Č
+			strn[index] = 0xC9; // Č
+            converted = true;
             break;
             } 
 
 		case 0x8E: {
 			if (!uppercase){ 
-			strn[index] = 0xD1;} // *ď
+			strn[index] = 0xD1;} // ď
 			else {
-			strn[index] = 0xCE;} // *Ď
-              break;
+			strn[index] = 0xCE;} // Ď
+            converted = true;
+            break;
 		}
 			case 0x8F: { 
-			strn[index] = 0xCE; // *Ď
+			strn[index] = 0xCE; // Ď
+            converted = true;
             break;
             } 	
 
 		case 0xBA: {
 			if (!uppercase){ 
-			strn[index] = 0xD3;} // *ĺ
+			strn[index] = 0xD3;} // ĺ
 			else {
-			strn[index] = 0xD2;} // *Ĺ 
-              break;
+			strn[index] = 0xD2;} // Ĺ 
+            converted = true;
+            break;
 		}
 			case 0xB9: { 
-			strn[index] = 0xD2; // *Ĺ 
+			strn[index] = 0xD2; // Ĺ 
+            converted = true;
             break;
             } 
 
 		case 0xBE: {
 			if (!uppercase){ 
-			strn[index] = 0xD5;} // *ľ
+			strn[index] = 0xD5;} // ľ
 			else {
-			strn[index] = 0xD4;} // *Ľ 
-              break;
+			strn[index] = 0xD4;} // Ľ 
+            converted = true;
+            break;
 		}
 			case 0xBD: { 
-			strn[index] = 0xD4; // *Ľ
+			strn[index] = 0xD4; // Ľ
+            converted = true;
             break;
             }
 
+        // ----------------------------------------------------------------
+        // RUMUŃSKI (RO)
+        // ----------------------------------------------------------------
+		case 0x83: {  // ă (a with breve)
+			if (!uppercase){ 
+			strn[index] = 0xf4;} // ă
+			else {
+			strn[index] = 0xf5;} // Ă
+            converted = true;
+            break;
+		}
+		
+		case 0x82: {  // Ă (A with breve)
+			strn[index] = 0xf5;
+            converted = true;
+            break;
+		}
       } 
 
+      if (converted) {
 		int sind = index + 2;
 		while (strn[sind]) {
         strn[sind - 1] = strn[sind];
         sind++;
       }
       strn[sind - 1] = 0;
-    
+      }
 	}
 
-if (strn[index] == 0xC3)  // Jeśli pierwszym bajtem znaków UTF-8 jest C3, umieść je wszystkie w tej grupie!
+    // ========================================================================
+    // BLOK C8: Rumuński (RO) - s i t z przecinkiem poniżej
+    // ========================================================================
+if (strn[index] == 0xC8)
     {
+      converted = false;
 	  switch (strn[index + 1]) {
 
+		case 0x99: {  // ș (s with comma below)
+			if (!uppercase){ 
+			strn[index] = 0xef;} // ș
+			else {
+			strn[index] = 0xf0;} // Ș
+            converted = true;
+            break;
+		}
+		
+		case 0x98: {  // Ș (S with comma below)
+			strn[index] = 0xf0;
+            converted = true;
+            break;
+		}
+
+		case 0x9B: {  // ț (t with comma below)
+			if (!uppercase){ 
+			strn[index] = 0xf1;} // ț
+			else {
+			strn[index] = 0xf2;} // Ț
+            converted = true;
+            break;
+		}
+		
+		case 0x9A: {  // Ț (T with comma below)
+			strn[index] = 0xf2;
+            converted = true;
+            break;
+		}
+
+      } 
+
+      if (converted) {
+		int sind = index + 2;
+		while (strn[sind]) {
+        strn[sind - 1] = strn[sind];
+        sind++;
+      }
+      strn[sind - 1] = 0;
+      }
+	}
+
+    // ========================================================================
+    // BLOK C3: Polski + Niemiecki + Słowacki + Rumuński
+    // ========================================================================
+if (strn[index] == 0xC3)
+    {
+      converted = false;
+	  switch (strn[index + 1]) {
+
+        // ----------------------------------------------------------------
+        // POLSKI (PL)
+        // ----------------------------------------------------------------
 		case 0xB3: {
 			if (!uppercase){ 
-			strn[index] = 0xBE;} // *ó
+			strn[index] = 0xBE;} // ó
 			else {
-			strn[index] = 0xBF;} // *Ó
-              break;
+			strn[index] = 0xBF;} // Ó
+            converted = true;
+            break;
 		}
 			case 0x93: { 
-			strn[index] = 0xBF; // *Ó
+			strn[index] = 0xBF; // Ó
+            converted = true;
             break;
             } 
-// deutschland chars: äöü ÄÖÜ ß é
-    
+
+        // ----------------------------------------------------------------
+        // NIEMIECKI (DE) + SZWEDZKI (SE)
+        // ----------------------------------------------------------------
 	        case 0xA4: {
-		if (!uppercase){					// ä 
+		if (!uppercase){		// ä 
 			strn[index] = 0x84;}
 		  else {
-			strn[index] = 0x8E;}			// Ä 
-              break;
+			strn[index] = 0x8E;}	// Ä 
+            converted = true;
+            break;
             }
 		case 0xB6: { 
-		if (!uppercase){					// ö 
+		if (!uppercase){		// ö 
 			strn[index] = 0x94;}
 		  else {
-			strn[index] = 0x99;}			// Ö 
-              break;
+			strn[index] = 0x99;}	// Ö 
+            converted = true;
+            break;
 			}
 		case 0xBC: {  
-		if (!uppercase){					// ü 
+		if (!uppercase){		// ü 
 			  strn[index] = 0x81;}
 		  else {
-			  strn[index] = 0x9A;}			// Ü 
-              break;
+			  strn[index] = 0x9A;}	// Ü 
+            converted = true;
+            break;
             }			
-		case 0x84: {  						// Ä
+		case 0x84: {  			// Ä
               strn[index] = 0x8E;
+              converted = true;
               break;
             }
-		case 0x96: {  						// Ö
+		case 0x96: {  			// Ö
               strn[index] = 0x99;
+              converted = true;
               break;
             }
-		case 0x9C: {  						// Ü
+		case 0x9C: {  			// Ü
               strn[index] = 0x9A;
+              converted = true;
               break;
             }
-		case 0x9F: {  						// ß
+		case 0x9F: {  			// ß
               strn[index] = 0xE1;
+              converted = true;
+              break;
+            }
+        case 0xA5: {                        // å (Swedish)
+		if (!uppercase){					
+			strn[index] = 0x86;}            // å small
+		  else {
+			strn[index] = 0x8F;}			// Å capital
+            converted = true;
+            break;
+            }
+		case 0x85: {  						// Å (Swedish capital)
+              strn[index] = 0x8F;
+              converted = true;
               break;
             }		       
          
-// Slovakia
-
+        // ----------------------------------------------------------------
+        // SŁOWACKI / CZESKI (SK/CZ)
+        // ----------------------------------------------------------------
         case 0xA1: {
 			if (!uppercase){ 
-			strn[index] = 0xD9;} // *á
+			strn[index] = 0xD9;} // á
 			else {
-			strn[index] = 0xD8;} // *Á
-              break;
+			strn[index] = 0xD8;} // Á
+            converted = true;
+            break;
 		}
 			case 0x81: { 
-			strn[index] = 0xD8; // *Á
+			strn[index] = 0xD8; // Á
+            converted = true;
             break;
             } 
-
 		 
 		case 0xA9: {
 			if (!uppercase){ 
-			strn[index] = 0x82;} // *é
+			strn[index] = 0x82;} // é
 			else {
-			strn[index] = 0x90;} // *É
-              break;
+			strn[index] = 0x90;} // É
+            converted = true;
+            break;
 		}
 			case 0x89: { 
-			strn[index] = 0x90; // *É
+			strn[index] = 0x90; // É
+            converted = true;
             break;
             } 
 
 		case 0xAD: {
 			if (!uppercase){ 
-			strn[index] = 0xDB;} // *í
+			strn[index] = 0xDB;} // í
 			else {
-			strn[index] = 0xDA;} // *Í
-              break;
+			strn[index] = 0xDA;} // Í
+            converted = true;
+            break;
 		}
 			case 0x8D: { 
-			strn[index] = 0xDA; // *Í
+			strn[index] = 0xDA; // Í
+            converted = true;
             break;
             } 	
 
 		case 0xB4: {
 			if (!uppercase){ 
-			strn[index] = 0xDD;} // *ô
+			strn[index] = 0xDD;} // ô
 			else {
-			strn[index] = 0xDC;} // *Ô
-              break;
+			strn[index] = 0xDC;} // Ô
+            converted = true;
+            break;
 		}
 			case 0x94: { 
-			strn[index] = 0xDC; // *Ô
+			strn[index] = 0xDC; // Ô
+            converted = true;
             break;
             } 	
 
 		case 0xBA: {
 			if (!uppercase){ 
-			strn[index] = 0xDF;} // *ú
+			strn[index] = 0xDF;} // ú
 			else {
-			strn[index] = 0xDE;} // *Ú
-              break;
+			strn[index] = 0xDE;} // Ú
+            converted = true;
+            break;
 		}
 			case 0x9A: { 
-			strn[index] = 0xDE; // *Ú
+			strn[index] = 0xDE; // Ú
+            converted = true;
             break;
             } 
 
 		case 0xBD: {
 			if (!uppercase){ 
-			strn[index] = 0xE3;} // *ý
+			strn[index] = 0xE3;} // ý
 			else {
-			strn[index] = 0xE2;} // *Ý
-              break;
+			strn[index] = 0xE2;} // Ý
+            converted = true;
+            break;
 		}
 			case 0x9D: { 
-			strn[index] = 0xE2; // *Ý
+			strn[index] = 0xE2; // Ý
+            converted = true;
             break;
             } 
 
+        // ----------------------------------------------------------------
+        // RUMUŃSKI (RO)
+        // ----------------------------------------------------------------
+		case 0xA2: {  // â (small a with circumflex)
+			if (!uppercase){ 
+			strn[index] = 0x83;} // â
+			else {
+			strn[index] = 0xee;} // Â
+            converted = true;
+            break;
+		}
+		
+		case 0x82: {  // Â (capital A with circumflex)
+			strn[index] = 0xee;
+            converted = true;
+            break;
+		}
+		
+		case 0xAE: {  // î (small i with circumflex)
+			if (!uppercase){ 
+			strn[index] = 0xed;} // î
+			else {
+			strn[index] = 0xf3;} // Î
+            converted = true;
+            break;
+		}
+		
+		case 0x8E: {  // Î (capital I with circumflex)
+			strn[index] = 0xf3;
+            converted = true;
+            break;
+		}
+
           } 
 
+      if (converted) {
 		int sind = index + 2;
 		while (strn[sind]) {
         strn[sind - 1] = strn[sind];
         sind++;
       }
       strn[sind - 1] = 0;
-    
+      }
 	}
-
-// Wstaw tutaj swoją korektę na dalsze czcionki...
-
 
     index++;
   }
+
+  // Konwertuj ASCII na wielkie litery gdy uppercase=true
+  // NIE konwertuj na małe gdy uppercase=false (zachowaj oryginał)
+  if (uppercase) {
+    for (int i = 0; strn[i] != '\0'; i++) {
+      if (strn[i] >= 'a' && strn[i] <= 'z') {
+        strn[i] = toupper(strn[i]);
+      }
+    }
+  }
+
 return strn;
 }
 #endif //#ifndef DSP_LCD

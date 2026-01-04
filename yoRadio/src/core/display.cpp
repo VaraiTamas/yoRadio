@@ -422,6 +422,9 @@ void Display::_swichMode(displayMode_e newmode) {
     config.screensaverTicks = SCREENSAVERSTARTUPDELAY;
     config.screensaverPlayingTicks = SCREENSAVERSTARTUPDELAY;
     config.isScreensaver = false;
+    #if PWR_AMP!=255                     // "PWR_AMP"
+      digitalWrite(PWR_AMP,HIGH);
+    #endif
   }
   if (newmode == VOL) {
   #ifndef HIDE_IP

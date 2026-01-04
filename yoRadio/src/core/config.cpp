@@ -106,6 +106,10 @@ void Config::init() {
   #endif
   _bootDone=false;
   setTimeConf();
+  #if PWR_AMP!=255               // "PWR_AMP"
+    pinMode(PWR_AMP, OUTPUT);
+    digitalWrite(PWR_AMP,HIGH);
+  #endif
 }
 
 void Config::_setupVersion(){

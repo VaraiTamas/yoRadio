@@ -17,7 +17,7 @@
 CommandHandler cmd;
 
 bool CommandHandler::exec(const char *command, const char *value, uint8_t cid) {
- // Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %lu \n", command, value, cid);
+ // Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %d \n", command, value, cid);
   if (strEquals(command, "start")) {
     //Serial.printf("commandhandler.cpp--> START \n");
     player.sendCommand({PR_PLAY, config.lastStation()});

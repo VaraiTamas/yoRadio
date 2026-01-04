@@ -29,6 +29,7 @@ class Player: public Audio {
     void _stop(bool alreadyStopped = false);
     void _play(uint16_t stationId);
     void _loadVol(uint8_t volume);
+    int8_t uiToDb(int8_t uiVal);
     bool _hasError;
   public:
     bool lockOutput = true;
@@ -45,7 +46,6 @@ class Player: public Audio {
     void initHeaders(const char *file);
     void setError();
     void setError(const char *e);
-    //bool hasError() { return strlen(_plError)>0; }
     void sendCommand(playerRequestParams_t request);
     void resetQueue();
     #ifdef MQTT_ROOT_TOPIC
@@ -59,9 +59,9 @@ class Player: public Audio {
     void stepVol(bool up);
     void setVol(uint8_t volume);
     uint8_t volToI2S(uint8_t volume);
+    void setTone(int8_t bass, int8_t mid, int8_t treble);
     void stopInfo();
     void setOutputPins(bool isPlaying);
-   // void setResumeFilePos(uint32_t pos) { _resumeFilePos = pos; }
 };
 
 extern Player player;
