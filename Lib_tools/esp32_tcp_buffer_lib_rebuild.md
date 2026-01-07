@@ -15,11 +15,11 @@ ESP-IDF telepítőcsomag (ugyanaz a főverzió, mint amit az Arduino használ)
 
 Nyisd meg a mappát:     
 C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\
-Itt találsz egy ilyen mappát:
-idf-release_v5.5-xxxxxxx
+Itt találsz egy ilyen mappát:   
+**idf-release_v5.5-xxxxxxx**  
 Ez mutatja, hogy az Arduino ESP-IDF 5.5.x verziót használ.
 
-Ezután keresd meg az 'sdkconfig' fájlt, erre később lesz szükség. Ez tartalmazza az összes beállítást, amelyet a könyvtárak fordításához használtak (alapértelmezetten). Az alábbi mappában találod.   
+Ezután keresd meg az **'sdkconfig'** fájlt, erre később lesz szükség. Ez tartalmazza az összes beállítást, amelyet a könyvtárak fordításához használtak (alapértelmezetten). Az alábbi mappában találod.   
 ...C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3
 
 ### 2️⃣ Azonos verziójú ESP-IDF letöltése
@@ -31,7 +31,7 @@ https://dl.espressif.com/dl/esp-idf/
 
 Töltsd le ugyanazt a verziót (pl. 5.5.2), majd telepítsd a szoftvert "Futtatás rendszergazdaként" módban (eltarthat egy ideig).
 
-Én a C: meghajtót használom.     
+Én a  C:\  meghajtót használom, ez nálad változhat.     
 
 
 Telepítés után indítsd el az ESP-IDF PowerShell környezetet.
@@ -47,10 +47,10 @@ C:\Espressif\frameworks\esp-idf-v5.5.2> .\export.ps1
 
 ### 3️⃣ Fordítási projekt létrehozása
 
-A telepítés a C:\Espressif mappába telepíti a fájlokat.
+A telepítés a **C:\Espressif** mappába telepíti a fájlokat.
 Ebbe a mappába hozz létre a munkakörnyezetnek egy mappát, például  
 C:\Espressif\Projects   
-Hozz létre projektkönyvtárat!  
+Majd ezen belül hozz létre egy projektet például ESP32S3 néven a PowerShell programmal!  
 ``` 
 cd C:\Espressif\Projects
 idf.py create-project ESP32S3
@@ -63,23 +63,10 @@ idf.py set-target esp32s3
 ```
 Fordítsd le a projektet!
 ```
-idf.py build
+PS C:\Espressif\projects\esp32s3> idf.py build
 ```
 Ez lefordítja az alapértelmezett könyvtárakat.
-### 4️⃣ A projektben ki kell kapcsolni az egyedi partíció beállítást.
-
-Indítsd el a menuconfig programot!
-```
-idf.py menuconfig
-```
-Választ a menüben:   
-Partition Table --->  
-Partition Table (Custom partition table CSV)  --->  
-és jelöld be a  
-( ) Single factory app, no OTA lehetőséget  
-Q - billentyűvel mentsd el a változásokat! 
-
-### 5️⃣ Arduino-sdkconfig átmásolása és módosítása
+### 4️⃣ Arduino-sdkconfig átmásolása és módosítása
 
 Másold át az Arduino-ból az sdkconfig fájlt innen!
 
@@ -89,21 +76,34 @@ ide:
 
 C:\Espressif\Projects\ESP32S3\
 
+### 5️⃣ A projektben ki kell kapcsolni az egyedi partíció beállítást.
 
-Majd nyisd meg, és módosítsd az alábbi állandók értékeit ezekre vagy saját belátásod szerint kisérletezz!
+Indítsd el a PowerShell programban a menuconfigot!
+```
+PS C:\Espressif\projects\esp32s3> idf.py menuconfig
+```
+Választ a menüben:   
+Partition Table --->  
+Partition Table (Single factory app, no OTA)  --->  
+és jelöld be    
+(x) Single factory app, no OTA  
+lehetőséget  
+
+Majd szintén a menuconfigban módosítsd az alábbi értékeket ezekre vagy saját belátásod szerint kisérletezz!
 |Új értékek az 'sdkconfig" fájlban    |         Eredeti érték |  Értékhatár (range)|  Menuconfig → Component config → LWIP → TCP →
 |-------------------------------------|-----------------------|--------------------|----------------------------------------------|
-|CONFIG_LWIP_MAX_ACTIVE_TCP=512       |         (16)          |  1-1024            | Maximum active TCP Connections
-|CONFIG_LWIP_MAX_LISTENING_TCP=512    |         (16)          | 1-1024             | Maximum listening TCP Connections
+|CONFIG_LWIP_MAX_ACTIVE_TCP=16        |         (16)          |  1-1024            | Maximum active TCP Connections
+|CONFIG_LWIP_MAX_LISTENING_TCP=16     |         (16)          | 1-1024             | Maximum listening TCP Connections
 |CONFIG_LWIP_TCP_SND_BUF_DEFAULT=8192 |         (5744)        | 2440-65535         | Default send buffer size  
 |CONFIG_LWIP_TCP_WND_DEFAULT=32768    |         (5760)        | 2440-65535         |Default receive window size
 |CONFIG_LWIP_TCP_RECVMBOX_SIZE=32     |         (6)           | 6-64               | Default TCP receive mail box size
 
+Q - billentyűvel mentsd el a változásokat!  
 
-Mentsd el a fájlt!  
+Ezt követően fordítsd le a projektet az alábbi paranccsal aPowerShell programban.
 
 ```
-idf.py build
+PS C:\Espressif\projects\esp32s3> idf.py build
 ```
 Most már az új beállításokkal fordulnak a könyvtárak.
 
