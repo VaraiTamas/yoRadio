@@ -13,14 +13,25 @@ ESP-IDF telepítőcsomag (ugyanaz a főverzió, mint amit az Arduino használ)
 
 ### 1️⃣ Az Arduino által használt ESP-IDF verzió ellenőrzése
 
-Nyisd meg a mappát:     
+Nyisd meg a mappát:  
+```   
 C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\
+```
 Itt találsz egy ilyen mappát:   
-**idf-release_v5.5-xxxxxxx**  
+
+**idf-release_v5.5-xxxxxxx***
+
 Ez mutatja, hogy az Arduino ESP-IDF 5.5.x verziót használ.
 
 Ezután keresd meg az **'sdkconfig'** fájlt, erre később lesz szükség. Ez tartalmazza az összes beállítást, amelyet a könyvtárak fordításához használtak (alapértelmezetten). Az alábbi mappában találod.   
-...C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3
+```
+C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3  
+```
+
+PlatformIO esetén:
+```
+C:\Users\<név>\.platformio\packages\framework-arduinoespressif32-libs\esp32s3
+```
 
 ### 2️⃣ Azonos verziójú ESP-IDF letöltése
 
@@ -49,14 +60,16 @@ C:\Espressif\frameworks\esp-idf-v5.5.2> .\export.ps1
 
 A telepítés a **C:\Espressif** mappába telepíti a fájlokat.
 Ebbe a mappába hozz létre a munkakörnyezetnek egy mappát, például  
+```
 C:\Espressif\Projects   
-Majd ezen belül hozz létre egy projektet például ESP32S3 néven a PowerShell programmal!  
+```
+Ezen belül hozz létre egy projektet például ESP32S3 néven a PowerShell programmal!  
 ``` 
 cd C:\Espressif\Projects
 idf.py create-project ESP32S3
 cd ESP32S3
 ```
-majd a cél beállításához futtasd a PowerShell-ben az alábbi parancsokat:
+A cél beállításához futtasd a PowerShell-ben az alábbi parancsokat:
 ```
 $env:IDF_TARGET="esp32s3"
 idf.py set-target esp32s3
@@ -69,13 +82,13 @@ Ez lefordítja az alapértelmezett könyvtárakat.
 ### 4️⃣ Arduino-sdkconfig átmásolása és módosítása
 
 Másold át az Arduino-ból az sdkconfig fájlt innen!
-
-...C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3\
-
+```
+C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3\
+```
 ide:
-
+```
 C:\Espressif\Projects\ESP32S3\
-
+```
 ### 5️⃣ A projektben ki kell kapcsolni az egyedi partíció beállítást.
 
 Indítsd el a PowerShell programban a menuconfigot!
@@ -110,22 +123,23 @@ Most már az új beállításokkal fordulnak a könyvtárak.
 ### 6️⃣ Az újonnan fordított könyvtárak kiemelése
 
 A build után keresd meg a fájlokat:
-
+```
 C:\Espressif\Projects\ESP32S3\build\esp-idf\lwip\liblwip.a  
 C:\Espressif\Projects\ESP32S3\build\esp-idf\esp_netif\libesp_netif.a
-
+```
 
 Ezek az új verziók.
 
 ### 7️⃣ A fájlok cseréje
 
 Biztonsági mentés ajánlott, majd másold be a fájlokat ide Arduino környezetben:
-
+```
 C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxx\esp32s3\lib\
-
+```
 Visual Studio Code PlatformIO környetetben:  
+```
 C:\Users\<név>\.platformio\packages\framework-arduinoespressif32-libs\esp32s3\lib
-
+```
 ### 8️⃣ Projekt újrafordítása Arduino alatt
 
 Fordítsd újra a projektet (pl. YoRadio).
