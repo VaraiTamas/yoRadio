@@ -2,7 +2,7 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
-// nincs befejezve, hiányzik a utf8Es.cpp fájl és a glcdfont.c spanyol változata
+
 // clang-format off
 const char mon[] PROGMEM = "lu";
 const char tue[] PROGMEM = "ma";
@@ -56,19 +56,19 @@ const char* const mnths[]   PROGMEM = { jan, feb, mar, apr, may, jun, jul, aug, 
 const char* const wind[]    PROGMEM = { wn_N, wn_NNE, wn_NE, wn_ENE, wn_E, wn_ESE, wn_SE, wn_SSE, wn_S, wn_SSW, wn_SW, wn_WSW, wn_W, wn_WNW, wn_NW, wn_NNW, wn_N };
 
 const char    const_PlReady[]    PROGMEM = "[listo]";
-const char  const_PlStopped[]    PROGMEM = "[stop]";
+const char  const_PlStopped[]    PROGMEM = "[detenido]";
 const char  const_PlConnect[]    PROGMEM = "";
 const char  const_DlgVolume[]    PROGMEM = "VOLUMEN";
 const char    const_DlgLost[]    PROGMEM = "* PERDIDO *";
-const char  const_DlgUpdate[]    PROGMEM = "* UPDATING *";
+const char  const_DlgUpdate[]    PROGMEM = "* ACTUALIZANDO *";
 const char const_DlgNextion[]    PROGMEM = "* NEXTION *";
 const char const_getWeather[]    PROGMEM = "";
-const char  const_waitForSD[]    PROGMEM = "INDEX SD";
+const char  const_waitForSD[]    PROGMEM = "ÍNDICE SD";
 
-const char        apNameTxt[]    PROGMEM = "AP NAME";
-const char        apPassTxt[]    PROGMEM = "PASSWORD";
-const char       bootstrFmt[]    PROGMEM = "Trying to %s";
-const char        apSettFmt[]    PROGMEM = "SETTINGS PAGE ON: HTTP://%s/";
+const char        apNameTxt[]    PROGMEM = "NOMBRE AP";
+const char        apPassTxt[]    PROGMEM = "CONTRASEÑA";
+const char       bootstrFmt[]    PROGMEM = "CONECTANDO CON %s";
+const char        apSettFmt[]    PROGMEM = "PAGINA DE CONFIGURACION: HTTP://%s/";
 // clang-format on
 #ifdef WEATHER_FMT_SHORT  // Módosítás
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
