@@ -6,7 +6,7 @@ A Presets rendszer lehetővé teszi, hogy bármely rádióállomást elments és
 
 - Lejátszás módban a felső címsáv rövid érintésével lépj a Presets képernyőre.
 
-- Egy képernyőn 8 darab kártya található melyek alá egy - egy rádióállomás mentehtő. 5 darab képernyő tehát összesen 40 darab csatornát lehet elmenteni. 
+- Egy képernyőn 8 darab kártya található melyek alá egy - egy rádióállomás menthető. 5 darab képernyő tehát összesen 40 darab csatornát lehet elmenteni. 
 - A fejlécen lévő Lejátszás Mentés Törlés feliratok alatt a kártya érintésével egy idővonal indul el mely mutatja, ha elengedjük a kártyát melyik funkció fog végrehajtódni. 
     - Lejátszásnál a mentett csatorna indul.
     - Mentésnél az éppen hallgatott csatorna kerül mentésre ha volt eddig mentve a kártyára, azt felülírja.
