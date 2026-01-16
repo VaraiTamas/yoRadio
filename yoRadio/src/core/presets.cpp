@@ -8,9 +8,9 @@
 #include "display.h"
 #include "player.h"
 
-#include "../displays/dspcore.h"  // DspCore + extern dsp
-#include "displays/tools/l10n.h"
-#include "displays/tools/utf8To.h"
+#include "../displays/dspcore.h"
+#include "../displays/tools/l10n.h"
+#include "../displays/tools/utf8To.h"
 #define GFX (*s_presetsCanvas)
 
 static inline const char *uiText(const String &s, bool upper = false) {

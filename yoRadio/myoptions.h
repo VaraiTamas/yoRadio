@@ -16,7 +16,7 @@
 /* Itt tudod beállítani a program nyelvét 
    You can set the program language here. 
    Supported languages: HU NL PL RU EN GR SK DE UA ES. */
-#define L10N_LANGUAGE EN
+#define L10N_LANGUAGE HU
 
 /* -- Névnapok megjelenítése -- Display name days -- 
 Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not filled in.) */

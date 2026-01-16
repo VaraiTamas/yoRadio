@@ -38,13 +38,13 @@
 #define COLOR_PLAYLIST_3         35,  35,  35
 #define COLOR_PLAYLIST_4         25,  25,  25
 #define COLOR_BITRATE           231, 211,  90
-#define COLOR_PRST_BUTTON     14,  21,  30  // "presets" buttons background
-#define COLOR_PRST_CARD       14,  21,  30  // "presets" kards
-#define COLOR_PRST_ACCENT      0,  76, 153
-#define COLOR_PRST_FAV       255, 150,   0
-#define COLOR_PRST_TITLE_1       255, 255, 255
-#define COLOR_PRST_TITLE_2     200, 200, 200
-#define COLOR_PRST_TITLE_3     150, 150, 150
-#define COLOR_PRST_LINE        162, 162, 162
+#define COLOR_PRST_BUTTON        14,  21,  30  // "presets" buttons background
+#define COLOR_PRST_CARD          14,  21,  30  // "presets" kards
+#define COLOR_PRST_ACCENT         0,  76, 153
+#define COLOR_PRST_FAV          255, 150,   0
+#define COLOR_PRST_TITLE_1      255, 255, 255
+#define COLOR_PRST_TITLE_2      200, 200, 200
+#define COLOR_PRST_TITLE_3      150, 150, 150
+#define COLOR_PRST_LINE         162, 162, 162
 #endif  /* #ifdef  ENABLE_THEME */
 #endif  /* #define _my_theme_h  */
