@@ -101,8 +101,20 @@ const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 odczuwalna: %.1f\011C \007
 const char weatherFmt[] PROGMEM = "%s \007 %.1f\011C \007 %d hPa \007 %d%% RH";
   #endif
 #endif
-
+// clang-format off
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
-const char weatherLang[] PROGMEM = "pl";      /* https://openweathermap.org/current#multi */
+const char weatherLang[]  PROGMEM = "pl";      /* https://openweathermap.org/current#multi */
+
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Przypisano";
+const char prstDeleted[]      PROGMEM = "Preset usunięty";
+const char prstNoUrl[]        PROGMEM = "Brak URL";
+const char prstEmptyPreset[]  PROGMEM = "Pusty preset";
+const char prstPlay[]         PROGMEM = "Odtwórz";
+const char prstSave[]         PROGMEM = "Zapisz";
+const char prstDel[]          PROGMEM = "Usuń";
+const char prstSpace[]        PROGMEM = "Spacja";
+const char prstCancel[]       PROGMEM = "Anuluj";
+const char prstOk[]           PROGMEM = "OK";
 
 #endif

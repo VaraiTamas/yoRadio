@@ -1153,6 +1153,11 @@ void ClockWidget::_formatDate() {
     _tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
     network.timeinfo.tm_year + 1900
   );
+   #elif L10N_LANGUAGE == ES
+  sprintf(
+    _tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
+    network.timeinfo.tm_year + 1900
+  );
 
     #endif
 }

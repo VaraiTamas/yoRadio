@@ -15,8 +15,8 @@
 
 /* Itt tudod beállítani a program nyelvét 
    You can set the program language here. 
-   Supported languages: HU NL PL RU EN GR SK DE. */
-#define L10N_LANGUAGE HU
+   Supported languages: HU NL PL RU EN GR SK DE UA ES. */
+#define L10N_LANGUAGE EN
 
 /* -- Névnapok megjelenítése -- Display name days -- 
 Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not filled in.) */
@@ -47,8 +47,8 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 
 /* Touch */
-//#define TS_MODEL TS_MODEL_XPT2046
-//#define TS_CS    3
+#define TS_MODEL TS_MODEL_XPT2046
+#define TS_CS    3
 
 // #define NEXTION_RX			15
 // #define NEXTION_TX			16
@@ -99,7 +99,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 /* Google TTS hanggal mondja be az ídőt megadott nyelven és megadott percenként.
    Speaks the time using Google TTS voice in the specified language and every specified minute.
 */
-#define CLOCK_TTS_ENABLED          true  // Enabled (true) or disabled (false)
+#define CLOCK_TTS_ENABLED          false // Enabled (true) or disabled (false)
 #define CLOCK_TTS_LANGUAGE         "HU"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
 #define CLOCK_TTS_INTERVAL_MINUTES 5    // Hány percenként mondja be. - How many times a minute does it say.
 

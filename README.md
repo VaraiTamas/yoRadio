@@ -102,11 +102,15 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.8.0
+   - Presets rendszer a kedvenc rádiócsatornák gyors eléréséhez. Lehetővé teszi, hogy bármely rádióállomást elments és később egyetlen érintéssel visszahívd, még akkor is, ha a playlist időközben megváltozik. Csak 320x480 felbontású kijelzőn működik. További infóért [olvasd el ezt!](docs/presets.md) (Grzegorz Słupik ötlete alapján).  
+   Figyelem a displayL10n_xx.h fájlok bővítésre kerültek! Óvatosan a másolásokkal.
+   - Spanyol nyelv hozzáadva https://github.com/Kuzeex támogatásával.
 ### v0.7.13
    - Erősítő vezérlése képernyővédővel és hangerővel ( by Łukasz Antoszewski ) [olvasd el ezt!](docs/pwr_amp.md)
    - PL, SK, DE glcdfont.c nyelvi fájl frissítve. (by Andrzej Jaroszuk) 
 
-### v0.7.12
+### v0.7.12 
    - A hangszínszabályzó hibájának javítása.
 
 ### v0.7.11

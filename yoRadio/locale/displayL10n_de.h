@@ -86,4 +86,16 @@ const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 Druck: %d hPa \007 Luftfeu
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
 const char weatherLang[] PROGMEM = "de";      /* https://openweathermap.org/current#multi */
 
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Gespeichert";
+const char prstDeleted[]      PROGMEM = "Preset gelöscht";
+const char prstNoUrl[]        PROGMEM = "Keine URL";
+const char prstEmptyPreset[]  PROGMEM = "Leer";
+const char prstPlay[] PROGMEM = "Start";
+const char prstSave[] PROGMEM = "Speichern";
+const char prstDel[]  PROGMEM = "Löschen";
+const char prstSpace[]  PROGMEM = "Leer";
+const char prstCancel[] PROGMEM = "Abbruch";
+const char prstOk[]     PROGMEM = "OK";
+
 #endif

@@ -88,7 +88,20 @@ const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 ощущается: %.1f\0
 const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 давление: %d hPa \007 влажность: %d%%";
   #endif
 #endif
+// clang-format off
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
-const char weatherLang[] PROGMEM = "ru";      /* https://openweathermap.org/current#multi */
+const char weatherLang[]  PROGMEM = "ru";      /* https://openweathermap.org/current#multi */
+
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Сохранено";
+const char prstDeleted[]      PROGMEM = "Пресет удалён";
+const char prstNoUrl[]        PROGMEM = "Нет URL";
+const char prstEmptyPreset[]  PROGMEM = "Пустой пресет";
+const char prstPlay[]         PROGMEM = "Воспроизв.";
+const char prstSave[]         PROGMEM = "Сохранить";
+const char prstDel[]          PROGMEM = "Удалить";
+const char prstSpace[]        PROGMEM = "Пробел";
+const char prstCancel[]       PROGMEM = "Отмена";
+const char prstOk[]           PROGMEM = "OK";
 
 #endif

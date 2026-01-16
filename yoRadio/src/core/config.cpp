@@ -378,6 +378,14 @@ void Config::loadTheme(){
   theme.playlist[2]   = color565(COLOR_PLAYLIST_2);
   theme.playlist[3]   = color565(COLOR_PLAYLIST_3);
   theme.playlist[4]   = color565(COLOR_PLAYLIST_4);
+  theme.prst_button   = color565(COLOR_PRST_BUTTON);      // Módosítás: plussz gombszín. "presets"
+  theme.prst_card     = color565(COLOR_PRST_CARD);        // Módosítás: plussz kártya szín. "presets"
+  theme.prst_accent   = color565(COLOR_PRST_ACCENT);      // Módosítás: plussz kiemelés szín. "presets"
+  theme.prst_fav      = color565(COLOR_PRST_FAV);         // Módosítás: plussz FAV gomb text szín. "presets"
+  theme.prst_title1   = color565(COLOR_PRST_TITLE_1);     // Módosítás: plussz kártya text1 szín. "presets"
+  theme.prst_title2   = color565(COLOR_PRST_TITLE_2);     // Módosítás: plussz kártya text2 szín. "presets"
+  theme.prst_title3   = color565(COLOR_PRST_TITLE_3);     // Módosítás: plussz kártya text3 inaktív szín. "presets"
+  theme.prst_line     = color565(COLOR_PRST_LINE);        // Módosítás: plussz vonal szín. "presets"
   #include "../displays/tools/tftinverttitle.h"
 }
 

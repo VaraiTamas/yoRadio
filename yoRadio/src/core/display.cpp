@@ -5,6 +5,7 @@
 #include "time.h"
 #include "config.h"
 #include "display.h"
+#include "presets.h"
 #include "player.h"
 #include "network.h"
 #include "netserver.h"
@@ -74,7 +75,7 @@ void Display::_createDspTask() {
 //============================================================================================================================
 DspCore dsp;
 
-Page *pages[] = {new Page(), new Page(), new Page(), new Page()};
+Page *pages[] = {new Page(), new Page(), new Page(), new Page(), new Page()}; // "presets" +1 page
 
   #if !(                                                                                                                                   \
     (DSP_MODEL == DSP_ST7735 && DTYPE == INITR_BLACKTAB) || DSP_MODEL == DSP_ST7789 || DSP_MODEL == DSP_ST7796 || DSP_MODEL == DSP_ILI9488 \
@@ -451,6 +452,10 @@ void Display::_swichMode(displayMode_e newmode) {
   }
   if (newmode == NUMBERS) {
     _showDialog("");
+  }
+  if (newmode == PRESETS) {
+    _pager->setPage(pages[PG_PRESETS], true);
+    presets_drawScreen();
   }
   if (newmode == STATIONS) {
     _pager->setPage(pages[PG_PLAYLIST]);

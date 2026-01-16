@@ -93,4 +93,16 @@ const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 Πίεση: %d hPa \007 Υ
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
 const char weatherLang[] PROGMEM = "el";      /* https://openweathermap.org/current#multi */
 
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Αποθηκεύτηκε";
+const char prstDeleted[]      PROGMEM = "Το preset διαγράφηκε";
+const char prstNoUrl[]        PROGMEM = "Χωρίς URL";
+const char prstEmptyPreset[]  PROGMEM = "Κενό preset";
+const char prstPlay[]         PROGMEM = "Αναπαραγωγή";
+const char prstSave[]         PROGMEM = "Αποθήκευση";
+const char prstDel[]          PROGMEM = "Διαγραφή";
+const char prstSpace[]        PROGMEM = "Κενό";
+const char prstCancel[]       PROGMEM = "Ακύρωση";
+const char prstOk[]           PROGMEM = "OK";
+
 #endif

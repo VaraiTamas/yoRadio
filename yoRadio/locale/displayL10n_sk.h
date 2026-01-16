@@ -89,7 +89,20 @@ const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 pocitová: %.1f\011C \007 
 const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 Tlak: %d hPa \007 vlhkosť: %d%%";
   #endif
 #endif
+// clang-format off
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
-const char weatherLang[] PROGMEM = "sk";      /* https://openweathermap.org/current#multi */
+const char weatherLang[]  PROGMEM = "sk";      /* https://openweathermap.org/current#multi */
+
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Priradené";
+const char prstDeleted[]      PROGMEM = "Preset zmazaný";
+const char prstNoUrl[]        PROGMEM = "Bez URL";
+const char prstEmptyPreset[]  PROGMEM = "Prázdny preset";
+const char prstPlay[]         PROGMEM = "Prehrať";
+const char prstSave[]         PROGMEM = "Uložiť";
+const char prstDel[]          PROGMEM = "Zmazať";
+const char prstSpace[]        PROGMEM = "Medzera";
+const char prstCancel[]       PROGMEM = "Zrušiť";
+const char prstOk[]           PROGMEM = "OK";
 
 #endif

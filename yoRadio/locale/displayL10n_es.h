@@ -2,7 +2,6 @@
 #define dsp_full_loc
 #include <pgmspace.h>
 #include "../myoptions.h"
-// nincs befejezve, hiányzik a utf8Es.cpp fájl és a glcdfont.c spanyol változata
 // clang-format off
 const char mon[] PROGMEM = "lu";
 const char tue[] PROGMEM = "ma";
@@ -56,19 +55,19 @@ const char* const mnths[]   PROGMEM = { jan, feb, mar, apr, may, jun, jul, aug, 
 const char* const wind[]    PROGMEM = { wn_N, wn_NNE, wn_NE, wn_ENE, wn_E, wn_ESE, wn_SE, wn_SSE, wn_S, wn_SSW, wn_SW, wn_WSW, wn_W, wn_WNW, wn_NW, wn_NNW, wn_N };
 
 const char    const_PlReady[]    PROGMEM = "[listo]";
-const char  const_PlStopped[]    PROGMEM = "[stop]";
+const char  const_PlStopped[]    PROGMEM = "[detenido]";
 const char  const_PlConnect[]    PROGMEM = "";
 const char  const_DlgVolume[]    PROGMEM = "VOLUMEN";
 const char    const_DlgLost[]    PROGMEM = "* PERDIDO *";
-const char  const_DlgUpdate[]    PROGMEM = "* UPDATING *";
+const char  const_DlgUpdate[]    PROGMEM = "* ACTUALIZANDO *";
 const char const_DlgNextion[]    PROGMEM = "* NEXTION *";
 const char const_getWeather[]    PROGMEM = "";
-const char  const_waitForSD[]    PROGMEM = "INDEX SD";
+const char  const_waitForSD[]    PROGMEM = "ÍNDICE SD";
 
-const char        apNameTxt[]    PROGMEM = "AP NAME";
-const char        apPassTxt[]    PROGMEM = "PASSWORD";
-const char       bootstrFmt[]    PROGMEM = "Trying to %s";
-const char        apSettFmt[]    PROGMEM = "SETTINGS PAGE ON: HTTP://%s/";
+const char        apNameTxt[]    PROGMEM = "NOMBRE AP";
+const char        apPassTxt[]    PROGMEM = "CONTRASEÑA";
+const char       bootstrFmt[]    PROGMEM = "CONECTANDO CON %s";
+const char        apSettFmt[]    PROGMEM = "PAGINA DE CONFIGURACION: HTTP://%s/";
 // clang-format on
 #ifdef WEATHER_FMT_SHORT  // Módosítás
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
@@ -79,12 +78,25 @@ const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
     #else
       #define WIND_UNIT "m/s"
     #endif
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 feels like: %.1f\011C \007 pressure: %d hPa \007 humidity: %d%% \007 wind: %.1f " WIND_UNIT " [%s]";
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 sensación térmica: %.1f\011C \007 'presion': %d hPa \007 humedad: %d%% \007 viento: %.1f " WIND_UNIT " [%s]";
   #else
-const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 pressure: %d hPa \007 humidity: %d%%";
+const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 'presion': %d hPa \007 humedad: %d%%";
   #endif
 #endif
+// clang-format off
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
-const char weatherLang[] PROGMEM = "en";      /* https://openweathermap.org/current#multi */
+const char weatherLang[]  PROGMEM = "en";      /* https://openweathermap.org/current#multi */
+
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Asignado";
+const char prstDeleted[]      PROGMEM = "Preset borrado";
+const char prstNoUrl[]        PROGMEM = "Sin URL";
+const char prstEmptyPreset[]  PROGMEM = "Preset vacío";
+const char prstPlay[]         PROGMEM = "Reproducir";
+const char prstSave[]         PROGMEM = "Guardar";
+const char prstDel[]          PROGMEM = "Borrar";
+const char prstSpace[]        PROGMEM = "Espacio";
+const char prstCancel[]       PROGMEM = "Cancelar";
+const char prstOk[]           PROGMEM = "OK";
 
 #endif

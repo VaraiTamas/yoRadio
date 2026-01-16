@@ -220,7 +220,51 @@ void Player::loop() {
 #endif
         break;
       }
+      case PR_URL:
+      {
+        // Play arbitrary URL (presets)
+        _hasError = false;
+        remoteStationName = false;
+        config.setDspOn(1);
 
+        if (_status == PLAYING) {
+          _stop();
+        }
+
+        // Set station label for UI
+        if (_nameBuf[0] != '\0') {
+          strlcpy(config.station.name, _nameBuf, sizeof(config.station.name));
+        } else {
+          strlcpy(config.station.name, "URL", sizeof(config.station.name));
+        }
+        strlcpy(config.station.url, _urlBuf, sizeof(config.station.url));
+        config.station.title[0] = '\0';
+
+        // Always WEB mode
+        config.saveValue(&config.store.play_mode, static_cast<uint8_t>(PM_WEB));
+
+        display.putRequest(PSTOP);
+        setOutputPins(false);
+        config.setTitle(LANG::const_PlConnect);
+
+        if (connecttohost(config.station.url)) {
+          _status = PLAYING;
+          config.setTitle("");
+          netserver.requestOnChange(MODE, 0);
+          setOutputPins(true);
+          display.putRequest(PSTART);
+          if (player_on_start_play) {
+            player_on_start_play();
+          }
+          pm.on_start_play();
+        } else {
+          telnet.printf("##ERROR#:	Error connecting to %.128s\n", config.station.url);
+          snprintf(config.tmpBuf, sizeof(config.tmpBuf), "Error connecting to %.128s", config.station.url);
+          setError();
+          _stop(true);
+        }
+        break;
+      }
       default: break;
     }
   }
@@ -256,6 +300,20 @@ void Player::setOutputPins(bool isPlaying) {
   if (MUTE_PIN != 255) {
     digitalWrite(MUTE_PIN, _ml);
   }
+}
+
+void Player::playUrl(const char *url, const char *name) {
+  if (!url || url[0] == '\0') {
+    return;
+  }
+  // Copy into buffers (used by PR_URL in player task)
+  strlcpy(_urlBuf, url, sizeof(_urlBuf));
+  if (name && name[0] != '\0') {
+    strlcpy(_nameBuf, name, sizeof(_nameBuf));
+  } else {
+    _nameBuf[0] = '\0';
+  }
+  sendCommand({PR_URL, 0});
 }
 
 void Player::_play(uint16_t stationId) {
@@ -417,10 +475,9 @@ int8_t Player::uiToDb(int8_t uiVal) {
     float db = (uiVal / 16.0f) * 20.0f;  // uiVal negatív!
     return (int8_t)roundf(db);
   }
-
 }
 
 void Player::setTone(int8_t bass, int8_t mid, int8_t treble) {
- // Serial.printf("EQ UI: %d %d %d  →  DSP: %d %d %d\n", bass, mid, treble, uiToDb(bass), uiToDb(mid), uiToDb(treble));
+  // Serial.printf("EQ UI: %d %d %d  →  DSP: %d %d %d\n", bass, mid, treble, uiToDb(bass), uiToDb(mid), uiToDb(treble));
   Audio::setTone(uiToDb(bass), uiToDb(mid), uiToDb(treble));
 }

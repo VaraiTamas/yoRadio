@@ -73,6 +73,14 @@ struct theme_t {
   uint16_t plcurrentbg;
   uint16_t plcurrentfill;
   uint16_t playlist[5];
+  uint16_t prst_card;    // Módosítás: plussz változó. "presets"
+  uint16_t prst_button;  // Módosítás: plussz változó. "presets"
+  uint16_t prst_accent;  // Módosítás: plussz változó. "presets"
+  uint16_t prst_fav;     // Módosítás: plussz változó. "presets"
+  uint16_t prst_title1;  // Módosítás: plussz változó. "presets"
+  uint16_t prst_title2;  // Módosítás: plussz változó. "presets"
+  uint16_t prst_title3;  // Módosítás: plussz változó. "presets"
+  uint16_t prst_line;  // Módosítás: plussz változó. "presets"
 };
 struct config_t {
   uint16_t config_set;  //must be 4262
@@ -177,7 +185,7 @@ public:
   uint16_t sleepfor;
   uint32_t sdResumePos;
   uint16_t stopedSdStationId = -1;  // "módosítás" új változó a player.stop ad neki értéket.
-  bool isClockTTS;  // "módosítás" Ha aktív a clockTTS
+  bool isClockTTS;                  // "módosítás" Ha aktív a clockTTS
   bool emptyFS;
   uint16_t vuRefLevel;
   uint16_t screensaverTicks;

@@ -84,8 +84,21 @@ const char weatherFmt[] PROGMEM =
 const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 %d hPa \007 %d%%";
   #endif
 #endif
-
+// clang-format off
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
-const char weatherLang[] PROGMEM = "hu";      /* https://openweathermap.org/current#multi */
+const char weatherLang[]  PROGMEM = "hu";      /* https://openweathermap.org/current#multi */
+
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Hozzárendelve";
+const char prstDeleted[]      PROGMEM = "Bejegyzés törölve";
+const char prstNoUrl[]        PROGMEM = "Nincs URL";
+const char prstEmptyPreset[]  PROGMEM = "Üres tárhely";
+const char prstPlay[]         PROGMEM = "Lejátszás";
+const char prstSave[]         PROGMEM = "Mentés";
+const char prstDel[]          PROGMEM = "Törlés";
+const char prstSpace[]        PROGMEM = "Szóköz";
+const char prstCancel[]       PROGMEM = "Mégse";
+const char prstOk[]           PROGMEM = "OK";
+
 
 #endif

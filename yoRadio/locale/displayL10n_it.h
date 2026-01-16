@@ -74,7 +74,7 @@ const char        apNameTxt[]    PROGMEM = "NOME AP";
 const char        apPassTxt[]    PROGMEM = "PASSWORD";
 const char       bootstrFmt[]    PROGMEM = "Connessione a %s";
 const char        apSettFmt[]    PROGMEM = "PAGINA IMPOSTAZIONI SU: HTTP://%s/";
-// clang-format on
+
 #ifdef WEATHER_FMT_SHORT
 const char weatherFmt[] PROGMEM = "%.1f\011C  \007  %d hPa  \007  %d%% RH";
 #else
@@ -92,4 +92,16 @@ const char weatherFmt[] PROGMEM = "%s, %.1f\011C \007 PRESSIONE: %d hPa \007 UMI
 const char weatherUnits[] PROGMEM = "metric"; /* standard, metric, imperial */
 const char weatherLang[] PROGMEM = "it";      /* https://openweathermap.org/current#multi */
 
+// ---- Presets screen ----
+const char prstAssigned[]     PROGMEM = "Assegnato";
+const char prstDeleted[]      PROGMEM = "Preset eliminato";
+const char prstNoUrl[]        PROGMEM = "Nessun URL";
+const char prstEmptyPreset[]  PROGMEM = "Preset vuoto";
+const char prstPlay[]         PROGMEM = "Riproduci";
+const char prstSave[]         PROGMEM = "Salva";
+const char prstDel[]          PROGMEM = "Elimina";
+const char prstSpace[]        PROGMEM = "Spazio";
+const char prstCancel[]       PROGMEM = "Annulla";
+const char prstOk[]           PROGMEM = "OK";
+// clang-format on
 #endif
