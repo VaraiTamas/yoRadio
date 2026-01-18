@@ -39,7 +39,6 @@ typedef TP_Point TSPoint;
   #endif
 
 void TouchScreen::init(uint16_t w, uint16_t h) {
-
   #if TS_MODEL == TS_MODEL_XPT2046
     #ifdef TS_SPIPINS
   TSSPI.begin(TS_SPIPINS);
@@ -150,8 +149,17 @@ void TouchScreen::loop() {
   if (stTouched) {
   #if TS_MODEL == TS_MODEL_XPT2046
     TSPoint p = ts.getPoint();
+    #ifndef X_TOUCH_MIRRORING
     touchX = map(p.x, TS_X_MIN, TS_X_MAX, 0, _width);
+    #else
+    touchX = map(p.x, TS_X_MIN, TS_X_MAX, _height, 0);
+    #endif
+    #ifndef Y_TOUCH_MIRRORING
     touchY = map(p.y, TS_Y_MIN, TS_Y_MAX, 0, _height);
+    #else
+    touchY = map(p.y, TS_Y_MIN, TS_Y_MAX, _height, 0);
+    #endif
+
   #elif TS_MODEL == TS_MODEL_GT911
     TSPoint p = ts.points[0];
     touchX = p.x;

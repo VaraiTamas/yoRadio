@@ -49,6 +49,8 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 /* Touch */
 #define TS_MODEL TS_MODEL_XPT2046
 #define TS_CS    3
+//#define X_TOUCH_MIRRORING
+//#define Y_TOUCH_MIRRORING
 
 // #define NEXTION_RX			15
 // #define NEXTION_TX			16

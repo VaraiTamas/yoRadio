@@ -102,6 +102,12 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.8.1
+   - Bekerült két új beállítás a myoptions.h fájlba. A touch képernyőn szükség szerint lehetőség van tükrözni az X vagy Y coordinátákat. 
+   ```
+   #define X_TOUCH_MIRRORING
+   #define Y_TOUCH_MIRRORING
+   ```
 ### v0.8.0
    - Presets rendszer a kedvenc rádiócsatornák gyors eléréséhez. Lehetővé teszi, hogy bármely rádióállomást elments és később egyetlen érintéssel visszahívd, még akkor is, ha a playlist időközben megváltozik. Csak 320x480 felbontású kijelzőn működik. További infóért [olvasd el ezt!](docs/presets.md) (Grzegorz Słupik ötlete alapján).  
    Figyelem a displayL10n_xx.h fájlok bővítésre kerültek! Óvatosan a másolásokkal.
