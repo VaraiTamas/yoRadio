@@ -102,6 +102,10 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.8.2
+   - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.4g (2026. jan 16.) frissítés.
+   - IRremoteESP8266 könyvtár frissítése v2.9.0 verzióra.
+      https://github.com/crankyoldgit/IRremoteESP8266
 ### v0.8.1
    - Bekerült két új beállítás a myoptions.h fájlba. A touch képernyőn szükség szerint lehetőség van tükrözni az X vagy Y coordinátákat. 
    ```
