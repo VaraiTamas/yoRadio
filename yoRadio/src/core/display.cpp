@@ -1,4 +1,3 @@
-//Módosítva v0.9.710 "vol_step"
 #include "Arduino.h"
 #include "options.h"
 #include "WiFi.h"

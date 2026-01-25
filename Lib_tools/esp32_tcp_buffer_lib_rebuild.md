@@ -1,15 +1,23 @@
-## 📄 ESP32 – LWIP és ESP-NETIF könyvtárak újrafordítása nagyobb TCP pufferekkel (Arduino + ESP-IDF)
+## 📄 ESP32 – LWIP és ESP-NETIF könyvtárak újrafordítása nagyobb TCP pufferekkel
 
-Ez az útmutató bemutatja, hogyan lehet az Arduino-ESP32 környezetben használt ESP-IDF könyvtárakat újrafordítani úgy, hogy nagyobb TCP pufferbeállításokat használjanak.
+Ez az útmutató bemutatja, hogyan lehet az ESP-IDF könyvtárakat újrafordítani úgy, hogy nagyobb TCP pufferbeállításokat használjanak.
 Ez különösen hasznos nagy bitrátájú stream-lejátszáshoz (pl. FLAC, >1 Mbps).
 
 🟡 Előfeltételek
 
 ESP32-S3 (vagy kompatibilis) fejlesztőeszköz
 
-Arduino-ESP32 core telepítve
+- Arduino-ESP32 core telepítve vagy    
+- VSC platformIO esetén az alábbi platform használata   
+```
+;currently espressif Arduino 3.3.6 and IDF 5.5.2+
+[env:esp32-s3-devkitc1-n16r8]
+platform = https://github.com/pioarduino/platform-espressif32/releases/download/stable/platform-espressif32.zip
+board = esp32-s3-devkitc1-n16r8
+framework = arduino
+```
 
-ESP-IDF telepítőcsomag (ugyanaz a főverzió, mint amit az Arduino használ)
+- ESP-IDF telepítőcsomag (ugyanaz a főverzió, mint amit az Arduino használ)
 
 ### 1️⃣ Az Arduino által használt ESP-IDF verzió ellenőrzése
 
@@ -23,16 +31,19 @@ Itt találsz egy ilyen mappát:
 
 Ez mutatja, hogy az Arduino ESP-IDF 5.5.x verziót használ.
 
-Ezután keresd meg az **'sdkconfig'** fájlt, erre később lesz szükség. Ez tartalmazza az összes beállítást, amelyet a könyvtárak fordításához használtak (alapértelmezetten). Az alábbi mappában találod.   
+Ezután keresd meg az **'sdkconfig'** fájlt, erre később lesz szükség. Ez tartalmazza az összes beállítást, amelyet a könyvtárak fordításához használtak (alapértelmezetten). Az alábbi mappában találod Arduino IDE esetén.   
 ```
 C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3  
 ```
 
-PlatformIO esetén:
+PlatformIO esetén megnyitva az sdkconfig fájl 
 ```
-C:\Users\<név>\.platformio\packages\framework-arduinoespressif32-libs\esp32s3
+C:\Users\<név>\.platformio\packages\framework-arduinoespressif32-libs\esp32s3\sdkconfig
 ```
-
+A fájl tetején van beírva
+```
+Espressif IoT Development Framework (ESP-IDF) 5.5.2 Project Configuration
+```
 ### 2️⃣ Azonos verziójú ESP-IDF letöltése
 
 Nyisd meg:
@@ -80,15 +91,21 @@ PS C:\Espressif\projects\esp32s3> idf.py build
 ```
 Ez lefordítja az alapértelmezett könyvtárakat.
 ### 4️⃣ Arduino-sdkconfig átmásolása és módosítása
-
-Másold át az Arduino-ból az sdkconfig fájlt innen!
+Fontos megjegyezni, hogy mindkét sdkconfig fájl első pár sorában feltüntetett veriószámnak egyeznie kell !  
+Ha egyeznek, másold át az Arduino-ból az sdkconfig fájlt innen!
 ```
 C:\Users\<név>\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-xxxxxxx\esp32s3\
+```
+PlatformIO esetén innen
+```
+C:\Users\<név>\.platformio\packages\framework-arduinoespressif32-libs\esp32s3\sdkconfig
 ```
 ide:
 ```
 C:\Espressif\Projects\ESP32S3\
 ```
+
+
 ### 5️⃣ A projektben ki kell kapcsolni az egyedi partíció beállítást.
 
 Indítsd el a PowerShell programban a menuconfigot!
