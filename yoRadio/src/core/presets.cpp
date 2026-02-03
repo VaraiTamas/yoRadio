@@ -1,17 +1,18 @@
-#include "presets.h"
 #include "options.h"
+#if DSP_MODEL == DSP_ILI9488
+  #include "presets.h"
 
-#include <Arduino.h>
-#include <Preferences.h>
+  #include <Arduino.h>
+  #include <Preferences.h>
 
-#include "config.h"
-#include "display.h"
-#include "player.h"
+  #include "config.h"
+  #include "display.h"
+  #include "player.h"
 
-#include "../displays/dspcore.h"
-#include "../displays/tools/l10n.h"
-#include "../displays/tools/utf8To.h"
-#define GFX (*s_presetsCanvas)
+  #include "../displays/dspcore.h"
+  #include "../displays/tools/l10n.h"
+  #include "../displays/tools/utf8To.h"
+  #define GFX (*s_presetsCanvas)
 
 static inline const char *uiText(const String &s, bool upper = false) {
   return utf8To(s.c_str(), upper);
@@ -178,8 +179,6 @@ static void makeKey(char *out, size_t outSz, uint8_t bank, uint8_t slot, const c
     snprintf(out, outSz, "b%u_p%u_%s", bank, slot, suffix);
   }
 }
-
-
 
 static void loadBankCache() {
   ensurePrefs();
@@ -493,7 +492,7 @@ static void cancelTopToastAndRestore() {
   }
   s_toastTopbarUntil = 0;  // toast megszüntetése
   ensurePresetsCanvas();
-  drawTopBar();  // Play / Save / Del újrarajzolása a canvasba
+  drawTopBar();                              // Play / Save / Del újrarajzolása a canvasba
   presetsBlitRect(0, 0, s_presetsW, TOP_H);  // csak a topbar frissül
 }
 
@@ -1176,3 +1175,4 @@ bool presets_clear(uint8_t slot) {
   drawToastTopBar(msg);
   return true;
 }
+#endif

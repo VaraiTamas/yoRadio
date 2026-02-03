@@ -456,7 +456,7 @@ void controlsEvent(bool toRight, int8_t volDelta) {
   }
   if (display.mode() != STATIONS) {
     #if !defined(DUMMYDISPLAY) || defined(USE_NEXTION)
-      display.putRequest(NEWMODE, VOL);
+      display.putRequest(NEWMODE, VOL);          // Hangerő képernyőre vált.
     #endif
    if (volDelta != 0) {
       int nv = config.store.volume + volDelta * config.store.volsteps;

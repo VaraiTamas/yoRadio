@@ -56,7 +56,7 @@ class Display {
     NumWidget *_nums;
     ClockWidget *_clock;
     Page *_boot;
-    TextWidget *_bootstring, *_volip, *_voltxt, *_rssi, *_bitrate;
+    TextWidget *_bootstring, *_volip, *_voltxt, *_rssi, *_bitrate, *_chtxt;
     bool _locked = false;
     uint8_t _bootStep;
     void _time(bool redraw = false);

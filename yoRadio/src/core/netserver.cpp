@@ -16,6 +16,11 @@
 #include "../displays/dspcore.h"
 #include "../displays/widgets/widgetsconfig.h"  //BitrateFormat
 
+#ifdef USE_DLNA  //DLNA mod
+  #include "../network/dlna_index.h"
+  #include "../network/dlna_service.h"
+#endif
+
 #if DSP_MODEL == DSP_DUMMY
   #define DUMMYDISPLAY
 #endif
@@ -92,39 +97,223 @@ bool NetServer::begin(bool quiet) {
   }
 
   webserver.on("/", HTTP_ANY, handleIndex);
-webserver.onFileUpload(handleUpload);
+  webserver.onNotFound(handleNotFound);
+  webserver.onFileUpload(handleUpload);
+//DLNA mod
+#ifdef USE_DLNA
+  extern String g_dlnaControlUrl;
 
-// Globális CORS fejlécek minden válaszhoz
-DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  /* ================= DLNA INIT ================= */
+  webserver.on("/dlna/init", HTTP_GET, [](AsyncWebServerRequest *request) {
+    //DLNA modplus
 
-// Statikus fájlok kiszolgálása
-webserver.serveStatic("/", SPIFFS, "/www/")
-  .setCacheControl("max-age=31536000");
-
-// Preflight OPTIONS válasz CORS fejlécekkel
-webserver.onNotFound([](AsyncWebServerRequest *request) {
-    if (request->method() == HTTP_OPTIONS) {
-        AsyncWebServerResponse *response = request->beginResponse(204);
-
-        // Ezek NÉLKÜL a preflight-et blokkolja a böngésző!
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        response->addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        response->addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-
-        request->send(response);
-        return;
+    if (dlna_isBusy()) {
+      request->send(429, "application/json", "{\"queued\":false,\"busy\":true}");
+      return;
     }
-    handleNotFound(request);
-});
 
-webserver.begin();
+    config.resumeAfterModeChange = player.isRunning();
+    if (config.resumeAfterModeChange) {
+      player.sendCommand({PR_STOP, 0});
+    }
+    //DLNA modplus
+    DlnaJob j{};
+    j.type = DJ_INIT;
+    j.reqId = dlna_next_reqId();
+
+    dlna_worker_enqueue(j);
+
+    request->send(202, "application/json", "{\"queued\":true}");
+  });
+
+  /* ================= DLNA LIST ================= */
+  webserver.on("/dlna/list", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("objectId")) {
+      request->send(400, "application/json", "{\"ok\":false,\"error\":\"Missing objectId\"}");
+      return;
+    }
+
+    if (!g_dlnaControlUrl.length()) {
+      request->send(503, "application/json", "{\"ok\":false,\"error\":\"DLNA not initialized\"}");
+      return;
+    }
+
+    String objectId = request->getParam("objectId")->value();
+    uint32_t start = request->hasParam("start") ? request->getParam("start")->value().toInt() : 0;
+
+    String json;
+
+    DlnaIndex idx;
+    bool ok = idx.listContainer(g_dlnaControlUrl, objectId, json, start);
+
+    if (!ok) {
+      request->send(500, "application/json", "{\"ok\":false,\"error\":\"Browse failed\"}");
+      return;
+    }
+
+    AsyncWebServerResponse *r = request->beginResponse(200, "application/json", json);
+    r->addHeader("Cache-Control", "no-store");
+    request->send(r);
+  });
+
+  /* ================= DLNA BUILD ================= */
+  webserver.on("/dlna/build", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("objectId")) {
+      request->send(400, "text/plain", "Missing objectId");
+      return;
+    }
+
+    String oid = request->getParam("objectId")->value();
+    Serial.printf("[DLNA][HTTP] %s objectId='%s'\n", "/dlna/build", oid.c_str());
+
+    if (dlna_isBusy()) {
+      request->send(429, "application/json", "{\"queued\":false,\"busy\":true}");
+      return;
+    }
+
+    DlnaJob j{};
+    j.type = DJ_BUILD;
+    strlcpy(j.objectId, request->getParam("objectId")->value().c_str(), sizeof(j.objectId));
+    j.reqId = dlna_next_reqId();
+    j.hardLimit = request->hasParam("limit") ? request->getParam("limit")->value().toInt() : 20000;
+
+    dlna_worker_enqueue(j);
+    char buf[96];
+    snprintf(buf, sizeof(buf), "{\"queued\":true,\"reqId\":%u}", (unsigned)j.reqId);
+    request->send(202, "application/json", "{\"queued\":true}");
+  });
+
+  /* ================= DLNA APPEND ================= */
+  webserver.on("/dlna/append", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("objectId")) {
+      request->send(400, "text/plain", "Missing objectId");
+      return;
+    }
+
+    String oid = request->getParam("objectId")->value();
+    Serial.printf("[DLNA][HTTP] %s objectId='%s'\n", "/dlna/append", oid.c_str());
+
+    if (dlna_isBusy()) {
+      request->send(429, "application/json", "{\"queued\":false,\"busy\":true}");
+      return;
+    }
+
+    DlnaJob j{};
+    j.type = DJ_APPEND;
+    strlcpy(j.objectId, request->getParam("objectId")->value().c_str(), sizeof(j.objectId));
+    j.reqId = dlna_next_reqId();
+    j.hardLimit = request->hasParam("limit") ? request->getParam("limit")->value().toInt() : 20000;
+
+    dlna_worker_enqueue(j);
+    char buf[96];
+    snprintf(buf, sizeof(buf), "{\"queued\":true,\"reqId\":%u}", (unsigned)j.reqId);
+    request->send(202, "application/json", "{\"queued\":true}");
+  });
+
+  /* ================= DLNA STATUS ================= */
+  webserver.on("/dlna/status", HTTP_GET, [](AsyncWebServerRequest *request) {
+    //DLNA modplus
+    // Build után egyszer reseteljük a DLNA indexet 1-re, hogy a lista első eleme legyen aktív.
+    static uint32_t s_appliedBuildVer = 0;
+    if (!g_dlnaStatus.busy && g_dlnaStatus.ok && g_dlnaStatus.playlistVer != 0 && g_dlnaStatus.playlistVer != s_appliedBuildVer
+        && strstr(g_dlnaStatus.msg, "build ok") != nullptr) {
+
+      s_appliedBuildVer = g_dlnaStatus.playlistVer;
+
+      Serial.println("[DLNA] Build completed → reset index to 1");
+    }
+
+    char buf[256];
+    snprintf(
+      buf, sizeof(buf), "{\"busy\":%s,\"ok\":%s,\"err\":%d,\"reqId\":%u,\"playlistVer\":%u,\"msg\":\"%s\"}", g_dlnaStatus.busy ? "true" : "false",
+      g_dlnaStatus.ok ? "true" : "false", g_dlnaStatus.err, (unsigned)g_dlnaStatus.reqId, (unsigned)g_dlnaStatus.playlistVer, g_dlnaStatus.msg
+    );
+
+    // Cache OFF a statusra
+    AsyncWebServerResponse *r = request->beginResponse(200, "application/json", buf);
+    r->addHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    r->addHeader("Pragma", "no-cache");
+    request->send(r);
+  });
+
+  webserver.on("/playlist/dlna", HTTP_GET, [](AsyncWebServerRequest *request) {
+    bool resume = config.resumeAfterModeChange;
+
+    config.store.playlistSource = PL_SRC_DLNA;
+    config.saveValue(&config.store.playlistSource, (uint8_t)PL_SRC_DLNA);
+
+  #ifdef USE_SD
+    if (config.getMode() == PM_SDCARD) {
+      config.changeMode(PM_WEB);
+    }
+  #endif
+
+    if (config.getMode() != PM_WEB) {
+      config.changeMode(PM_WEB);
+    } else {
+      config.loadStation(config.store.lastDlnaStation);
+
+      if (player_on_station_change)
+        player_on_station_change();
+      netserver.requestOnChange(GETINDEX, 0);
+    }
+
+    if (resume) {
+      Serial.println("[DLNA] Resume playback with DLNA playlist");
+      player.sendCommand({PR_PLAY, (int)config.store.lastDlnaStation});
+    }
+
+    config.resumeAfterModeChange = false;
+
+    netserver.requestOnChange(GETINDEX, 0);
+    netserver.requestOnChange(GETPLAYERMODE, 0);
+
+    request->send(200, "text/plain", "OK");
+  });
+
+  webserver.on("/playlist/web", HTTP_GET, [](AsyncWebServerRequest *request) {
+    bool resume = config.resumeAfterModeChange;
+    config.resumeAfterModeChange = player.isRunning();
+    Serial.printf("[MODE] WEB enter, resume=%d\n", config.resumeAfterModeChange);
+
+    config.store.playlistSource = PL_SRC_WEB;
+    config.saveValue(&config.store.playlistSource, (uint8_t)PL_SRC_WEB);
+
+    if (config.getMode() != PM_WEB) {
+      config.changeMode(PM_WEB);
+    } else {
+      // nincs mode reset → csak visszatöltjük az indexet
+      config.loadStation(config.lastStation());
+
+      if (player_on_station_change) {
+        player_on_station_change();
+      }
+      netserver.requestOnChange(GETINDEX, 0);
+    }
+
+    if (resume) {
+      Serial.println("[DLNA] Resume playback after browser exit");
+      player.sendCommand({PR_PLAY, config.lastStation()});
+    }
+    config.resumeAfterModeChange = false;
+
+    netserver.requestOnChange(GETINDEX, 0);
+    netserver.requestOnChange(GETPLAYERMODE, 0);
+
+    request->send(200, "text/plain", "OK");
+  });
+
+#endif
+  webserver.serveStatic("/", SPIFFS, "/www/");
+  webserver.begin();
 
   //if(strlen(config.store.mdnsname)>0)
   //  MDNS.begin(config.store.mdnsname);
   websocket.onEvent(onWsEvent);
   webserver.addHandler(&websocket);
+#ifdef USE_DLNA  //DLNA mod
+  dlna_worker_start();
+#endif
   if (!quiet) {
     Serial.println("done");
   }
@@ -218,6 +407,13 @@ void NetServer::processQueue() {
         if (config.getMode() == PM_SDCARD) {
           //config.indexSDPlaylist();
           config.initSDPlaylist();
+        }
+#endif
+#ifdef USE_DLNA  //DLNA mod
+        if (config.getMode() == PM_WEB && config.store.playlistSource == PL_SRC_DLNA) {
+          config.indexDLNAPlaylist();
+          config.initDLNAPlaylist();
+          break;
         }
 #endif
         if (config.getMode() == PM_WEB) {
@@ -371,17 +567,18 @@ void NetServer::processQueue() {
           (player.isRunning() && config.store.audioinfo) ? (int)(100 * player.inBufferFilled() / playerBufMax) : 0
         ); /*rssi = 255;*/
         break;
-      case SDPOS: 
-      //"módosítás" Itt adja át az SD kártya pozícióját a csúszkához és a számlálóhoz.
+      case SDPOS:
+        //"módosítás" Itt adja át az SD kártya pozícióját a csúszkához és a számlálóhoz.
         sprintf(
-         wsBuf, "{\"sdpos\": %lu,\"sdtpos\": %lu,\"sdtend\": %lu}", player.getAudioFilePosition(), player.getAudioCurrentTime(), player.getAudioFileDuration()
-        ); 
+          wsBuf, "{\"sdpos\": %lu,\"sdtpos\": %lu,\"sdtend\": %lu}", player.getAudioFilePosition(), player.getAudioCurrentTime(), player.getAudioFileDuration()
+        );
         //Serial.printf("netserver.cpp-->wsBuf: %s \n", wsBuf);
         break;
-      // Az mp3 fájlon belül a zenekezdeti byte és utolsó byte pozíciója.  
-      case SDLEN:     sprintf(wsBuf, "{\"sdmin\": %lu,\"sdmax\": %lu}", player.sd_min, player.sd_max); // Az audionanlersben kap értéket.
+      // Az mp3 fájlon belül a zenekezdeti byte és utolsó byte pozíciója.
+      case SDLEN:
+        sprintf(wsBuf, "{\"sdmin\": %lu,\"sdmax\": %lu}", player.sd_min, player.sd_max);  // Az audionanlersben kap értéket.
         //Serial.printf("netserver.cpp-->wsBuf: %s \n", wsBuf);
-      break;
+        break;
       case SDSNUFFLE: sprintf(wsBuf, "{\"snuffle\": %d}", config.store.sdsnuffle); break;
       case BITRATE:
         sprintf(
@@ -398,12 +595,36 @@ void NetServer::processQueue() {
           config.store.bass, config.store.middle, config.store.trebble
         );
         break;
-      case BALANCE:       sprintf(wsBuf, "{\"payload\":[{\"id\": \"balance\", \"value\": %d}]}", config.store.balance); break;
-      case SDINIT:        sprintf(wsBuf, "{\"sdinit\": %d}", SDC_CS != 255); break;
-      case GETPLAYERMODE: sprintf(wsBuf, "{\"playermode\": \"%s\"}", config.getMode() == PM_SDCARD ? "modesd" : "modeweb"); break;
+      case BALANCE: sprintf(wsBuf, "{\"payload\":[{\"id\": \"balance\", \"value\": %d}]}", config.store.balance); break;
+      case SDINIT:  sprintf(wsBuf, "{\"sdinit\": %d}", SDC_CS != 255); break;
+      case GETPLAYERMODE:
+      {  //DLNA mod
+#ifdef USE_DLNA
+        if (config.getMode() == PM_WEB && config.store.playlistSource == PL_SRC_DLNA) {
+          sprintf(wsBuf, "{\"playermode\": \"modedlna\"}");
+        } else
+#endif
+          if (config.getMode() == PM_SDCARD) {
+          sprintf(wsBuf, "{\"playermode\": \"modesd\"}");
+        } else {
+          sprintf(wsBuf, "{\"playermode\": \"modeweb\"}");
+        }
+        break;
+      }
 #ifdef USE_SD
-      case CHANGEMODE:
-        config.changeMode(config.newConfigMode);
+      case CHANGEMODE: config.changeMode(config.newConfigMode);
+
+  #ifdef USE_DLNA  //DLNA modplus
+        if (config.resumeAfterModeChange) {
+          uint16_t st = (config.getMode() == PM_SDCARD)
+                          ? config.store.lastSdStation
+                          : (config.store.playlistSource == PL_SRC_DLNA ? config.store.lastDlnaStation : config.store.lastStation);
+
+          Serial.printf("[MODE] Resume playback → station %u\n", st);
+          player.sendCommand({PR_PLAY, st});
+          config.resumeAfterModeChange = false;
+        }
+  #endif  //DLNA modplus
         return;
         break;
 #endif
@@ -480,6 +701,7 @@ void NetServer::onWsMessage(void *arg, uint8_t *data, size_t len, uint8_t client
         websocket.text(clientId, "{\"pong\": 1}");
         return;
       }
+      // Tone settings (trebble/middle/bass)
       if (strcmp(_wscmd, "trebble") == 0) {
         int8_t valb = atoi(_wsval);
         config.setTone(config.store.bass, config.store.middle, valb);
@@ -506,6 +728,41 @@ void NetServer::onWsMessage(void *arg, uint8_t *data, size_t len, uint8_t client
         return;
       }
 
+#ifdef USE_DLNA  //DLNA mod
+      // ===== WEB playlist aktiválás =====
+      if (strcmp(_wscmd, "playlist") == 0 && strcmp(_wsval, "web") == 0) {
+
+        Serial.println("[WEB] Switch to WEB playlist");
+
+        config.store.playlistSource = PL_SRC_WEB;
+        config.saveValue(&config.store.playlistSource, (uint8_t)PL_SRC_WEB);
+
+        config.indexPlaylist();
+        config.initPlaylist();
+
+        netserver.requestOnChange(GETINDEX, 0);
+        netserver.requestOnChange(GETPLAYERMODE, 0);
+
+        return;
+      }
+      // ===== DLNA playlist aktiválás =====
+      if (strcmp(_wscmd, "playlist") == 0 && strcmp(_wsval, "dlna") == 0) {
+
+        Serial.println("[WEB] Switch to DLNA playlist");
+
+        config.store.playlistSource = PL_SRC_DLNA;
+        config.saveValue(&config.store.playlistSource, (uint8_t)PL_SRC_DLNA);
+
+        config.indexDLNAPlaylist();
+        config.initDLNAPlaylist();
+
+        netserver.requestOnChange(GETINDEX, 0);
+        netserver.requestOnChange(GETPLAYERMODE, 0);
+
+        return;
+      }
+#endif
+
       if (cmd.exec(_wscmd, _wsval, clientId)) {
         return;
       }
@@ -514,7 +771,8 @@ void NetServer::onWsMessage(void *arg, uint8_t *data, size_t len, uint8_t client
 }
 
 void NetServer::getPlaylist(uint8_t clientId) {
-  sprintf(nsBuf, "{\"file\": \"http://%s%s\"}", config.ipToStr(WiFi.localIP()), PLAYLIST_PATH);
+  //sprintf(nsBuf, "{\"file\": \"http://%s%s\"}", config.ipToStr(WiFi.localIP()), PLAYLIST_PATH);
+  sprintf(nsBuf, "{\"file\": \"http://%s%s\"}", config.ipToStr(WiFi.localIP()), REAL_PLAYL);  //DLNA mod
   if (clientId == 0) {
     websocket.textAll(nsBuf);
   } else {
@@ -708,10 +966,38 @@ void handleNotFound(AsyncWebServerRequest *request) {
     return;
   }
   if (request->method() == HTTP_GET) {
+    //DLNA mod
+#ifdef USE_DLNA
+    if (request->method() == HTTP_GET && request->url().startsWith("/data/dlna_")) {
+
+      String path = request->url();
+      Serial.printf("[DLNA][HTTP] GET %s\n", path.c_str());
+
+      if (!SPIFFS.exists(path)) {
+        request->send(404, "text/plain", "DLNA file not found");
+        return;
+      }
+
+      String type = "text/plain";
+      if (path.endsWith(".json")) {
+        type = "application/json";
+      } else if (path.endsWith(".csv")) {
+        type = "text/plain";
+      }
+
+      request->send(SPIFFS, path, type);
+      return;
+    }
+#endif
     DBGVB("[%s] client ip=%s request of %s", __func__, config.ipToStr(request->client()->remoteIP()), request->url().c_str());
-    if (strcmp(request->url().c_str(), PLAYLIST_PATH) == 0 || strcmp(request->url().c_str(), SSIDS_PATH) == 0 || strcmp(request->url().c_str(), INDEX_PATH) == 0
-        || strcmp(request->url().c_str(), TMP_PATH) == 0 || strcmp(request->url().c_str(), PLAYLIST_SD_PATH) == 0
-        || strcmp(request->url().c_str(), INDEX_SD_PATH) == 0) {
+    if (
+      strcmp(request->url().c_str(), PLAYLIST_PATH) == 0 || strcmp(request->url().c_str(), SSIDS_PATH) == 0 || strcmp(request->url().c_str(), INDEX_PATH) == 0
+      || strcmp(request->url().c_str(), TMP_PATH) == 0 || strcmp(request->url().c_str(), PLAYLIST_SD_PATH) == 0
+      || strcmp(request->url().c_str(), INDEX_SD_PATH) == 0
+#ifdef USE_DLNA  //DLNA mod
+      || strcmp(request->url().c_str(), PLAYLIST_DLNA_PATH) == 0 || strcmp(request->url().c_str(), INDEX_DLNA_PATH) == 0
+#endif
+    ) {
 #ifdef MQTT_ROOT_TOPIC
       if (strcmp(request->url().c_str(), PLAYLIST_PATH) == 0) {
         while (mqttplaylistblock) {
@@ -719,11 +1005,21 @@ void handleNotFound(AsyncWebServerRequest *request) {
         }
       }
 #endif
-      if (strcmp(request->url().c_str(), PLAYLIST_PATH) == 0 && config.getMode() == PM_SDCARD) {
+      /* if(strcmp(request->url().c_str(), PLAYLIST_PATH) == 0 && config.getMode()==PM_SDCARD){
         netserver.chunkedHtmlPage("application/octet-stream", request, PLAYLIST_SD_PATH);
-      } else {
+      }else{
         netserver.chunkedHtmlPage("application/octet-stream", request, request->url().c_str());
+      }*/
+      if (strcmp(request->url().c_str(), PLAYLIST_PATH) == 0) {
+        netserver.chunkedHtmlPage("application/octet-stream", request, REAL_PLAYL);  //DLNA mod
+        return;
       }
+
+      if (strcmp(request->url().c_str(), INDEX_PATH) == 0) {
+        netserver.chunkedHtmlPage("application/octet-stream", request, REAL_INDEX);  //DLNA mod
+        return;
+      }
+      netserver.chunkedHtmlPage("application/octet-stream", request, request->url().c_str());
       return;
     }  // if (strcmp(request->url().c_str(), PLAYLIST_PATH) == 0 ||
   }  // if (request->method() == HTTP_GET)
@@ -758,10 +1054,19 @@ void handleNotFound(AsyncWebServerRequest *request) {
     request->send(200, "image/x-icon", "data:,");
     return;
   }
-  if (request->url() == "/variables.js") {
-    sprintf(
-      netserver.nsBuf, "var yoVersion='%s';\nvar formAction='%s';\nvar playMode='%s';\n", YOVERSION,
-      (network.status == CONNECTED && !config.emptyFS) ? "webboard" : "", (network.status == CONNECTED) ? "player" : "ap"
+  if (request->url() == "/variables.js") {  //DLNA mod
+    snprintf(
+      netserver.nsBuf, sizeof(netserver.nsBuf),
+      "var yoVersion='%s';\n"
+      "var formAction='%s';\n"
+      "var playMode='%s';\n"
+      "var dlnaSupported=%d;\n",
+      YOVERSION, (network.status == CONNECTED && !config.emptyFS) ? "webboard" : "", (network.status == CONNECTED) ? "player" : "ap",
+#ifdef USE_DLNA
+      1
+#else
+      0
+#endif
     );
     request->send(200, "text/html", netserver.nsBuf);
     return;

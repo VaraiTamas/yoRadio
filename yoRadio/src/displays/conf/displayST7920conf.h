@@ -38,6 +38,7 @@ const FillConfig  heapbarConf     PROGMEM = {{ 0, 63, 0, WA_LEFT }, DSP_WIDTH, 1
 const WidgetConfig bootstrConf    PROGMEM = { 0, 64-8, 1, WA_CENTER };
 const WidgetConfig bitrateConf    PROGMEM = { 0, 13, 1, WA_RIGHT };
 //const WidgetConfig voltxtConf     PROGMEM = { 32, 108, 1, WA_RIGHT };
+const WidgetConfig chtxtConf      PROGMEM = { 150 ,56, 1, WA_LEFT }; //→ az aktuális csatorna CH:szöveg (PLAYER footer)
 const WidgetConfig  iptxtConf     PROGMEM = { 0, 64-11, 1, WA_LEFT };
 const WidgetConfig   rssiConf     PROGMEM = { 0, 64-11, 1, WA_RIGHT };
 const WidgetConfig numConf        PROGMEM = { 0, 26, 0, WA_CENTER };

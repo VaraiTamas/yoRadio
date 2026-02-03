@@ -195,7 +195,7 @@ protected:
   void _clear();
   void _reset();
 };
-
+/************************************************************ VU WIDGET **********************************************/
 class VuWidget : public Widget {
 public:
   VuWidget() {}  // Módosítás: vumidcolor plussz paraméter.
@@ -209,6 +209,15 @@ public:
   static void setLabelsDrawn(bool value);  // Módosítás
   static bool isLabelsDrawn();             // Módosítás
 protected:
+  #if defined(DSP_OLED)
+  uint16_t _maxDimension = 216;  // VU teljes hossza pixelben
+  uint16_t _peakL = 0;
+  uint16_t _peakR = 0;
+  uint8_t _peakFallDelay = 6;  // peak késleltetés
+  uint8_t _peakFallRate = 1;   // peak esés sebessége
+  uint8_t _peakFallDelayCounter = 0;
+  #endif
+
   #if !defined(DSP_LCD) && !defined(DSP_OLED)
   Canvas *_canvas;
   #endif
@@ -218,7 +227,7 @@ protected:
   void _draw();
   void _clear();
 };
-
+/********************************************************** NUM WIDGET *******************************************/
 class NumWidget : public TextWidget {
 public:
   using Widget::init;
@@ -280,6 +289,10 @@ private:
   #ifndef DSP_LCD
   Adafruit_GFX &getRealDsp();
   #endif
+  #if defined(DSP_OLED) && (DSP_MODEL == DSP_SSD1322)
+  void _drawShortDateSSD1322();
+  #endif
+
 protected:
   char _timebuffer[20] = "00:00";
   char _tmp[38], _datebuf[38];  // Módosítva 38-ra v7.4

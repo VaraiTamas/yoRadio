@@ -67,18 +67,18 @@ static void loopDspTask(void *pvParameters) {
 }
 
 void Display::_createDspTask() {
-  xTaskCreatePinnedToCore(loopDspTask, "DspTask", CORE_STACK_SIZE, NULL, DSP_TASK_PRIORITY, NULL, DSP_TASK_CORE_ID); //"task_prioritas"
+  xTaskCreatePinnedToCore(loopDspTask, "DspTask", CORE_STACK_SIZE, NULL, DSP_TASK_PRIORITY, NULL, DSP_TASK_CORE_ID);  //"task_prioritas"
 }
 
 #ifndef DUMMYDISPLAY
 //============================================================================================================================
 DspCore dsp;
 
-Page *pages[] = {new Page(), new Page(), new Page(), new Page(), new Page()}; // "presets" +1 page
+Page *pages[] = {new Page(), new Page(), new Page(), new Page(), new Page()};  // "presets" +1 page
 
-  #if !(                                                                                                                                   \
-    (DSP_MODEL == DSP_ST7735 && DTYPE == INITR_BLACKTAB) || DSP_MODEL == DSP_ST7789 || DSP_MODEL == DSP_ST7796 || DSP_MODEL == DSP_ILI9488 \
-    || DSP_MODEL == DSP_ILI9486 || DSP_MODEL == DSP_ILI9341 || DSP_MODEL == DSP_ILI9225 || DSP_MODEL == DSP_ST7789_170                     \
+  #if !(                                                                                                                                           \
+    (DSP_MODEL == DSP_ST7735 && DTYPE == INITR_BLACKTAB) || DSP_MODEL == DSP_ST7789 || DSP_MODEL == DSP_ST7796 || DSP_MODEL == DSP_ILI9488         \
+    || DSP_MODEL == DSP_ILI9486 || DSP_MODEL == DSP_ILI9341 || DSP_MODEL == DSP_ILI9225 || DSP_MODEL == DSP_ST7789_170 || DSP_MODEL == DSP_SSD1322 \
   )
     #undef BITRATE_FULL
     #define BITRATE_FULL false
@@ -208,12 +208,15 @@ void Display::_buildPager() {
   _volip = new TextWidget(iptxtConf, 30, false, config.theme.ip, config.theme.background);
   #endif
   #ifndef HIDE_RSSI
-  _rssi = new TextWidget(rssiConf, 20, false, config.theme.rssi, config.theme.background);
+  _rssi = new TextWidget(rssiConf, 20, false, config.theme.rssi, config.theme.background);  //20 config.theme.background
   #endif
   _nums->init(numConf, 10, false, config.theme.digit, config.theme.background);
   #ifndef HIDE_WEATHER
   _weather = new ScrollWidget("\007", weatherConf, config.theme.weather, config.theme.background);
   #endif
+
+  _chtxt =
+    new TextWidget(chtxtConf, 12, false, config.theme.ch, config.theme.background);  // Az aktuális csatorna számának kiírásához létrehoz egy TextWidgetet.
 
   if (_volbar) {
     _footer->addWidget(_volbar);
@@ -229,6 +232,9 @@ void Display::_buildPager() {
   }
   if (_heapbar) {
     _footer->addWidget(_heapbar);
+  }
+  if (_chtxt) {
+    _footer->addWidget(_chtxt);  // Az aktuális csatorna számának widgetét hozzáadja a footerhez.
   }
 
   if (_metabackground) {
@@ -351,6 +357,9 @@ void Display::_start() {
   if (_rssi) {
     _setRSSI(WiFi.RSSI());
   }
+  if (_chtxt) {                                      // Ha létezik a widget
+    _chtxt->setText(config.lastStation(), "CH:%d");  // Beállítja a csatorna számát a widgetnek.
+  }
   #ifndef HIDE_IP
   if (_volip) {
     _volip->setText(config.ipToStr(WiFi.localIP()), iptxtFmt);
@@ -403,7 +412,7 @@ void Display::_swichMode(displayMode_e newmode) {
   #endif
     _meta->setAlign(metaConf.widget.align);
     //_meta->setText(config.station.name);
-   // _nums->setText("");
+    // _nums->setText("");
     _station();
     config.isScreensaver = false;
     _pager->setPage(pages[PG_PLAYER]);
@@ -422,9 +431,9 @@ void Display::_swichMode(displayMode_e newmode) {
     config.screensaverTicks = SCREENSAVERSTARTUPDELAY;
     config.screensaverPlayingTicks = SCREENSAVERSTARTUPDELAY;
     config.isScreensaver = false;
-    #if PWR_AMP!=255                     // "PWR_AMP"
-      digitalWrite(PWR_AMP,HIGH);
-    #endif
+  #if PWR_AMP != 255  // "PWR_AMP"
+    digitalWrite(PWR_AMP, HIGH);
+  #endif
   }
   if (newmode == VOL) {
   #ifndef HIDE_IP
@@ -452,10 +461,12 @@ void Display::_swichMode(displayMode_e newmode) {
   if (newmode == NUMBERS) {
     _showDialog("");
   }
+  #if DSP_MODEL == DSP_ILI9488
   if (newmode == PRESETS) {
     _pager->setPage(pages[PG_PRESETS], true);
     presets_drawScreen();
   }
+  #endif
   if (newmode == STATIONS) {
     _pager->setPage(pages[PG_PLAYLIST]);
     _plcurrent->setText("");
@@ -592,6 +603,9 @@ void Display::loop() {
             if (_fullbitrate) {
               _fullbitrate->setBitrate(config.station.bitrate);
               _fullbitrate->setFormat(config.configFmt);
+            }
+            if (_chtxt) {                                      // Ha létezik a widget
+              _chtxt->setText(config.lastStation(), "CH:%d");  // Beállítja a csatorna számát a widgetnek.
             }
           }
         } break;
@@ -739,9 +753,11 @@ void Display::_setRSSI(int rssi) {
 void Display::_station() {
   _meta->setAlign(metaConf.widget.align);
   if (config.station.name[0] == '.') {
-    _meta->setText(config.station.name +1);
-  }else _meta->setText(config.station.name);
-  
+    _meta->setText(config.station.name + 1);
+  } else {
+    _meta->setText(config.station.name);
+  }
+
   /*#ifdef USE_NEXTION
   nextion.newNameset(config.station.name);
   nextion.bitrate(config.station.bitrate);
@@ -760,7 +776,7 @@ char *split(char *str, const char *delim) {
 
 void Display::_title() {
   // Ha üres a title, használja a playlistben tárolt nevet.
-  if(strlen(config.station.title) == 0){
+  if (strlen(config.station.title) == 0) {
     strlcpy(config.station.title, config.station.name, sizeof(config.station.title));
   }
   if (strlen(config.station.title) > 0) {

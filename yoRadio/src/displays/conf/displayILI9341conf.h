@@ -33,9 +33,13 @@ const FillConfig  heapbarConf     PROGMEM = {{ 0, 239, 0, WA_LEFT }, DSP_WIDTH, 
 /* WIDGETS  */                           /* { left, top, fontsize, align } */
 const WidgetConfig bootstrConf    PROGMEM = { 0, 182, 1, WA_CENTER };
 const WidgetConfig bitrateConf    PROGMEM = { TFT_FRAMEWDT, 148, 1, WA_RIGHT };
+
+/* FOOTER */
+const WidgetConfig iptxtConf      PROGMEM = { TFT_FRAMEWDT, 214, 1, WA_LEFT };
 const WidgetConfig voltxtConf     PROGMEM = { 0, 214, 1, WA_CENTER };  // Hangerő
-const WidgetConfig  iptxtConf     PROGMEM = { TFT_FRAMEWDT, 214, 1, WA_LEFT };
-const WidgetConfig   rssiConf     PROGMEM = { TFT_FRAMEWDT, 214-6, 2, WA_RIGHT };
+const WidgetConfig chtxtConf      PROGMEM = { 210 ,214, 1, WA_LEFT }; //→ az aktuális csatorna CH:szöveg (PLAYER footer)
+const WidgetConfig rssiConf       PROGMEM = { TFT_FRAMEWDT, 214-6, 2, WA_RIGHT };
+
 const WidgetConfig numConf        PROGMEM = { 0, 120+30, 0, WA_CENTER };
 const WidgetConfig apNameConf     PROGMEM = { TFT_FRAMEWDT, 66, 2, WA_CENTER };
 const WidgetConfig apName2Conf    PROGMEM = { TFT_FRAMEWDT, 90, 2, WA_CENTER };

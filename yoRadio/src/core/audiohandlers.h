@@ -212,8 +212,10 @@ void my_audio_info(Audio::msg_t m) {
     // ----- Fájl vége (SD mód) -----
     case Audio::evt_eof:
     {
-      config.vuRefLevel =0;
-      // audio_eof(); // TODO Nem mindig érkezik meg az eof.
+      config.vuRefLevel = 0;
+#ifdef USE_DLNA
+      audio_eof();  // TODO Nem mindig érkezik meg az eof.
+#endif
     } break;
 
     // ----- Log események (hiba, diagnosztika) -----
@@ -468,10 +470,20 @@ void audio_id3data(const char *info) {
 }
 
 void audio_eof() {
+  //Serial.printf("mode=%d (PM_WEB=0, PM_SDCARD=1)\n", config.getMode());
   if (!config.isClockTTS && config.getMode() == PM_SDCARD) {
     config.sdResumePos = 0;
+    Serial.println("EOF: SD -> player.next()");
     player.next();
   }
+
+#ifdef USE_DLNA  //DLNA mod
+  if (config.store.playlistSource == PL_SRC_DLNA) {
+    Serial.println("EOF: DLNA -> player.next()");
+    player.next();
+    return;
+  }
+#endif
 }
 
 void audio_progress(uint32_t startpos, uint32_t endpos) {

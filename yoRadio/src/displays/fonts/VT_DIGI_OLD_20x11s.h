@@ -62,7 +62,7 @@ const GFXglyph VT_DIGI_OLD_20x11sGlyphs[] PROGMEM = {
   {   224,  11,  20,  15,    2,  -20 },   // 0x37 '7'
   {   252,  11,  20,  15,    2,  -20 },   // 0x38 '8'
   {   280,  11,  20,  15,    2,  -20 },   // 0x39 '9'
-  {   308,   2,  20,   9,    3,  -20 },   // 0x3A ':'
+  {   308,   2,  20,   6,    2,  -20 },   // 0x3A ':'
   {     0,   0,   0,   0,    0,    0 },   // 0x3B ';'
   {     0,   0,   0,   0,    0,    0 },   // 0x3C '<'
   {     0,   0,   0,   0,    0,    0 },   // 0x3D '='
@@ -88,5 +88,5 @@ const GFXglyph VT_DIGI_OLD_20x11sGlyphs[] PROGMEM = {
 };
 
 const GFXfont Clock_GFXfont_sec PROGMEM = {
-  (uint8_t  *)VT_DIGI_OLD_20x11sBitmaps,        
-  (GFXglyph *)VT_DIGI_OLD_20x11sGlyphs, 0x20, 0x50,         110 };
+  (uint8_t  *)VT_DIGI_OLD_20x11sBitmaps,         
+  (GFXglyph *)VT_DIGI_OLD_20x11sGlyphs, 0x20, 0x50,          110 };

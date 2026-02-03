@@ -36,6 +36,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 #define DSP_MODEL DSP_ILI9488
 //#define DSP_MODEL DSP_ILI9341
 //#define DSP_MODEL DSP_ST7796
+//#define DSP_MODEL DSP_SSD1322
 #define TFT_DC         9
 #define TFT_CS         10
 #define TFT_RST        -1
@@ -47,8 +48,8 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 
 /* Touch */
-#define TS_MODEL TS_MODEL_XPT2046
-#define TS_CS    3
+//#define TS_MODEL TS_MODEL_XPT2046
+//#define TS_CS    3
 //#define X_TOUCH_MIRRORING
 //#define Y_TOUCH_MIRRORING
 
@@ -73,9 +74,9 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define ENC2_INTERNALPULLUP	true
 
 /* CLOCK MODUL RTC DS3132 */
- #define RTC_SCL			     7
- #define RTC_SDA			     8
- #define RTC_MODULE DS3231
+ //#define RTC_SCL			     7
+ // #define RTC_SDA			     8
+ //#define RTC_MODULE DS3231
 
 /* REMOTE CONTROL INFRARED RECEIVER */
 #define IR_PIN 38
@@ -88,7 +89,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 
 /* Az inaktív szegmens megjelenítése az óra számaiban true -> engedélyez, false -> nem engedélyez. 
    Inactive segments of the clock, true or false. */
-#define CLOCKFONT_MONO true
+//#define CLOCKFONT_MONO
 
 /* 12 órás időformátum definiálása. 
    Define 12-hour time format.*/
@@ -103,7 +104,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 #define CLOCK_TTS_ENABLED          false // Enabled (true) or disabled (false)
 #define CLOCK_TTS_LANGUAGE         "HU"  // Language ( EN, HU, PL, NL, DE, RU, RO ,FR, GR)
-#define CLOCK_TTS_INTERVAL_MINUTES 5    // Hány percenként mondja be. - How many times a minute does it say.
+#define CLOCK_TTS_INTERVAL_MINUTES 15    // Hány percenként mondja be. - How many times a minute does it say.
 
 /* Ezzel a beállítással nincs görgetés az időjárás sávon.
    With this setting there is no scrolling on the weather bar.
@@ -115,12 +116,10 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 //#define EXT_WEATHER  true
 
-
 /* Ezzel a beállítással a szél sebessége km/h lesz.
    With this setting, the wind speed will be km/h.
 */
 //#define WIND_SPEED_IN_KMH
-
 
 /* A VU méter két fajta kijelzési módot támogat.
 BOOMBOX_STYLE stílusa, amikor középről két oldalra leng ki a kijelző. Azt itt tudod beállítani.

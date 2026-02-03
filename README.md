@@ -18,9 +18,10 @@ https://github.com/e2002/yoradio
 ## Telepitesi tanacsok
 !!! Figyelem !!!
 Ez a verzió kizárólag az ESP32-S3-devkit-C1 N16R8, 44 lábú modulhoz és
-- ILI9488 480x320 felbontású SPI
-- ILI9341 320x240 felbontású SPI 
-- ST7796  480x320 felbontású SPI
+- ILI9488 480x320 felbontású SPI (LCD)
+- ILI9341 320x240 felbontású SPI (LCD)
+- ST7796  480x320 felbontású SPI (LCD)
+- SSD1322 256x64 felbontású SPI (OLED)
 
 kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelően, [PCM5102A](PCM5102A) -val tesztelve!
 - Amennyiben mindig a hangerő jelenik meg ellenőrízd a következőket:
@@ -102,6 +103,9 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.8.3
+   - SSD1322 OLED kijelző hozzáadva.
+   - Az aktuális lejátszási listaszám megjelenítése a kijelzőn.
 ### v0.8.2
    - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.4g (2026. jan 16.) frissítés.
    - IRremoteESP8266 könyvtár frissítése v2.9.0 verzióra.

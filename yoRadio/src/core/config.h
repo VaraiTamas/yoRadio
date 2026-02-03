@@ -1,4 +1,3 @@
-//Módosítva v0.9.689 "nameday" "wumeter"
 #ifndef config_h
 #define config_h
 #pragma once
@@ -8,20 +7,31 @@
 #include <EEPROM.h>
 #include "../displays/widgets/widgetsconfig.h"  //BitrateFormat
 
-#define EEPROM_SIZE     768
+#define EEPROM_SIZE     1024  //860-nál járok 2025.10.21 >> 1024 is bőven elég lesz majd
 #define EEPROM_START    500
 #define EEPROM_START_IR 0
 #define EEPROM_START_2  10
-#define PLAYLIST_PATH   "/data/playlist.csv"
-#define SSIDS_PATH      "/data/wifi.csv"
-#define TMP_PATH        "/data/tmpfile.txt"
-#define INDEX_PATH      "/data/index.dat"
+#ifndef BUFLEN
+  #define BUFLEN 170
+#endif
+#define PLAYLIST_PATH "/data/playlist.csv"
+#define SSIDS_PATH    "/data/wifi.csv"
+#define TMP_PATH      "/data/tmpfile.txt"
+#define INDEX_PATH    "/data/index.dat"
 
 #define PLAYLIST_SD_PATH "/data/playlistsd.csv"
 #define INDEX_SD_PATH    "/data/indexsd.dat"
+#ifdef USE_DLNA                                         //DLNA mod
+  #define PLAYLIST_DLNA_PATH "/data/playlist_dlna.csv"  //DLNA mod
+  #define INDEX_DLNA_PATH    "/data/indexdlna.dat"      //DLNA mod
 
-#define REAL_PLAYL config.getMode() == PM_WEB ? PLAYLIST_PATH : PLAYLIST_SD_PATH
-#define REAL_INDEX config.getMode() == PM_WEB ? INDEX_PATH : INDEX_SD_PATH
+  #define REAL_PLAYL (config.getMode() == PM_SDCARD ? PLAYLIST_SD_PATH : config.store.playlistSource == PL_SRC_DLNA ? PLAYLIST_DLNA_PATH : PLAYLIST_PATH)
+
+  #define REAL_INDEX (config.getMode() == PM_SDCARD ? INDEX_SD_PATH : config.store.playlistSource == PL_SRC_DLNA ? INDEX_DLNA_PATH : INDEX_PATH)
+#else
+  #define REAL_PLAYL (config.getMode() == PM_WEB ? PLAYLIST_PATH : PLAYLIST_SD_PATH)
+  #define REAL_INDEX (config.getMode() == PM_WEB ? INDEX_PATH : INDEX_SD_PATH)
+#endif
 
 #define MAX_PLAY_MODE     1
 #define WEATHERKEY_LENGTH 58
@@ -31,12 +41,19 @@
   #define ESP_ARDUINO_3 1
 #endif
 
-#define CONFIG_VERSION 5
+#define CONFIG_VERSION 7
 
-enum playMode_e : uint8_t {
+enum playMode_e : uint8_t {  //DLNA mod
   PM_WEB = 0,
-  PM_SDCARD = 1
+  PM_SDCARD = 1,
 };
+
+#ifdef USE_DLNA
+enum PlaylistSource : uint8_t {
+  PL_SRC_WEB = 0,
+  PL_SRC_DLNA = 1
+};
+#endif
 
 void u8fix(char *src);
 
@@ -64,6 +81,7 @@ struct theme_t {
   uint16_t heap;
   uint16_t buffer;
   uint16_t ip;
+  uint16_t ch;
   uint16_t vol;
   uint16_t rssi;
   uint16_t bitrate;
@@ -80,7 +98,7 @@ struct theme_t {
   uint16_t prst_title1;  // Módosítás: plussz változó. "presets"
   uint16_t prst_title2;  // Módosítás: plussz változó. "presets"
   uint16_t prst_title3;  // Módosítás: plussz változó. "presets"
-  uint16_t prst_line;  // Módosítás: plussz változó. "presets"
+  uint16_t prst_line;    // Módosítás: plussz változó. "presets"
 };
 struct config_t {
   uint16_t config_set;  //must be 4262
@@ -91,6 +109,7 @@ struct config_t {
   int8_t middle;
   int8_t bass;
   uint16_t lastStation;
+  uint16_t lastDlnaStation;  //DLNA mod
   uint16_t countStation;
   uint8_t lastSSID;
   bool audioinfo;
@@ -103,6 +122,7 @@ struct config_t {
   bool flipscreen;
   bool invertdisplay;
   bool numplaylist;
+  bool stationLine;  // 0 = default, 1 = line
   bool fliptouch;
   bool dbgtouch;
   bool dspon;
@@ -143,10 +163,15 @@ struct config_t {
   uint16_t abuff;
   bool telnet;
   bool watchdog;
-  bool nameday;  // Módosítás "nameday" új hely a struktúrában
+  bool nameday;
   uint16_t timeSyncInterval;
   uint16_t timeSyncIntervalRTC;
   uint16_t weatherSyncInterval;
+#ifdef USE_DLNA  // DLNA mod
+  uint8_t playlistSource;
+  void indexDLNAPlaylist();
+  uint8_t lastPlayedSource;
+#endif
 };
 
 #if IR_PIN != 255
@@ -171,6 +196,26 @@ struct neworkItem {
 
 class Config {
 public:
+  /* ----- Auto On-Off Timer --original in private class--- */
+  template<class T> int eepromWrite(int ee, const T &value) {
+    const uint8_t *p = (const uint8_t *)(const void *)&value;
+    int i;
+    for (i = 0; i < sizeof(value); i++) {
+      EEPROM.write(ee++, *p++);
+    }
+    EEPROM.commit();
+    return i;
+  }
+
+  template<class T> int eepromRead(int ee, T &value) {
+    uint8_t *p = (uint8_t *)(void *)&value;
+    int i;
+    for (i = 0; i < sizeof(value); i++) {
+      *p++ = EEPROM.read(ee++);
+    }
+    return i;
+  }
+  /* ----- Auto On-Off Timer --original in private class--- */
   config_t store;
   station_t station;
   theme_t theme;
@@ -230,18 +275,42 @@ public:
   }
   void initPlaylist();
   void indexPlaylist();
+#ifdef USE_DLNA  //DLNA mod
+  void indexDLNAPlaylist();
+  void initDLNAPlaylist();
+  bool resumeAfterModeChange;
+  bool isBooting;
+#endif
   void initSDPlaylist();
   void changeMode(int newmode = -1);
   uint16_t playlistLength();
   uint16_t lastStation() {
-    return getMode() == PM_WEB ? store.lastStation : store.lastSdStation;
+#ifdef USE_SD
+    if (getMode() == PM_SDCARD) {
+      return store.lastSdStation;
+    }
+#endif
+#ifdef USE_DLNA
+    if (store.playlistSource == PL_SRC_DLNA) {
+      return store.lastDlnaStation;
+    }
+#endif
+    return store.lastStation;
   }
   void lastStation(uint16_t newstation) {
-    if (getMode() == PM_WEB) {
-      saveValue(&store.lastStation, newstation);
-    } else {
+#ifdef USE_SD
+    if (getMode() == PM_SDCARD) {
       saveValue(&store.lastSdStation, newstation);
+      return;
     }
+#endif
+#ifdef USE_DLNA
+    if (store.playlistSource == PL_SRC_DLNA) {
+      saveValue(&store.lastDlnaStation, newstation);
+      return;
+    }
+#endif
+    saveValue(&store.lastStation, newstation);
   }
   char *stationByNum(uint16_t num);
   void setTimezone(int8_t tzh, int8_t tzm);
@@ -297,7 +366,6 @@ public:
       EEPROM.commit();
     }
   }
-
   void saveValue(char *field, const char *value, size_t N, bool commit = true, bool force = false) {
     if (strcmp(field, value) == 0 && !force) {
       return;
@@ -321,8 +389,8 @@ public:
   }
 
 private:
-  template<class T> int eepromWrite(int ee, const T &value);
-  template<class T> int eepromRead(int ee, T &value);
+  //template <class T> int eepromWrite(int ee, const T& value);  /* ----- Auto On-Off Timer --original in private class--- */
+  //template <class T> int eepromRead(int ee, T& value);  /* ----- Auto On-Off Timer --original in private class--- */
   bool _bootDone;
   bool _rtcFound;
   FS *_SDplaylistFS;
@@ -340,8 +408,11 @@ private:
 };
 
 extern Config config;
+
 #if DSP_HSPI || TS_HSPI || VS_HSPI
 extern SPIClass SPI2;
 #endif
+
+#define REF_BY_LAYOUT(store, field, ly) ((ly) == 1 ? (store).field##Str : (ly) == 2 ? (store).field##Bbx : (ly) == 3 ? (store).field##Std : (store).field##Def)
 
 #endif

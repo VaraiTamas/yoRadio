@@ -35,7 +35,7 @@ class Player : public Audio {
 private:
   uint32_t _volTicks; /* delayed volume save  */
   bool _volTimer;     /* delayed volume save  */
-                      // uint32_t    _resumeFilePos;
+  uint32_t    _resumeFilePos;
   plStatus_e _status;
   //char        _plError[PLERR_LN];
 private:
@@ -84,6 +84,7 @@ public:
   // Play arbitrary URL (used by presets). Executed in player task via queue.
   void playUrl(const char *url, const char *name = nullptr);
   void setOutputPins(bool isPlaying);
+  void setResumeFilePos(uint32_t pos) { _resumeFilePos = pos; }
 };
 
 extern Player player;
