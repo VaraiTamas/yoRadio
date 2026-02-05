@@ -10,9 +10,11 @@ ESP32-S3 (vagy kompatibilis) fejlesztőeszköz
 - Arduino-ESP32 core telepítve vagy    
 - VSC platformIO esetén az alábbi platform használata   
 ```
-;currently espressif Arduino 3.3.6 and IDF 5.5.2+
+; framework-arduinoespressif32 @ 3.3.6
+; framework-arduinoespressif32-libs @ 5.5.0+sha.f56bea3d1f
+; (v5.5.2.260116)
 [env:esp32-s3-devkitc1-n16r8]
-platform = https://github.com/pioarduino/platform-espressif32/releases/download/stable/platform-espressif32.zip
+platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.36/platform-espressif32.zip
 board = esp32-s3-devkitc1-n16r8
 framework = arduino
 ```
