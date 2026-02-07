@@ -68,11 +68,11 @@ void Config::init() {
   EEPROM.begin(EEPROM_SIZE);
   sdResumePos = 0;
   //DLNA modplus
-#ifdef USE_DLNA 
-  isBooting = true; 
-  resumeAfterModeChange = false; 
-#endif 
-//DLNA modplus
+#ifdef USE_DLNA
+  isBooting = true;
+  resumeAfterModeChange = false;
+#endif
+  //DLNA modplus
   screensaverTicks = 0;
   screensaverPlayingTicks = 0;
   newConfigMode = 0;
@@ -102,8 +102,11 @@ void Config::init() {
 #endif
   eepromRead(EEPROM_START, store);
 #ifdef USE_DLNA
-  if (store.lastPlayedSource == PL_SRC_DLNA) store.playlistSource = PL_SRC_DLNA;
-  else store.playlistSource = PL_SRC_WEB;
+  if (store.lastPlayedSource == PL_SRC_DLNA) {
+    store.playlistSource = PL_SRC_DLNA;
+  } else {
+    store.playlistSource = PL_SRC_WEB;
+  }
 #endif
   bootInfo();  // https://github.com/e2002/yoradio/pull/149
   if (store.config_set != 4262) {
@@ -112,17 +115,21 @@ void Config::init() {
   if (store.version > CONFIG_VERSION) {
     saveValue(&store.version, (uint16_t)CONFIG_VERSION, true, true);
   } else {
-    while (store.version != CONFIG_VERSION) _setupVersion();
+    while (store.version != CONFIG_VERSION) {
+      _setupVersion();
+    }
   }
   BOOTLOG("CONFIG_VERSION\t%d", store.version);
-  
+
   store.play_mode = store.play_mode & 0b11;
   //DLNA modplus
-#ifdef USE_DLNA 
+#ifdef USE_DLNA
 #else
-  if(store.play_mode>1) store.play_mode=PM_WEB;
+  if (store.play_mode > 1) {
+    store.play_mode = PM_WEB;
+  }
 #endif
-//DLNA modplus
+  //DLNA modplus
   _initHW();
   if (!SPIFFS.begin(true)) {
     Serial.println("##[ERROR]#\tSPIFFS Mount Failed");
@@ -142,7 +149,7 @@ void Config::init() {
   _bootDone = false;
   setTimeConf();
 //DLNA modplus
-#ifdef USE_DLNA 
+#ifdef USE_DLNA
   isBooting = false;
 #endif
 //DLNA modplus
@@ -185,7 +192,20 @@ void Config::_setupVersion() {
 }
 
 void Config::changeMode(int newmode) {  //DLNA mod
+  //Serial.printf("Config.cpp-->changeMode() newmode: %d", newmode);
 #ifdef USE_SD
+  // Encoder dupla klikk (paraméter nélküli hívás)
+  if (newmode == -1) {
+    // DLNA nem választható encoderről
+    newmode = (getMode() == PM_SDCARD) ? PM_WEB : PM_SDCARD;
+  }
+
+  // 🔒 biztonsági ellenőrzés
+  if (newmode < 0 || newmode >= 2) {  // 0 --> radio; 1 --> SD; 2 --> DLNA
+    Serial.printf("##[ERROR]# changeMode invalid newmode: %d\n", newmode);
+    return;
+  }
+
   bool pir = player.isRunning();
 
   if (SDC_CS == 255 && newmode == PM_SDCARD) {
@@ -238,18 +258,12 @@ void Config::changeMode(int newmode) {  //DLNA mod
   initPlaylistMode();
 
   if (pir) {
-#ifdef USE_DLNA
-    uint16_t st = (getMode() == PM_SDCARD)
-      ? store.lastSdStation
-      : (store.playlistSource == PL_SRC_DLNA
-         ? store.lastDlnaStation
-         : store.lastStation);
-#else
-    uint16_t st = (getMode() == PM_SDCARD)
-                  ? store.lastSdStation
-                  : store.lastStation;
+  #ifdef USE_DLNA
+    uint16_t st = (getMode() == PM_SDCARD) ? store.lastSdStation : (store.playlistSource == PL_SRC_DLNA ? store.lastDlnaStation : store.lastStation);
+  #else
+    uint16_t st = (getMode() == PM_SDCARD) ? store.lastSdStation : store.lastStation;
     player.sendCommand({PR_PLAY, st});
-#endif
+  #endif
   }
 
   netserver.resetQueue();
@@ -377,7 +391,9 @@ void Config::initPlaylistMode() {
     initSDPlaylist();
     uint16_t cs = playlistLength();
     _lastStation = store.lastSdStation;
-    if (_lastStation == 0 && cs > 0) _lastStation = _randomStation();
+    if (_lastStation == 0 && cs > 0) {
+      _lastStation = _randomStation();
+    }
   } else
 #endif
   {
@@ -393,7 +409,9 @@ void Config::initPlaylistMode() {
 
       // ⬇️ DLNA indexet CSAK innen vesszük
       _lastStation = store.lastDlnaStation;
-      if (_lastStation == 0 && cs > 0) _lastStation = 1;
+      if (_lastStation == 0 && cs > 0) {
+        _lastStation = 1;
+      }
 
     } else
 #endif
@@ -401,7 +419,9 @@ void Config::initPlaylistMode() {
       initPlaylist();
       uint16_t cs = playlistLength();
       _lastStation = store.lastStation;
-      if (_lastStation == 0 && cs > 0) _lastStation = 1;
+      if (_lastStation == 0 && cs > 0) {
+        _lastStation = 1;
+      }
     }
   }
 
@@ -837,7 +857,7 @@ void Config::indexDLNAPlaylist() {
     return;
   }
 
-  static char lineBuf[512]; 
+  static char lineBuf[512];
   int sOvol = 0;
 
   uint32_t lines = 0;
@@ -851,7 +871,9 @@ void Config::indexDLNAPlaylist() {
     lineBuf[n] = 0;
 
     // CRLF kezelés
-    if (n > 0 && lineBuf[n - 1] == '\r') lineBuf[n - 1] = 0;
+    if (n > 0 && lineBuf[n - 1] == '\r') {
+      lineBuf[n - 1] = 0;
+    }
 
     // üres sor skip
     if (lineBuf[0] == 0) {
@@ -861,7 +883,7 @@ void Config::indexDLNAPlaylist() {
 
     // FONTOS: parseCSV kapjon ÍRHATÓ buffert (lineBuf), ne String.c_str()-t
     if (parseCSV(lineBuf, tmpBuf, tmpBuf2, sOvol)) {
-      index.write((uint8_t*)&pos, 4);
+      index.write((uint8_t *)&pos, 4);
       ok++;
     }
 
@@ -869,7 +891,7 @@ void Config::indexDLNAPlaylist() {
 
     // WDT/Task starvation ellen (DLNA/WiFi közben kellhet)
     if ((lines % 50) == 0) {
-      delay(0);   // vagy yield();
+      delay(0);  // vagy yield();
     }
   }
 
@@ -894,7 +916,7 @@ void Config::initPlaylist() {
   }*/
 }
 
-#ifdef USE_DLNA //DLNA mod
+#ifdef USE_DLNA  //DLNA mod
 void Config::initDLNAPlaylist() {
   indexDLNAPlaylist();
 
@@ -1283,20 +1305,23 @@ void Config::bootInfo() {
   BOOTLOG("flipscreen:\t%s", store.flipscreen ? "true" : "false");
   BOOTLOG("invertdisplay:\t%s", store.invertdisplay ? "true" : "false");
   BOOTLOG("showweather:\t%s", store.showweather ? "true" : "false");
-  BOOTLOG("buttons:\tleft=%d, center=%d, right=%d, up=%d, down=%d, mode=%d, pullup=%s", 
-          BTN_LEFT, BTN_CENTER, BTN_RIGHT, BTN_UP, BTN_DOWN, BTN_MODE, BTN_INTERNALPULLUP?"true":"false");
-  BOOTLOG("encoders:\tl1=%d, b1=%d, r1=%d, pullup=%s, l2=%d, b2=%d, r2=%d, pullup=%s", 
-          ENC_BTNL, ENC_BTNB, ENC_BTNR, ENC_INTERNALPULLUP?"true":"false", ENC2_BTNL, ENC2_BTNB, ENC2_BTNR, ENC2_INTERNALPULLUP?"true":"false");
+  BOOTLOG(
+    "buttons:\tleft=%d, center=%d, right=%d, up=%d, down=%d, mode=%d, pullup=%s", BTN_LEFT, BTN_CENTER, BTN_RIGHT, BTN_UP, BTN_DOWN, BTN_MODE,
+    BTN_INTERNALPULLUP ? "true" : "false"
+  );
+  BOOTLOG(
+    "encoders:\tl1=%d, b1=%d, r1=%d, pullup=%s, l2=%d, b2=%d, r2=%d, pullup=%s", ENC_BTNL, ENC_BTNB, ENC_BTNR, ENC_INTERNALPULLUP ? "true" : "false", ENC2_BTNL,
+    ENC2_BTNB, ENC2_BTNR, ENC2_INTERNALPULLUP ? "true" : "false"
+  );
   BOOTLOG("ir:\t\t%d", IR_PIN);
-  if(SDC_CS!=255) BOOTLOG("SD:\t\t%d", SDC_CS);
+  if (SDC_CS != 255) {
+    BOOTLOG("SD:\t\t%d", SDC_CS);
+  }
   BOOTLOG("------------------------------------------------");
   BOOTLOG("------------------------------------------------");
   BOOTLOG(
-    "CONFIG:\tsizeof(store)=%u B | EEPROM_START=%u | EEPROM_END=%u | EEPROM_SIZE=%u",
-    (unsigned)sizeof(config.store),
-    (unsigned)EEPROM_START,
-    (unsigned)(EEPROM_START + sizeof(config.store)),
-    (unsigned)EEPROM_SIZE
+    "CONFIG:\tsizeof(store)=%u B | EEPROM_START=%u | EEPROM_END=%u | EEPROM_SIZE=%u", (unsigned)sizeof(config.store), (unsigned)EEPROM_START,
+    (unsigned)(EEPROM_START + sizeof(config.store)), (unsigned)EEPROM_SIZE
   );
   BOOTLOG("------------------------------------------------");
 }

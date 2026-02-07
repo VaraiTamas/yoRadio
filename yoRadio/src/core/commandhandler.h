@@ -1,5 +1,6 @@
 #ifndef commandhandler_h
 #define commandhandler_h
+#include <Arduino.h>
 
 class CommandHandler {
 public:

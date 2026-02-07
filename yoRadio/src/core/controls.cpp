@@ -576,7 +576,6 @@ void onBtnDoubleClick(int id) {
     case EVT_BTNCENTER:
     case EVT_ENCBTNB:
     case EVT_ENC2BTNB: {
-        //display.putRequest(NEWMODE, display.mode() == PLAYER ? VOL : PLAYER);
         onBtnClick(EVT_BTNMODE);
         break;
       }
@@ -590,6 +589,7 @@ void onBtnDoubleClick(int id) {
         break;
   }
 }
+
 void setIRTolerance(uint8_t tl){
   config.saveValue(&config.store.irtlp, tl);
 #if IR_PIN!=255
