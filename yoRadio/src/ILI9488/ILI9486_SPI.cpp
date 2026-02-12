@@ -55,10 +55,10 @@ ILI9486_SPI::ILI9486_SPI(SPIClass *spiClass, int8_t cs, int8_t dc, int8_t rst) :
 #endif
   _x_address_set = -1;
   _x_address_set = -1;
-  digitalWrite(_cs, HIGH);
-  digitalWrite(_dc, HIGH);
   pinMode(_cs, OUTPUT);
   pinMode(_dc, OUTPUT);
+  digitalWrite(_cs, HIGH);
+  digitalWrite(_dc, HIGH);
   if (rst >= 0)
   {
     digitalWrite(rst, HIGH);

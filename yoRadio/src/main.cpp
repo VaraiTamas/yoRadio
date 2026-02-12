@@ -1,145 +1,136 @@
-//v0.9.720 Módosítva! "clock_tts"
 #include "Arduino.h"
-#include "clock_tts/clock_tts.h" // Módosítás: plussz sor. "clock_tts"
+#include "clock_tts/clock_tts.h" // "clock_tts"
 #include "core/options.h"
 #include "core/config.h"
 #include "pluginsManager/pluginsManager.h"
 #include "core/telnet.h"
 #include "core/player.h"
 #include "core/display.h"
-
 #include "core/network.h"
 #include "core/netserver.h"
 #include "core/controls.h"
-//#include "core/mqtt.h"
+// #include "core/mqtt.h"
 #include "core/optionschecker.h"
 #include "core/timekeeper.h"
 #ifdef USE_NEXTION
-#include "displays/nextion.h"
+    #include "displays/nextion.h"
 #endif
-#include "core/audiohandlers.h"   //"audio_change"
-#ifdef USE_DLNA //DLNA mod
-#include "network/dlna_service.h"
+#include "core/audiohandlers.h" //"audio_change"
+#ifdef USE_DLNA                 // DLNA mod
+    #include "network/dlna_service.h"
 #endif
 #if USE_OTA
-#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-#include <NetworkUdp.h>
-#else
-#include <WiFiUdp.h>
-#endif
-#include <ArduinoOTA.h>
+    #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+        #include <NetworkUdp.h>
+    #else
+        #include <WiFiUdp.h>
+    #endif
+    #include <ArduinoOTA.h>
 #endif
 
 #if DSP_HSPI || TS_HSPI || VS_HSPI
-SPIClass  SPI2(HSPI);
+SPIClass SPI2(HSPI);
 #endif
 
 extern __attribute__((weak)) void yoradio_on_setup();
 
 #if USE_OTA
-void setupOTA(){
-  if(strlen(config.store.mdnsname)>0)
-    ArduinoOTA.setHostname(config.store.mdnsname);
-#ifdef OTA_PASS
-  ArduinoOTA.setPassword(OTA_PASS);
-#endif
-  ArduinoOTA
-    .onStart([]() {
-      player.sendCommand({PR_STOP, 0});
-      display.putRequest(NEWMODE, UPDATING);
-      telnet.printf("Start OTA updating %s\r\n", ArduinoOTA.getCommand() == U_FLASH?"firmware":"filesystem");
-    })
-    .onEnd([]() {
-      telnet.printf("\nEnd OTA update, Rebooting...\r\n");
-      ESP.restart();
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      telnet.printf("Progress OTA: %u%%\r", (progress / (total / 100)));
-    })
-    .onError([](ota_error_t error) {
-      telnet.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) {
-        telnet.printf("Auth Failed\r\n");
-      } else if (error == OTA_BEGIN_ERROR) {
-        telnet.printf("Begin Failed\r\n");
-      } else if (error == OTA_CONNECT_ERROR) {
-        telnet.printf("Connect Failed\r\n");
-      } else if (error == OTA_RECEIVE_ERROR) {
-        telnet.printf("Receive Failed\r\n");
-      } else if (error == OTA_END_ERROR) {
-        telnet.printf("End Failed\r\n");
-      }
-    });
-  ArduinoOTA.begin();
+void setupOTA() {
+    if (strlen(config.store.mdnsname) > 0) ArduinoOTA.setHostname(config.store.mdnsname);
+    #ifdef OTA_PASS
+    ArduinoOTA.setPassword(OTA_PASS);
+    #endif
+    ArduinoOTA
+        .onStart([]() {
+            player.sendCommand({PR_STOP, 0});
+            display.putRequest(NEWMODE, UPDATING);
+            telnet.printf("Start OTA updating %s\r\n", ArduinoOTA.getCommand() == U_FLASH ? "firmware" : "filesystem");
+        })
+        .onEnd([]() {
+            telnet.printf("\nEnd OTA update, Rebooting...\r\n");
+            ESP.restart();
+        })
+        .onProgress([](unsigned int progress, unsigned int total) { telnet.printf("Progress OTA: %u%%\r", (progress / (total / 100))); })
+        .onError([](ota_error_t error) {
+            telnet.printf("Error[%u]: ", error);
+            if (error == OTA_AUTH_ERROR) {
+                telnet.printf("Auth Failed\r\n");
+            } else if (error == OTA_BEGIN_ERROR) {
+                telnet.printf("Begin Failed\r\n");
+            } else if (error == OTA_CONNECT_ERROR) {
+                telnet.printf("Connect Failed\r\n");
+            } else if (error == OTA_RECEIVE_ERROR) {
+                telnet.printf("Receive Failed\r\n");
+            } else if (error == OTA_END_ERROR) {
+                telnet.printf("End Failed\r\n");
+            }
+        });
+    ArduinoOTA.begin();
 }
 #endif
 
-
-
 void setup() {
-  Serial.begin(115200);
-  if(REAL_LEDBUILTIN!=255) pinMode(REAL_LEDBUILTIN, OUTPUT);
-  if (yoradio_on_setup) yoradio_on_setup();
-  pm.on_setup();
-  config.init();
-  display.init();
-  player.init();
-  network.begin();
-  if (network.status != CONNECTED && network.status!=SDREADY) {
+    Serial.begin(115200);
+    if (REAL_LEDBUILTIN != 255) pinMode(REAL_LEDBUILTIN, OUTPUT);
+    if (yoradio_on_setup) yoradio_on_setup();
+    pm.on_setup(); // pluginsManager
+    config.init();
+    display.init();
+    player.init();
+    network.begin();
+    if (network.status != CONNECTED && network.status != SDREADY) {
+        netserver.begin();
+        initControls();
+        display.putRequest(DSP_START);
+        while (!display.ready()) delay(10);
+        return;
+    }
+    if (SDC_CS != 255) {
+        display.putRequest(WAITFORSD, 0);
+        Serial.print("##[BOOT]#\tSD search\t");
+    }
+    config.initPlaylistMode();
     netserver.begin();
+    telnet.begin();
     initControls();
     display.putRequest(DSP_START);
-    while(!display.ready()) delay(10);
-    return;
-  }
-  if(SDC_CS!=255) {
-    display.putRequest(WAITFORSD, 0);
-    Serial.print("##[BOOT]#\tSD search\t");
-  }
-  config.initPlaylistMode();
-  netserver.begin();
-  telnet.begin();
-  initControls();
-  display.putRequest(DSP_START);
-  while(!display.ready()) delay(10);
-  #if USE_OTA
+    while (!display.ready()) delay(10);
+#if USE_OTA
     setupOTA();
-  #endif
-  if (config.getMode()==PM_SDCARD) player.initHeaders(config.station.url);
-  player.lockOutput=false;
-  if (config.store.smartstart == 1) {
-    player.sendCommand({PR_PLAY, config.lastStation()});
-  }
-  #if CLOCK_TTS_ENABLED
-   clock_tts_setup(); // Módosítás: plussz sor. "clock_tts"
-  #endif
-  if (psramFound()) {
-    Serial.println("✅ PSRAM elérhető!");
-  } else {
-    Serial.println("❌ PSRAM nem található!");
-  }
-  Audio::audio_info_callback =  my_audio_info;   // "audio_change" audiohandlers.h ban kezelve.
-  Serial.printf("Total heap : %lu\n", ESP.getHeapSize());
-  Serial.printf("Free heap  : %lu\n", ESP.getFreeHeap());
-  Serial.printf("Total PSRAM: %lu\n", ESP.getPsramSize());
-  Serial.printf("Free PSRAM : %lu\n", ESP.getFreePsram());
-  pm.on_end_setup();
+#endif
+    if (config.getMode() == PM_SDCARD) player.initHeaders(config.station.url);
+    player.lockOutput = false;
+    if (config.store.smartstart == 1) { player.sendCommand({PR_PLAY, config.lastStation()}); }
+#if CLOCK_TTS_ENABLED
+    clock_tts_setup(); // Módosítás: plussz sor. "clock_tts"
+#endif
+    if (psramFound()) {
+        Serial.println("✅ PSRAM elérhető!");
+    } else {
+        Serial.println("❌ PSRAM nem található!");
+    }
+    Audio::audio_info_callback = my_audio_info; // "audio_change" audiohandlers.h ban kezelve.
+    Serial.printf("Total heap : %lu\n", ESP.getHeapSize());
+    Serial.printf("Free heap  : %lu\n", ESP.getFreeHeap());
+    Serial.printf("Total PSRAM: %lu\n", ESP.getPsramSize());
+    Serial.printf("Free PSRAM : %lu\n", ESP.getFreePsram());
+    pm.on_end_setup();
 }
 
 void loop() {
-  timekeeper.loop1();
-  telnet.loop();
-  if (network.status == CONNECTED || network.status==SDREADY) {
-    player.loop();
+    timekeeper.loop1();
+    telnet.loop();
+    if (network.status == CONNECTED || network.status == SDREADY) {
+        player.loop();
 #if USE_OTA
-    ArduinoOTA.handle();
+        ArduinoOTA.handle();
 #endif
-  }
-  loopControls();
-  #ifdef NETSERVER_LOOP1
-  netserver.loop();
-  #endif
-  #if CLOCK_TTS_ENABLED
-   clock_tts_loop(); // Módosítás: plussz sor.  "clock_tts"
-  #endif 
+    }
+    loopControls();
+#ifdef NETSERVER_LOOP1
+    netserver.loop();
+#endif
+#if CLOCK_TTS_ENABLED
+    clock_tts_loop(); // Módosítás: plussz sor.  "clock_tts"
+#endif
 }
