@@ -101,6 +101,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define SDC_CS     18
 #define SDSPISPEED 4000000 /* 4MHz - Slower speed to prevent display flicker on shared SPI bus */
 
+/*----- by Maciej Bednarski -----*/
 /*---- Ezt aktíválva a lejátszási listában a cursor mozog le - fel -----*/
 /*---- Activating this will move the cursor up and down in the playlist -----*/
 #define PLAYLIST_SCROLL_MOVING_CURSOR
