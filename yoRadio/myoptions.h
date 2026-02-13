@@ -58,12 +58,12 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 
 /*----- Touch ISP -----*/
-// #define TS_MODEL TS_MODEL_XPT2046
-// #define TS_CS    3
+ //#define TS_MODEL TS_MODEL_XPT2046
+ //#define TS_CS    3
 
 /*----- Touch I2C -----*/
 // #define TS_MODEL TS_MODEL_FT6X36
-// #defineTS_SCL       7
+// #define TS_SCL      7
 // #define TS_SDA      8
 // #define TS_INT     17 
 
