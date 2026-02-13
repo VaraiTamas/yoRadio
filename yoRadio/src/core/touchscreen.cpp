@@ -29,7 +29,7 @@
         #ifdef TS_SPIPINS
 SPIClass TSSPI(HSPI);
         #endif
-        #include <XPT2046_Touchscreen.h>
+        #include "../Touch/XPT2046/XPT2046_Touchscreen.h"
 XPT2046_Touchscreen ts(TS_CS);
 typedef TS_Point    TSPoint;
     #elif TS_MODEL == TS_MODEL_GT911

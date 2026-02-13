@@ -41,7 +41,6 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
 
 Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd őket a könyvtárkezelővel vagy PlatformIO esetén használd a mellékelt platformio.ini fájlt.
 - Adafruit GFX Library  1.12.3  https://github.com/adafruit/Adafruit-GFX-Library.git
-- XPT2046_Touchscreen   1.4     https://github.com/PaulStoffregen/XPT2046_Touchscreen.git (szükség esetén)
 - RTCLib                2.1.4   https://github.com/adafruit/RTClib.git
 - Adafruit_ILI9341      1.6.2   https://github.com/adafruit/Adafruit_ILI9341.git   (szükség esetén)
 
