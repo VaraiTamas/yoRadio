@@ -62,7 +62,8 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define TS_CS    3
 
 /*----- Touch I2C -----*/
-// #define TS_MODEL TS_MODEL_FT6X36 
+// #define TS_MODEL TS_MODEL_FT6X36
+// #define TS_INT  17 
 
 /*----- Touch corrections -----*/
 // #define X_TOUCH_MIRRORING
