@@ -33,16 +33,15 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
 // #define TS_CS    3
 ```
 - Nem támogatja az ESP32-t PSRAM memória nélkül.   
-- Az Arduino-ESP32 Core 3.3.0 vagy újabb verziójú Espressif Arduino keretrendszerre van szükség.  
-- A partíció sémánál válaszd "8M with spiffs (3MB APP/1.5MB SPIFFS)" 
-- A memória szerkezete és a vele való munka teljesen megváltozott, az összes puffer és sok változó átkerült a PSRAM-ba. 
-- Nagyon fontos, hogy a data mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!  
+- Az Arduino-ESP32 Core 3.3.3 vagy újabb verziójú Espressif Arduino keretrendszerre van szükség.  
+- A partíció sémánál válaszd "Custom" A program a saját partitions.csv fájllal rendelkezik a gyökér könyvtárban, így ez kerül beolvasásra.
+- Nagyon fontos, hogy a "yoRadio/data/data" mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!  Másik módszer F12 gomb megnyomása után a megnyíló fejlesztői ablakban a "Network" fülre kattíntva megjelenik a "Disable cache" opció. Ezt bepipálva majd Ctrl+Shift+R billentyű valódi frissítést hajt végre.
 - Ha az IR (infrared) beállítása nem működik, [ olvasd el ezt!](PCB/IR/ir_power_filter.md)
 - Ha nagy bitrátájú sztrimek lejátszásakor szakadozást tapasztalsz akkor [olvasd el ezt!](Lib_tools/LIB_TOOLS.md)
 
 Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd őket a könyvtárkezelővel vagy PlatformIO esetén használd a mellékelt platformio.ini fájlt.
 - Adafruit GFX Library  1.12.3  https://github.com/adafruit/Adafruit-GFX-Library.git
-- XPT2046_Touchscreen   1.4     https://github.com/PaulStoffregen/XPT2046_Touchscreen.git
+- XPT2046_Touchscreen   1.4     https://github.com/PaulStoffregen/XPT2046_Touchscreen.git (szükség esetén)
 - RTCLib                2.1.4   https://github.com/adafruit/RTClib.git
 - Adafruit_ILI9341      1.6.2   https://github.com/adafruit/Adafruit_ILI9341.git   (szükség esetén)
 
