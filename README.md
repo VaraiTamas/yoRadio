@@ -102,7 +102,7 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 ## Version history:
 ### v0.8.4
-   - FT6X36 kapacitív drájver hozzáadva.
+   - FT6X36 kapacitív driver hozzáadva.
    - mytheme.h fájl kiegészült az aktuális csatornaszám kijelzésének színével.
    ```
    #define COLOR_CH  165, 162, 132
