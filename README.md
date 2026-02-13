@@ -103,6 +103,25 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.8.4
+   - FT6X36 kapacitív drájver hozzáadva.
+   - mytheme.h fájl kiegészült az aktuális csatornaszám kijelzésének színével.
+   ```
+   #define COLOR_CH  165, 162, 132
+   ```
+   - A myoptions.h fájl kiegészült. A lejátszási listában a cursor mozog LE - FEL. (by Maciej Bednarski)
+   ```
+   #define PLAYLIST_SCROLL_MOVING_CURSOR
+   ```
+   - A myoptions.h fájl kiegészült. Rádió módban, ha elfogy az adatbuffer automatikusan STOP és PLAY (by Andrzej Jaroszuk)
+   ```
+   #define ENABLE_STALL_WATCHDOG
+   ```
+   - A myoptions.h fájl kiegészült. Ezzel a bejegyzéssel a képernyő színei szürkeárnyalatosak lesznek.
+   ```
+   #define THEME_GRAY
+   ```
+
 ### v0.8.3
    - SSD1322 OLED kijelző hozzáadva.
    - Az aktuális lejátszási listaszám megjelenítése a kijelzőn.
