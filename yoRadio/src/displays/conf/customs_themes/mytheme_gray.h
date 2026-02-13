@@ -71,7 +71,7 @@
 /*----- PRESETS -----*/
 #define COLOR_PRST_BUTTON        21,  21,  21  // "presets" buttons background
 #define COLOR_PRST_CARD          21,  21,  21  // "presets" kards
-#define COLOR_PRST_ACCENT       150, 150, 150
+#define COLOR_PRST_ACCENT        50,  50,  50
 #define COLOR_PRST_FAV          255, 255, 255
 #define COLOR_PRST_TITLE_1      255, 255, 255
 #define COLOR_PRST_TITLE_2      200, 200, 200
