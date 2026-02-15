@@ -3,7 +3,7 @@
 - **PCB mérete:** 98 × 100 mm
 - **SMD alkatrészek mérete:** 1206
 - A `GPIO_1`, `GPIO_2`, `GPIO_42`, `GPIO_17` kivezetések nem használt PIN-ek, kivétel ha capacitive touch -ot használsz.  
-  Ez esetben a `GPIO_17 - INT` és a `GPIO_42 - RST` touch.
+  Ez esetben a `GPIO_17 - INT` és csak GT911 esetén a `GPIO_42 - RST` touch.
 - **R1-R2** az I2C busz SCL és SCA felhúzóellenállásai. 2.2kΩ (Capacitive touch és RTC modul DS3132 használja.)
 - Az **R3–R6** ellenállások a nem használt pinek felhúzóellenállásai. 
   Csak szükség esetén kell beforrasztani őket. 10kΩ
@@ -32,17 +32,23 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
 // #define ENC2_INTERNALPULLUP true
 ```
 ### Érintő képernyő SPI buszt használó XPT2046 chip esetén (resistive)  
-- A T.CK, T.CS, T-MISO, T.MOSI érintkezők az LCD modulon az érintőképernyő SPI vezetékei. Használat esetén mindegyiket be kell kötni. Amennyiben nem akarsz használni érintő kijelzőt és nem kötöd be ezeket, úgy a myoptions.h fájlban kommenteld ki a sor elejére helyezett // jellel az ide vonatkozó definíciókat. Ellenkező esetben mindig a hangerő képernyő jelenhet meg.
-```
-// #define TS_MODEL TS_MODEL_XPT2046
-// #define TS_CS    3
+- A T.CK, T.CS, T-MISO, T.MOSI érintkezők az LCD modulon az érintőképernyő SPI vezetékei. Használat esetén mindegyiket be kell kötni. Amennyiben nem akarsz használni érintő kijelzőt és nem kötöd be ezeket, úgy a myoptions.h fájlban kommenteld ki a sor elejére helyezett // jellel az ide vonatkozó definíciókat. Ellenkező esetben mindig a hangerő képernyő jelenhet meg.  
+
+```cpp
+/*----- Touch ISP -----*/
+ #define TS_MODEL TS_MODEL_XPT2046
+ #define TS_CS    3
 ```
 
 ### Érintő képernyő I2C buszt használó FT6X36 chip esetén (capacitive) 
-  - A myoptions.h fájlban kell engedélyezni ezt a funkciót. A GPIO 17 az alaplapon nem az I2C csatlakozónál van, ezt külön kell bekötni. Felhúzóellenállás nem szükséges.
-  ```
- #define TS_MODEL TS_MODEL_FT6X36
- #define TS_INT  17 
+  - A myoptions.h fájlban kell engedélyezni ezt a funkciót. A GPIO 17 az alaplapon nem az I2C csatlakozónál van, ezt külön kell bekötni. Felhúzóellenállás nem szükséges. 
+
+  ```cpp
+ /*----- Touch I2C -----*/
+#define TS_MODEL TS_MODEL_FT6X36
+#define TS_SCL      7
+#define TS_SDA      8
+#define TS_INT     17 
 ```
 
 ### SD kártya
@@ -60,12 +66,12 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
         #define RTC_MODULE DS3231
 ```
 ### Power-select jumperek       
-A PWS_DAC, PWS_LCD, PWS_I2C power select jumperek csak tesztelési céllal kerültek fel. Amennyiben a modul tartalmaz saját 3.3V -os stabilizátor IC -t, úgy lehet választani az 5V -os táplálást.
+A PWS_LCD, PWS_I2C power select jumperek csak tesztelési céllal kerültek fel. Amennyiben a modul tartalmaz saját 3.3V -os stabilizátor IC -t, úgy lehet választani az 5V -os táplálást.
 
 - 5V_ESP32 zárása → az ESP a saját 3.3 V stabilizátorát használja
 
 - 3.3V_ESP32 zárása → az ESP-t az alaplapi stabilizátor táplálja        
-Ajánlás: csak az 5V_ESP32 ágat zárd
+Ajánlás: csak az 5V_ESP32 ágat zárd!
 
 ### Erősítő ki -be kapcsolása a képernyővédő és hangerő függvényében [olvasd el ezt!](../../docs/pwr_amp.md)
 
@@ -105,7 +111,7 @@ Ajánlás: csak az 5V_ESP32 ágat zárd
   https://github.com/e2002/yoradio/wiki/How-to-flash
 
 
-### Ez a PCB verzió legyártható a [jlcpcb.com](https://jlcpcb.com/) oldalon a [yoradio_gerber.zip](../../PCB/BCP_2025_12_21/yoradio_gerber_2025_dec_21.zip)   fájl feltöltésével.     
+### Ez a PCB verzió legyártható a [jlcpcb.com](https://jlcpcb.com/) oldalon a [yoradio_gerber.zip](../../PCB/PCB_2025_12_21/yoradio_gerber.zip)   fájl feltöltésével.     
 
 ![PCB front](2D_top_98x100mm.jpg)<br><br>
 ![PCB back](2D_bottom_98x100mm.jpg)<br><br>

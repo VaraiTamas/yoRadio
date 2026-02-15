@@ -8,8 +8,14 @@ https://www.aliexpress.com/item/1005009170360406.html
 https://www.aliexpress.com/item/1005006781542881.html
 
 ## Kijelzők / Displays
-- IPS 4.0 Inch Red Module ILI9488 Factory TFT LCD 480*320 DIY Display 14 Pin Electronic Board
+- IPS 4.0 Inch Red Module ILI9488 Factory TFT LCD 480*320 DIY Display 14 Pin Electronic Board   
+(SPI resistive touch XPT2046)   
 https://www.aliexpress.com/item/1005006287831546.html
+
+- IPS CTP 3.5 Inch SPI Red ILI9488 14 pin Full View Angle 480*320   
+(I2C capacitive touch FT6236)   
+https://www.aliexpress.com/item/1005007789737257.html   
+
 ## Digital/Analog Converter (DAC)
 
 - Interface I2S PCM5102A DAC Decoder GY-PCM5102 I2S Player Module For Raspberry Pi pHAT Format Board Digital PCM5102 Audio Board
@@ -46,9 +52,6 @@ https://www.aliexpress.com/item/1005003621329893.html
 - Universal Remote Control Replacement For Original Tanix W2 TX3 TX5 TX6 TX6S TX9 TX68 TV BOX Controller Accessories    
 https://www.aliexpress.com/item/1005010439257796.html   
 
-- Universal Learn Remote Control Work for 2 devices Copy IR Code for TV VCR STB DVD DVB BOX 2 in 1 Controller Easy for Old People.
-https://www.aliexpress.com/item/32960027990.html
-
 ## Tápegységek / Power supplies
 - 5 Volt 1-10Pcs AC-DC 3.3V/5V/12V Precision Buck Converter AC220v toDC 3.3V/5V/12V DC step down Transformer power supply module 1A 12W
 https://www.aliexpress.com/item/10000159007917.html
@@ -70,8 +73,8 @@ https://www.aliexpress.com/item/1005006345065523.html
 https://www.aliexpress.com/item/1005009195056493.html
 
 ## USB Bluetooth Transmiter
-- Grwibeou 2 IN 1 USB Bluetooth 5.0 Adapter Transmiter 3.5mm AUX Jack   
-https://www.aliexpress.com/item/1005006421639768.html
+- KN330 3 in 1 Bluetooth 5.0 Transmitter Receiver USB EDR Adapter Dongle 3.5mm AUX RCA for TV PC Headphones Home Stereo Car HIFI  
+https://www.aliexpress.com/item/1005009252961710.html
 
 ## Optocoupler Isolation Relay Module Board
 - 3.3V 1 Channel Relay Module High And Low Level Trigger Dual Optocoupler Isolation Relay Module Board
@@ -80,3 +83,7 @@ https://www.aliexpress.com/item/1005005514531757.html
 ## Vezetékek / Wires    
 - UL1007 Wire PVC Insulation Tinned Copper Cable Stranded Electrical Line 22 AWG PVC Wire（5 Colors Mix Kit）
 https://www.aliexpress.com/item/1005007813766293.html
+
+## Szerszám / Tool
+- SN-68B Crimps Plug JST ,TE,XH,SM,VH,PH,Molex Terminals Ratchet Crimper Pliers For 0.08-1.5mm²(28-16 AWG) Wires Tool
+https://www.aliexpress.com/item/1005008523636465.html?spm=a2g0o.order_list.order_list_main.66.514b1802aakfO9
