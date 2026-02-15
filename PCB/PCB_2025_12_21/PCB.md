@@ -55,16 +55,16 @@ Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket
 ### SD kártya
 - Az FSPI csatlakozóhoz lehet bekötni az SD kártya olvasót. Használata esetén a myoptions.h fájlban be kell kapcsolni a definíciókat.
 ```cpp
-        /* DS CARD */
-        #define SDC_CS 18
+/* DS CARD */
+#define SDC_CS 18
 ```
 ### RTC óramodul
 - Az I2C csatlakozó alkalmas közvetlenül óramodul RTC DS3132 fogadására. Használata esetén a myoptions.h fájlban be kell kapcsolni a definíciókat.
 ```cpp
-        /* CLOCK MODUL RTC DS3132 */
-        #define RTC_SCL			     7
-        #define RTC_SDA			     8
-        #define RTC_MODULE DS3231
+/* CLOCK MODUL RTC DS3132 */
+#define RTC_SCL			     7
+#define RTC_SDA			     8
+#define RTC_MODULE DS3231
 ```
 ### Power-select jumperek       
 A PWS_LCD, PWS_I2C power select jumperek csak tesztelési céllal kerültek fel. Amennyiben a modul tartalmaz saját 3.3V -os stabilizátor IC -t, úgy lehet választani az 5V -os táplálást.
