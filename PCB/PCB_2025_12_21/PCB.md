@@ -2,6 +2,7 @@
 
 - **PCB mérete:** 98 × 100 mm
 - **SMD alkatrészek mérete:** 1206
+- Kapcsolási rajz PDF formátumban letölthető: [wiring_diagram_2025_dec_21.pdf](../../PCB/PCB_2025_12_21/wiring_diagram_2025_dec_21.pdf) 
 - A `GPIO_1`, `GPIO_2`, `GPIO_42`, `GPIO_17` kivezetések nem használt PIN-ek, kivétel ha capacitive touch -ot használsz.  
   Ez esetben a `GPIO_17 - INT` és csak GT911 esetén a `GPIO_42 - RST` touch.
 - **R1-R2** az I2C busz SCL és SCA felhúzóellenállásai. 2.2kΩ (Capacitive touch és RTC modul DS3132 használja.)
@@ -14,7 +15,7 @@
   - **C5–C8** 100 nF
   - Beültetésük csak akkor szükséges, ha **nem a képen látható kék ENCODER-modult** használsz (a modul ezeket tartalmazza már!)
 
-![](../../Rotary_encoder/rotary_encoder_modul_wire_diagram.png)
+<img src="../../Rotary_encoder/rotary_encoder_modul_wire_diagram.png" alt="rotary_encoder_modul_wire_diagram.png" height="400"><br><br>
 
 Az encoderek használata esetén a `myoptions.h` fájlban definiálni kell őket:
 
@@ -71,7 +72,16 @@ A PWS_LCD, PWS_I2C power select jumperek csak tesztelési céllal kerültek fel.
 - 5V_ESP32 zárása → az ESP a saját 3.3 V stabilizátorát használja
 
 - 3.3V_ESP32 zárása → az ESP-t az alaplapi stabilizátor táplálja        
-Ajánlás: csak az 5V_ESP32 ágat zárd!
+Ajánlás: csak az 5V_ESP32 ágat zárd!  
+
+### A B0505S‑1WR3 egy DC-DC konverter (feszültségátalakító) modul.
+Ez azt jelenti, hogy egy adott egyenáramú feszültséget másik egyenáramú feszültséggé alakítson át, miközben villamosan elválasztja (izolálja) a bemenetet és a kimenetet egymástól.
+- Bemenet: kb. 5 V DC
+- Kimenet: 5 V DC (stabil, izolált)
+- Kimeneti áram: ~800 mA
+
+Az ilyen modult akkor érdemes használni, ha például egy mikrokontroller vagy más érzékeny elektronika tápjáról szeretnél leválasztott, stabil 5 V-ot, vagy elektromos zaj/csatlakozási problémák miatt fontos az izoláció. Ebben az esetben a **POWER_OUT** kivezetésen keresztül lehetőség nyílik egy USB transmitter megtáplálására így annak hangjában nem lesz hallható az elektrónika által okozott nagyfrekvenciás zaj. 
+- A B0505S‑1WR3 konvertert és a C1 és C2 kondenzátorokat csak akkor kell beforrasztani, ha ez a funkció használva lesz!
 
 ### Erősítő ki -be kapcsolása a képernyővédő és hangerő függvényében [olvasd el ezt!](../../docs/pwr_amp.md)
 
@@ -116,6 +126,4 @@ Ajánlás: csak az 5V_ESP32 ágat zárd!
 ![PCB front](2D_top_98x100mm.jpg)<br><br>
 ![PCB back](2D_bottom_98x100mm.jpg)<br><br>
 ![3D top](3D_top.jpg)<br><br>
-
-
 
