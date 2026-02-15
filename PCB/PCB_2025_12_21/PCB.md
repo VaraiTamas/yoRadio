@@ -79,7 +79,7 @@ Ajánlás: csak az 5V_ESP32 ágat zárd!
 <img src="../../PCB/esp32-S3-DevKitC-1-original-pinout-low.jpg" alt="esp32-S3-DevKitC-1-original-pinout-low" height="400"><br><br>      
 
 ### Az ESP32-S3-DevKitC 1 N16R8 fejlesztőmodul lábkiosztása ebben a projektben.      
-<img src="../../PCB\esp_s3_devkit_c1_n16r8_pins_setup.png" alt="esp_s3_devkit_c1_n16r8_pins_setup" height="400"><br><br>
+<img src="../../PCB/esp_s3_devkit_c1_n16r8_pins_setup.png" alt="esp_s3_devkit_c1_n16r8_pins_setup" height="400"><br><br>
 
 - Az ESP32-S3 kártyák esetében a HSPI busz által használt GPIO-k száma eltérhet (**SCK, MISO, MOSI**).  
   Általában **nincs elérhető VSPI busz**.
