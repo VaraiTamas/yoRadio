@@ -8,7 +8,7 @@
 - **R1-R2** az I2C busz SCL és SCA felhúzóellenállásai. 2.2kΩ (Capacitive touch és RTC modul DS3132 használja.)
 - Az **R3–R6** ellenállások a nem használt pinek felhúzóellenállásai. 
   Csak szükség esetén kell beforrasztani őket. 10kΩ
-- Az **R13** ellenállás az ESP modul indulásánál segít, 3.3V -ra felhúzza a GPIO 0 PIN-t. 10kΩ
+- Az **R13** ellenállás az ESP modul indulásánál segít, 3.3V -ra felhúzza a GPIO 0 PIN-t. Erre azért van szükség, mert előfordul, hogy első indításra nem indul el az ESP32-S3-Dev kit 1 modul, csak a másodikra. Indításnál a GPIO 0 lábnak magas jelszinten kell lennie, de ez nem minden esetben épül fel. Ezt segíti ez a felhúzó ellenállás. 10kΩ
 ### Forgó jeleadó - rotary encoder
 - Az ENCODER-hez tartozó alkatrészek:
   - **R7–R12** 10 kΩ
