@@ -44,6 +44,10 @@ class Display {
     void unlock() { _locked=false; }
     uint16_t width();
     uint16_t height();
+    void setBrightnessPercent(uint8_t percent);
+    void setContrast(uint8_t value);
+   static uint8_t gamma100to255(uint8_t percent);
+
   private:
     ScrollWidget *_meta, *_title1, *_plcurrent, *_weather, *_title2;
     PlayListWidget *_plwidget;

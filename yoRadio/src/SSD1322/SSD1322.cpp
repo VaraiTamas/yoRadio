@@ -114,6 +114,7 @@ inline void Jamis_SSD1322::SPIwrite(uint8_t d) {
 // must be started/ended in calling function for efficiency.
 // This is a private function, not exposed (see ssd1322_command() instead).
 void Jamis_SSD1322::ssd1322_command1(uint8_t c) {
+ //Serial.printf("comm1: %d\n", c);
   SSD1322_MODE_COMMAND
   SPIwrite(c);
 }
@@ -135,6 +136,7 @@ void Jamis_SSD1322::ssd1322_data1(uint8_t c) {
     @return None (void).
 */
 void Jamis_SSD1322::ssd1322_command(uint8_t c) {
+  //Serial.printf("comm: %d\n", c);
   TRANSACTION_START
   ssd1322_command1(c);
   TRANSACTION_END
@@ -554,6 +556,21 @@ void Jamis_SSD1322::display(void) {
 
 void Jamis_SSD1322::invertDisplay(boolean flag) {
     ssd1322_command(flag ? SSD1322_INVERSEDISPLAY : SSD1322_NORMALDISPLAY);
+}
+
+void Jamis_SSD1322::ssd1322_setMasterContrast(uint8_t v) {
+    v &= 0x0F;
+    TRANSACTION_START
+    ssd1322_command1(0xC7);
+    ssd1322_data1(v);
+    TRANSACTION_END
+}
+
+void Jamis_SSD1322::ssd1322_setContrast(uint8_t value) {
+    TRANSACTION_START
+    ssd1322_command1(0xC1);  // COMMAND mód
+    ssd1322_data1(value);    // DATA mód
+    TRANSACTION_END
 }
 
 #endif //if DSP_MODEL==DSP_SSD1322

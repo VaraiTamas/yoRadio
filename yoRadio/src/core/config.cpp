@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include "config.h"
 #include "display.h"
+#include "../SSD1322/SSD1322.h"
 #include "player.h"
 #include "network.h"
 #include "netserver.h"
@@ -98,6 +99,12 @@ void Config::init() {
     #endif
 #endif
     eepromRead(EEPROM_START, store);
+    BOOTLOG("---- EEPROM AFTER READ ----");
+    BOOTLOG("fadeEnabled   : %d", store.fadeEnabled);
+    BOOTLOG("fadeStartDelay: %d", store.fadeStartDelay);
+    BOOTLOG("fadeTarget    : %d", store.fadeTarget);
+    BOOTLOG("fadeStep      : %d", store.fadeStep);
+    BOOTLOG("--------------------------");
 #ifdef USE_DLNA
     if (store.lastPlayedSource == PL_SRC_DLNA) {
         store.playlistSource = PL_SRC_DLNA;
@@ -106,7 +113,7 @@ void Config::init() {
     }
 #endif
     bootInfo(); // https://github.com/e2002/yoradio/pull/149
-    if (store.config_set != 4262) { setDefaults(); }
+    if (store.config_set != 4263) { setDefaults(); }
     if (store.version > CONFIG_VERSION) {
         saveValue(&store.version, (uint16_t)CONFIG_VERSION, true, true);
     } else {
@@ -174,6 +181,13 @@ void Config::_setupVersion() {
             saveValue(&store.timeSyncInterval, (uint16_t)60);    // min
             saveValue(&store.timeSyncIntervalRTC, (uint16_t)24); // hours
             saveValue(&store.weatherSyncInterval, (uint16_t)30); // min
+            break;
+        case 8:
+            saveValue(&store.fadeEnabled, (uint8_t)FADE_ENABLED);
+            saveValue(&store.fadeStartDelay, (uint16_t)FADE_START_DELAY);
+            saveValue(&store.fadeTarget, (uint8_t)FADE_TARGET);
+            saveValue(&config.store.fadeStep, (uint8_t)FADE_STEP);
+            break;
         default: break;
     }
     currentVersion++;
@@ -535,6 +549,7 @@ void Config::setIrBtn(int val) {
 }
 #endif
 void Config::resetSystem(const char* val, uint8_t clientId) {
+    BOOTLOG("***************** RESET SYSTEM *****************");
     if (strcmp(val, "system") == 0) {
         saveValue(&store.smartstart, (uint8_t)2, false);
         saveValue(&store.audioinfo, false, false);
@@ -568,6 +583,10 @@ void Config::resetSystem(const char* val, uint8_t clientId) {
         saveValue(&store.screensaverPlayingEnabled, false);
         saveValue(&store.screensaverPlayingTimeout, (uint16_t)5);
         saveValue(&store.screensaverPlayingBlank, false);
+        saveValue(&store.fadeEnabled, (uint8_t)FADE_ENABLED, true);
+        saveValue(&store.fadeStartDelay, (uint16_t)FADE_START_DELAY, true);
+        saveValue(&store.fadeTarget, (uint8_t)FADE_TARGET, true);
+        saveValue(&store.fadeStep, (uint8_t)FADE_STEP, true);
         display.putRequest(NEWMODE, CLEAR);
         display.putRequest(NEWMODE, PLAYER);
         netserver.requestOnChange(GETSCREEN, clientId);
@@ -614,7 +633,8 @@ void Config::resetSystem(const char* val, uint8_t clientId) {
 }
 
 void Config::setDefaults() {
-    store.config_set = 4262;
+    BOOTLOG("***************** SET DEFAULT *****************");
+    store.config_set = 4263;
     store.version = CONFIG_VERSION;
     store.volume = 12;
     store.balance = 0;
@@ -629,7 +649,6 @@ void Config::setDefaults() {
     store.tzHour = 3;
     store.tzMin = 0;
     store.timezoneOffset = 0;
-
     store.vumeter = false;
     store.softapdelay = 0;
     store.flipscreen = false;
@@ -680,9 +699,13 @@ void Config::setDefaults() {
     store.timeSyncInterval = 60;    // min
     store.timeSyncIntervalRTC = 24; // hour
     store.weatherSyncInterval = 30; // min
-#ifdef USE_DLNA                     // DLNA mod
+    store.fadeEnabled = FADE_ENABLED;
+    store.fadeStartDelay = FADE_START_DELAY;
+    store.fadeTarget = FADE_TARGET;
+    store.fadeStep = FADE_STEP;
+    // DLNA mod
     store.playlistSource = PL_SRC_WEB;
-#endif
+
     eepromWrite(EEPROM_START, store);
 }
 
@@ -1085,15 +1108,20 @@ bool Config::initNetwork() {
 }
 
 void Config::setBrightness(bool dosave) {
-#if BRIGHTNESS_PIN != 255
+//#if BRIGHTNESS_PIN != 255
+    Serial.printf("config.cpp--> setBrightness() dosave: %d\n", dosave);
     if (!store.dspon && dosave) { display.wakeup(); }
-    analogWrite(BRIGHTNESS_PIN, map(store.brightness, 0, 100, 0, 255));
+    //#if DSP_MODEL == DSP_SSD1322
+    display.setBrightnessPercent(store.brightness);
+    //#else
+    //analogWrite(BRIGHTNESS_PIN, map(store.brightness, 0, 100, 0, 255));
+    //#endif
     if (!store.dspon) { store.dspon = true; }
     if (dosave) {
         saveValue(&store.brightness, store.brightness, false, true);
         saveValue(&store.dspon, store.dspon, true, true);
     }
-#endif
+//#endif
 #ifdef USE_NEXTION
     nextion.wake();
     char cmd[15];
@@ -1168,7 +1196,7 @@ void Config::sleepForAfter(uint16_t sf, uint16_t sa) {
 
 void Config::bootInfo() {
     BOOTLOG("************************************************");
-    BOOTLOG("*               ёPadio v%s                *", YOVERSION);
+    BOOTLOG("*           yoPadio V-Tom v%s                  *", YOVERSION);
     BOOTLOG("************************************************");
     BOOTLOG("------------------------------------------------");
     BOOTLOG("arduino:\t%d", ARDUINO);

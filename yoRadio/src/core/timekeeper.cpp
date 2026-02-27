@@ -76,11 +76,17 @@ TimeKeeper::TimeKeeper() {
 bool TimeKeeper::loop0() { // core0 (display)
     if (network.status != CONNECTED) { return true; }
     uint32_t        currentTime = millis();
+    static uint32_t _last05s = 0;
     static uint32_t _last1s = 0;
     static uint32_t _last2s = 0;
     static uint32_t _last5s = 0;
+   if(currentTime - _last05s >= 500){ // 0,5 sec
+        _last05s = currentTime;
+        pm.on_ticker();
+    }
     if (currentTime - _last1s >= 1000) { // 1sec
         _last1s = currentTime;
+   
 // #ifndef DUMMYDISPLAY
 #if !defined(DUMMYDISPLAY) || defined(USE_NEXTION)
     #ifndef UPCLOCK_CORE1
@@ -111,8 +117,8 @@ bool TimeKeeper::loop1() { // core1 (player)
     static uint32_t _restartBackoffMs = 5000;
 #endif
     if (currentTime - _last1s >= 1000) { // 1sec
-        pm.on_ticker();
         _last1s = currentTime;
+       //   pm.on_ticker();
 // #ifndef DUMMYDISPLAY
 #if !defined(DUMMYDISPLAY) || defined(USE_NEXTION)
     #ifdef UPCLOCK_CORE1
@@ -127,7 +133,7 @@ bool TimeKeeper::loop1() { // core1 (player)
     if (currentTime - _last2s >= 2000) { // 2sec
         _last2s = currentTime;
     }
-/*----- by Andrzej Jaroszuk -----*/    
+/*----- by Andrzej Jaroszuk -----*/
 /*----- Megállítja a lejátszást internet rádió módban, ha a lejátszási puffer elfogy. Utána  újraindítja a lejátszást. -----*/
 /*----- Stops playback in internet radio mode when the playback buffer runs out. Then restarts playback. -----*/
 #ifdef ENABLE_STALL_WATCHDOG

@@ -1,4 +1,5 @@
 //v0.9.693 Módosítva "nameday"
+// clang-format off
 #include "options.h"
 #include "Arduino.h"
 #include <SPIFFS.h>
@@ -519,15 +520,34 @@ void NetServer::processQueue() {
         Serial.printf("netserver-> config.store.nameday %d \n", config.store.nameday);
         break;
       case GETSCREEN:
-        sprintf(
-          wsBuf,
-          "{\"flip\":%d,\"inv\":%d,\"nump\":%d,\"tsf\":%d,\"tsd\":%d,\"dspon\":%d,\"br\":%d,\"con\":%d,\"scre\":%d,\"scrt\":%d,\"scrb\":%d,\"scrpe\":%d,"
-          "\"scrpt\":%d,\"scrpb\":%d}",
-          config.store.flipscreen, config.store.invertdisplay, config.store.numplaylist, config.store.fliptouch, config.store.dbgtouch, config.store.dspon,
-          config.store.brightness, config.store.contrast, config.store.screensaverEnabled, config.store.screensaverTimeout, config.store.screensaverBlank,
-          config.store.screensaverPlayingEnabled, config.store.screensaverPlayingTimeout, config.store.screensaverPlayingBlank
-        );
-        break;
+  sprintf(
+    wsBuf,
+    "{\"flip\":%d,\"inv\":%d,\"nump\":%d,\"tsf\":%d,\"tsd\":%d,\"dspon\":%d,"
+    "\"br\":%d,\"con\":%d,"
+    "\"scre\":%d,\"scrt\":%d,\"scrb\":%d,"
+    "\"scrpe\":%d,\"scrpt\":%d,\"scrpb\":%d,"
+    "\"fadeenabled\":%d,\"fadestartdelay\":%d,\"fadetarget\":%d,\"fadestep\":%d"
+    "}",
+    config.store.flipscreen,
+    config.store.invertdisplay,
+    config.store.numplaylist,
+    config.store.fliptouch,
+    config.store.dbgtouch,
+    config.store.dspon,
+    config.store.brightness,
+    config.store.contrast,
+    config.store.screensaverEnabled,
+    config.store.screensaverTimeout,
+    config.store.screensaverBlank,
+    config.store.screensaverPlayingEnabled,
+    config.store.screensaverPlayingTimeout,
+    config.store.screensaverPlayingBlank,
+    config.store.fadeEnabled,
+    config.store.fadeStartDelay,
+    config.store.fadeTarget,
+    config.store.fadeStep
+  );
+  break;
       case GETTIMEZONE:
         sprintf(
           wsBuf, "{\"tzh\":%d,\"tzm\":%d,\"sntp1\":\"%s\",\"sntp2\":\"%s\", \"timeint\":%d,\"timeintrtc\":%d}", config.store.tzHour, config.store.tzMin,

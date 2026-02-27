@@ -58,15 +58,14 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 */
 
 /*----- Touch ISP -----*/
- //#define TS_MODEL TS_MODEL_XPT2046
- //#define TS_CS    3
+// #define TS_MODEL TS_MODEL_XPT2046
+// #define TS_CS    3
 
 /*----- Touch I2C -----*/
 // #define TS_MODEL TS_MODEL_FT6X36
 // #define TS_SCL      7
 // #define TS_SDA      8
 // #define TS_INT     17 
-
 
 /*----- Touch corrections -----*/
 // #define X_TOUCH_MIRRORING
@@ -101,9 +100,9 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 /*----- REMOTE CONTROL INFRARED RECEIVER -----*/
 #define IR_PIN 38
 
-/*----- DS CARD -----*/
+/*----- SD CARD -----*/
 // #define SDC_CS     18
-#define SDSPISPEED 4000000 /* 4MHz - Slower speed to prevent display flicker on shared SPI bus */
+// #define SDSPISPEED 4000000 /* 4MHz - Slower speed to prevent display flicker on shared SPI bus */
 
 /*----- by Maciej Bednarski -----*/
 /*---- Ezt aktíválva a lejátszási listában a cursor mozog le - fel -----*/

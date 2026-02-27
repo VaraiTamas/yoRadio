@@ -101,6 +101,11 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 
 ## Version history:
+### v0.8.5
+   - FADE CONTROL szolgáltatás hozzáadva a WEB UI -hoz. Lehetővé teszi egy beállított fényerő, lépésenként elérését, adott idő elteltével. OLED esetén csak kontraszt csökkentést hajt végre, így kímélhető a kijelző.  
+   Teljes data/www mappa feltöltése szükséges!!! (by Zsolt Simon) 
+   - Indításnál több időt kap a WiFi a hálózatok keresésére, így elkerüli a korai AP üzemű indítást.  
+   (by Tomasz Bugno)
 ### v0.8.4
    - FT6X36 kapacitív driver hozzáadva.
    - mytheme.h fájl kiegészült az aktuális csatornaszám kijelzésének színével.
@@ -119,7 +124,6 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
    ```
    #define THEME_GRAY
    ```
-
 ### v0.8.3
    - SSD1322 OLED kijelző hozzáadva.
    - Az aktuális lejátszási listaszám megjelenítése a kijelzőn.

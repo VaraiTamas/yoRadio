@@ -3,6 +3,7 @@
 #include "core/options.h"
 #include "core/config.h"
 #include "pluginsManager/pluginsManager.h"
+#include "plugins/backlight/backlight.h" // backlight plugin
 #include "core/telnet.h"
 #include "core/player.h"
 #include "core/display.h"
@@ -71,8 +72,13 @@ void setupOTA() {
 
 void setup() {
     Serial.begin(115200);
+#if (BRIGHTNESS_PIN != 255) // backlight plugin
+    Serial.printf("Exists? %p\n", &backlightPlugin);
+    backlightPluginInit();
+#endif
     if (REAL_LEDBUILTIN != 255) pinMode(REAL_LEDBUILTIN, OUTPUT);
     if (yoradio_on_setup) yoradio_on_setup();
+    pm.init();     // pluginsManager
     pm.on_setup(); // pluginsManager
     config.init();
     display.init();

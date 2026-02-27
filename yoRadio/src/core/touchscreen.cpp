@@ -8,6 +8,7 @@
     #include "player.h"
     #include "presets.h"
     #include "../displays/dspcore.h" // DspCore + extern dsp
+    #include "../plugins/backlight/backlight.h"
 
     #ifndef TS_X_MIN
         #define TS_X_MIN 400
@@ -165,10 +166,7 @@ void TouchScreen::loop() {
 
     // Auto-exit presets screen after 15s of no touch activity
     if (display.mode() == PRESETS) {
-        if (presets_toastExpired()) {
-            // presets_drawScreen();  // ⬅ KÉNYSZER REDRAW
-            return;
-        }
+        if (presets_toastExpired()) { return; }
         if (presetsLastActivity == 0) { presetsLastActivity = millis(); }
         if (stTouched) {
             presetsLastActivity = millis();
@@ -394,8 +392,15 @@ void TouchScreen::loop() {
 
             if (direct == TDS_REQUEST) {
                 uint32_t pressTicks = millis() - touchLongPress;
-                if (pressTicks < BTN_PRESS_TICKS * 2) {
-                    if (pressTicks > 200) { // Érintési zajok kiszűrése 200ms alatt nem lesz STOP
+                if (pressTicks < BTN_PRESS_TICKS * 2) { // (1000 ms stations)
+                    if (pressTicks > 50) {              // Érintési zajok kiszűrése 50ms alatt nem lesz STOP
+                        if (config.store.fadeEnabled) {            // Ha be van kapcsolva a FADE CONTROL
+                            if (backlightPlugin.isFadeControl()) { // Első érintésre csak visszadja a fényt
+                                touchLongPress = millis();
+                                return;
+                            }
+                        }
+                        // Serial.println("touchscreen.cpp--> NORMAL CLICK");
                         onBtnClick(EVT_BTNCENTER);
                     }
                 } else {
