@@ -8,7 +8,7 @@
     - NPN taranzisztoron keresztül (BC817) R1 1KΩ ellenálláson át valamelyik GPIO - val magas jelszinten vezérelve, R2 1KΩ.
     - J6 jumper átkötésével fix 3.3V, R2 1KΩ.
 - Van rajta egy 5V 2A kimentet közvetlenül a HLK-10M05 -ön keresztül J3.
-- Van rajta egy 5V 0.8A leválasztott kimenet (B0505S-1 WR3-5V) amely alkalmas a hátlapra szerelt USB aljzat megtáplálására, így zajmentes Bluetooth adót csatlakoztathatunk.
+- Van rajta egy 5V 0.8A leválasztott kimenet (B0505S-1 WR3-5V) amely alkalmas a hátlapra szerelt USB aljzat megtáplálására, így zajmentes Bluetooth adót csatlakoztathatunk J4.
 ### Top
 
 <img src="2D_top.png" alt="2D_top.png" height="400"><br><br>
