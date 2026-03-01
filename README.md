@@ -99,6 +99,7 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 ## 3D nyomtatasi tervek
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
+- https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
 
 ## Version history:
 ### v0.8.5
