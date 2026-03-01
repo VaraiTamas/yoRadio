@@ -659,8 +659,8 @@ void Config::setDefaults() {
     store.dspon = true;
     store.brightness = 100;
     store.contrast = 55;
-    strlcpy(store.sntp1, "pool.ntp.org", 35);
-    strlcpy(store.sntp2, "1.ru.pool.ntp.org", 35);
+    strlcpy(store.sntp1, "hu.pool.ntp.org", 35);
+    strlcpy(store.sntp2, "time.google.com", 35);
     store.showweather = false;
     strlcpy(store.weatherlat, "46.3873", 10);
     strlcpy(store.weatherlon, "18.1513", 10);
@@ -1108,20 +1108,13 @@ bool Config::initNetwork() {
 }
 
 void Config::setBrightness(bool dosave) {
-//#if BRIGHTNESS_PIN != 255
-    Serial.printf("config.cpp--> setBrightness() dosave: %d\n", dosave);
     if (!store.dspon && dosave) { display.wakeup(); }
-    //#if DSP_MODEL == DSP_SSD1322
     display.setBrightnessPercent(store.brightness);
-    //#else
-    //analogWrite(BRIGHTNESS_PIN, map(store.brightness, 0, 100, 0, 255));
-    //#endif
     if (!store.dspon) { store.dspon = true; }
     if (dosave) {
         saveValue(&store.brightness, store.brightness, false, true);
         saveValue(&store.dspon, store.dspon, true, true);
     }
-//#endif
 #ifdef USE_NEXTION
     nextion.wake();
     char cmd[15];

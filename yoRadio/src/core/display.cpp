@@ -95,32 +95,34 @@ Display::~Display() {
     delete _title2;
     delete _plcurrent;
 }
-
 void Display::init() {
     Serial.print("##[BOOT]#\tdisplay.init\t");
-    #ifdef USE_NEXTION
+#ifdef USE_NEXTION
     nextion.begin();
-    #endif
-    #if LIGHT_SENSOR != 255
+#endif
+#if LIGHT_SENSOR != 255
     analogSetAttenuation(ADC_0db);
-    #endif
+#endif
     _bootStep = 0;
+    // --- HARDVER INIT ---
     dsp.initDisplay();
-    displayQueue = NULL;
+    // --- QUEUE ---
     displayQueue = xQueueCreate(5, sizeof(requestParams_t));
-    while (displayQueue == NULL) { ; }
+    while (displayQueue == NULL) {
+        delay(1);
+    }
+    _pager      = new Pager();
+    _footer     = new Page();
+    _plwidget   = new PlayListWidget();
+    _nums       = new NumWidget();
+    _clock      = new ClockWidget();
+    _meta       = new ScrollWidget();
+    _title1     = new ScrollWidget();
+    _plcurrent  = new ScrollWidget();
     _createDspTask();
-    while (!_bootStep == 0) { delay(10); }
-    //_pager.begin();
-    //_bootScreen();
-    _pager = new Pager();
-    _footer = new Page();
-    _plwidget = new PlayListWidget();
-    _nums = new NumWidget();
-    _clock = new ClockWidget();
-    _meta = new ScrollWidget();
-    _title1 = new ScrollWidget();
-    _plcurrent = new ScrollWidget();
+    while (_bootStep == 0) {
+        delay(10);
+    }
     Serial.println("done");
 }
 
@@ -147,6 +149,7 @@ uint16_t Display::height() {
     #endif
 
 void Display::_bootScreen() {
+    if (!_pager) return; // mód
     _boot = new Page();
     _boot->addWidget(new ProgressWidget(bootWdtConf, bootPrgConf, BOOT_PRG_COLOR, 0));
     _bootstring = (TextWidget*)&_boot->addWidget(new TextWidget(bootstrConf, 50, true, BOOT_TXT_COLOR, 0));

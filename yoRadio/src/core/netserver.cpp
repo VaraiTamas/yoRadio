@@ -312,6 +312,9 @@ bool NetServer::begin(bool quiet) {
   //  MDNS.begin(config.store.mdnsname);
   websocket.onEvent(onWsEvent);
   webserver.addHandler(&websocket);
+  websocket.enable(true);            // mód
+//websocket.setPingInterval(5000);     // 5 mp-enként ping
+//websocket.setPongTimeout(3000);      // 3 mp-en belül válasz kell
 #ifdef USE_DLNA  //DLNA mod
   dlna_worker_start();
 #endif
@@ -690,7 +693,28 @@ void NetServer::loop() {
       break;
     default: break;
   }
-  //processQueue();
+  static uint32_t lastPing = 0;
+
+if (millis() - lastPing > 5000) {  // 5 mp
+    lastPing = millis();
+
+    if (websocket.count() > 0) {
+        websocket.textAll("{\"ping\":1}");
+    }
+}
+static uint32_t lastWsActivity = 0;
+
+// ha van kliens, frissítjük az aktivitást
+if (websocket.count() > 0) {
+    lastWsActivity = millis();
+}
+
+// ha 15 mp óta nincs aktivitás → zárjuk
+if (millis() - lastWsActivity > 15000 && websocket.count() > 0) {
+    Serial.println("[WS] Force reconnect");
+    websocket.closeAll();
+}
+
 }
 
 #if IR_PIN != 255

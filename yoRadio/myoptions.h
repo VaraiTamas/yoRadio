@@ -93,12 +93,12 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define ENC2_INTERNALPULLUP	true
 
 /*----- CLOCK MODUL RTC DS3132 -----*/
-// #define RTC_SCL			     7
-// #define RTC_SDA			     8
-// #define RTC_MODULE DS3231
+ #define RTC_SCL			     7
+ #define RTC_SDA			     8
+ #define RTC_MODULE DS3231
 
 /*----- REMOTE CONTROL INFRARED RECEIVER -----*/
-#define IR_PIN 38
+// #define IR_PIN 38
 
 /*----- SD CARD -----*/
 // #define SDC_CS     18
@@ -171,11 +171,26 @@ This pin controls the amplifier's power supply. When music is playing, the pin i
 When music is not playing (stopped or volume is 0), the pin is set to LOW. This change occurs when the screensaver is running. -----*/
 // #define PWR_AMP 2
 
-// #define WAKE_PIN	42
-
 /*----- by Andrzej Jaroszuk -----*/    
 /*----- Megállítja a lejátszást internet rádió módban, ha a lejátszási puffer elfogy. Utána  újraindítja a lejátszást. -----*/
 /*----- Stops playback in internet radio mode when the playback buffer runs out. Then restarts playback. -----*/
 #define ENABLE_STALL_WATCHDOG
+
+/*----- by Karol Wysocki -----*/  
+/*----- Letíltja az encoder gomb másodlagos funkcióját. Csak két encoder esetén használd! -----*/
+/*----- Disables the secondary function of the encoder button. Use only if you have two encoders! -----*/
+#define ENCODERS_DEDICATED
+
+/* Sleep functions */
+// #define BTN_MODE ENC_BTNB
+// #define WAKE_PIN ENC2_BTNB
+
+
+/*----- by Zsolt Simon -----*/
+/*----- Tested on Synology NAS ----- */
+// #define USE_DLNA
+// #define dlnaHost "192.168.1.200"
+// #define dlnaIDX  21
+
 
 #endif // myoptions_h
