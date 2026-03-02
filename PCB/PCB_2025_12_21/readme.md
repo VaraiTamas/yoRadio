@@ -127,3 +127,5 @@ Az ilyen modult akkor érdemes használni, ha például egy mikrokontroller vagy
 ![PCB back](2D_bottom_98x100mm.jpg)<br><br>
 ![3D top](3D_top.jpg)<br><br>
 
+## Itt meghívhatsz egy kávéra!!!     
+https://buymeacoffee.com/vtom

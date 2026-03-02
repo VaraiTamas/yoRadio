@@ -214,3 +214,6 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 ### v0.5.0
    - Két formátumú kivezérlésmérő   
 
+
+## Itt meghívhatsz egy kávéra!!!     
+https://buymeacoffee.com/vtom

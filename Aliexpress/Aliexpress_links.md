@@ -87,3 +87,6 @@ https://www.aliexpress.com/item/1005007813766293.html
 ## Szerszám / Tool
 - SN-68B Crimps Plug JST ,TE,XH,SM,VH,PH,Molex Terminals Ratchet Crimper Pliers For 0.08-1.5mm²(28-16 AWG) Wires Tool
 https://www.aliexpress.com/item/1005008523636465.html?spm=a2g0o.order_list.order_list_main.66.514b1802aakfO9
+
+## Itt meghívhatsz egy kávéra!!!     
+https://buymeacoffee.com/vtom

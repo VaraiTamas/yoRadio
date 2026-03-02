@@ -27,4 +27,8 @@ A funkció **alapértelmezés szerint ki van kapcsolva**.
 A `myoptions.h` fájlban lehet engedélyezni az alábbi sor beírásával, ahol a vezérelni akart GPIO számát kell megadni:
 
 ```cpp
-#define PWR_AMP 2
+#define PWR_AMP 2 
+```
+
+## Itt meghívhatsz egy kávéra!!!     
+https://buymeacoffee.com/vtom
