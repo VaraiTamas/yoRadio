@@ -39,13 +39,8 @@ TextWidget::~TextWidget() {
 }
 
 void TextWidget::_charSize(uint8_t textsize, uint8_t& width, uint16_t& height) {
-    #ifndef DSP_LCD
     width = textsize * CHARWIDTH;
     height = textsize * CHARHEIGHT;
-    #else
-    width = 1;
-    height = 1;
-    #endif
 }
 
 void TextWidget::init(WidgetConfig wconf, uint16_t buffsize, bool uppercase, uint16_t fgcolor, uint16_t bgcolor) {
@@ -258,9 +253,7 @@ void ScrollWidget::_draw() {
             dsp.setCursor(_x + hiddenChars * _charWidth, _config.top);
             dsp.setClipping({_config.left, _config.top, _width, _textheight});
             dsp.print(_window);
-    #ifndef DSP_LCD
             dsp.print(" ");
-    #endif
             dsp.clearClipping();
         }
     } else {
@@ -709,26 +702,17 @@ bool VuWidget::isLabelsDrawn() { // Saját
     return _labelsDrawn;
 }
 
-    /************************
-        NUM & CLOCK
-    ************************/
-    #if !defined(DSP_LCD)
-        #if TIME_SIZE < 19 // 19->NOKIA
-const GFXfont* Clock_GFXfontPtr = nullptr;
-            #define CLOCKFONT5x7
-        #else
-
-            #ifndef DSP_OLED
+/************************
+    NUM & CLOCK
+************************/
+    #ifndef DSP_OLED
 const GFXfont* Clock_GFXfontPtr = &Clock_GFXfont;
 const GFXfont* Clock_GFXfontPtr_Sec = &Clock_GFXfont_sec; // Módosítás saját betű másodperchez. "font"
-            #else
+    #else
 const GFXfont* Clock_GFXfontPtr = &Clock_GFXfont_sec;
 const GFXfont* Clock_GFXfontPtr_Sec = &Clock_GFXfont_sec;
-            #endif
-        #endif
-    #endif //! defined(DSP_LCD)
-
-    #if !defined(CLOCKFONT5x7) && !defined(DSP_LCD)
+    #endif
+    #if !defined(CLOCKFONT5x7)
 inline GFXglyph* pgm_read_glyph_ptr(const GFXfont* gfxFont, uint8_t c) {
     return gfxFont->glyph + c;
 }
@@ -753,13 +737,9 @@ uint16_t _textHeight() {
     return pgm_read_byte(&glyph->height);
 }
         #endif
-    #else //! defined(CLOCKFONT5x7) && !defined(DSP_LCD)
+    #else //! defined(CLOCKFONT5x7)
 uint8_t _charWidth(unsigned char c) {
-        #ifndef DSP_LCD
     return CHARWIDTH * TIME_SIZE;
-        #else
-    return 1;
-        #endif
 }
 uint16_t _textHeight() {
     return CHARHEIGHT * TIME_SIZE;
@@ -768,11 +748,7 @@ uint16_t _textHeight() {
 uint16_t _textWidth(const char* txt) {
     uint16_t w = 0, l = strlen(txt);
     for (uint16_t c = 0; c < l; c++) { w += _charWidth(txt[c]); }
-    //  #if DSP_MODEL==DSP_ILI9225
-    //  return w+l;
-    //  #else
     return w;
-    //  #endif
 }
 
 /************************************************************************************************************
@@ -822,22 +798,16 @@ void NumWidget::setText(const char* txt) {
     _getBounds();
     if (strcmp(_oldtext, _text) == 0) { return; }
     uint16_t clearHeight;
-    #ifndef DSP_LCD
     if (Clock_GFXfontPtr != nullptr) {
         clearHeight = _textHeight();
     } else {
         clearHeight = CHARHEIGHT * TIME_SIZE;
     }
-    #else
-    clearHeight = _textheight;
-    #endif
     int16_t clearTop = _config.top - clearHeight + 1;
-    #ifndef DSP_LCD
     if (Clock_GFXfontPtr != nullptr) {
         clearTop -= 2;    // felső túlnyúlás
         clearHeight += 2; // alsó biztonság
     }
-    #endif
     if (_active) {
     #ifndef CLOCKFONT5x7
         dsp.fillRect(_oldleft == 0 ? _realLeft() : min(_oldleft, _realLeft()), clearTop, max(_oldtextwidth, _textwidth), clearHeight, _bgcolor);
@@ -861,12 +831,10 @@ void NumWidget::_getBounds() {
 }
 
 void NumWidget::_draw() {
-    #ifndef DSP_LCD
     if (!_active || TIME_SIZE < 2) { return; }
     dsp.setTextSize(Clock_GFXfontPtr == nullptr ? TIME_SIZE : 1);
     dsp.setFont(Clock_GFXfontPtr);
     dsp.setTextColor(_fgcolor, _bgcolor);
-    #endif
     if (!_active) { return; }
     dsp.setCursor(_realLeft(), _config.top);
     dsp.print(_text);
@@ -990,16 +958,14 @@ void ClockWidget::_getTimeBounds() {
     _dotsleft = _textWidth(buf);
 }
 
-    #ifndef DSP_LCD
-
 Adafruit_GFX& ClockWidget::getRealDsp() {
-        #ifdef PSFBUFFER
+    #ifdef PSFBUFFER
     if (_fb && _fb->ready()) { return *_fb; }
-        #endif
+    #endif
     return dsp;
 }
 
-        #if DSP_MODEL == DSP_SSD1322
+    #if DSP_MODEL == DSP_SSD1322
 
 void ClockWidget::_drawShortDateSSD1322() {
     if (config.isScreensaver) { return; }
@@ -1026,22 +992,20 @@ void ClockWidget::_drawShortDateSSD1322() {
     dsp.setCursor(x, dc.top);
     dsp.print(_tmp);
 }
-
-        #endif
+    #endif
 
 void ClockWidget::_printClock(bool force) {
     auto& gfx = getRealDsp();
     gfx.setTextSize(Clock_GFXfontPtr == nullptr ? TIME_SIZE : 1);
     gfx.setFont(Clock_GFXfontPtr);
-    // bool clockInTitle = !config.isScreensaver && _config.top < _timeheight;  //DSP_SSD1306x32
     if (force) {
         _clearClock();
         _getTimeBounds();
-        #ifdef CLOCKFONT_MONO
+    #ifdef CLOCKFONT_MONO
         gfx.setTextColor(config.theme.clockbg, config.theme.background);
         gfx.setCursor(_left(), _top());
         gfx.print("88:88");
-        #endif
+    #endif
         // if (clockInTitle) {
         // gfx.setTextColor(config.theme.meta, config.theme.metabg);
         //} else {
@@ -1050,11 +1014,11 @@ void ClockWidget::_printClock(bool force) {
         gfx.setCursor(_left(), _top());
         gfx.print(_timebuffer); // Az óra, perc kiírása.
 
-        #if DSP_MODEL == DSP_SSD1322
-            #ifndef HIDE_DATE
+    #if DSP_MODEL == DSP_SSD1322
+        #ifndef HIDE_DATE
         _drawShortDateSSD1322();
-            #endif
-            #ifdef AM_PM_STYLE
+        #endif
+        #ifdef AM_PM_STYLE
         constexpr uint8_t FONT_H = 7; // TinyFont5 teljes magasság
         constexpr uint8_t ASCENT = 6; // baseline fölé
 
@@ -1067,21 +1031,21 @@ void ClockWidget::_printClock(bool force) {
         dsp.setTextSize(0);
         dsp.setFont(&TinyFont5);
         dsp.setTextColor(config.theme.clock, config.theme.background);
-                #ifdef CLOCKFONT_MONO
+            #ifdef CLOCKFONT_MONO
         dsp.setCursor(179, 23);
-                #else
+            #else
         dsp.setCursor(188, 23);
-                #endif
-        dsp.print(buf); // AM vagy PM kiírása
             #endif
+        dsp.print(buf); // AM vagy PM kiírása
         #endif
+    #endif
 
         if (_fullclock) { // A másodperceket is kiírja nem csak az óra percet.
             bool fullClockOnScreensaver = (!config.isScreensaver || (_fb->ready() && FULL_SCR_CLOCK));
             _linesleft = _left() + _timewidth + _space;
             if (fullClockOnScreensaver) {
                 gfx.drawFastVLine(_linesleft, _top() - _timeheight, _timeheight, config.theme.div); // A másodperc vertikális vonala.
-        #ifdef AM_PM_STYLE
+    #ifdef AM_PM_STYLE
                 // A másodperc horizontális vonala.
                 gfx.drawFastHLine(_linesleft, _top() - (_timeheight / 2), CHARWIDTH * _superfont * 2 + _space, config.theme.div);
                 gfx.setTextSize(0);
@@ -1091,18 +1055,18 @@ void ClockWidget::_printClock(bool force) {
                 gfx.setCursor(_linesleft + 8, _top());
                 gfx.print(buf); // AM vagy PM kiírása
 
-        #else
-            #if DSP_MODEL == DSP_ILI9341
+    #else
+        #if DSP_MODEL == DSP_ILI9341
                 constexpr int lineOffset = 17; // 320x240
-            #else
+        #else
                 constexpr int lineOffset = 25; // 480x320
-            #endif
+        #endif
                 // A másodperc horizontális vonala.
                 gfx.drawFastHLine(_linesleft, _top() - (_timeheight / 2) + lineOffset, CHARWIDTH * _superfont * 2 + _space, config.theme.div);
-        #endif
+    #endif
                 if (!config.isScreensaver) {
                     _formatDate();
-        #ifndef HIDE_DATE
+    #ifndef HIDE_DATE
                     memcpy_P(&_dateConf, &dateConf, sizeof(WidgetConfig));
                     // Sor törlése teljes szélességben
                     int lineHeight = _dateheight * 8;                                                 // kb. 8 pixel per TextSize
@@ -1115,7 +1079,7 @@ void ClockWidget::_printClock(bool force) {
                     dsp.setCursor(_dateleft, _dateConf.top); // Módosítás saját beállítás változó "_dateConf"
                     dsp.setTextColor(config.theme.date, config.theme.background);
                     dsp.print(_datebuf);
-        #endif // HIDE_DATE
+    #endif // HIDE_DATE
                 }
             }
         }
@@ -1124,30 +1088,30 @@ void ClockWidget::_printClock(bool force) {
         // *** Másodperc kiírása ***
         gfx.setTextSize(0);
         gfx.setFont(Clock_GFXfontPtr_Sec);
-        #ifdef CLOCKFONT_MONO
+    #ifdef CLOCKFONT_MONO
         gfx.setTextColor(config.theme.clockbg, config.theme.background);
-        #else
+    #else
         gfx.setTextColor(config.theme.background, config.theme.background);
-        #endif
+    #endif
         uint16_t topSec;
         uint16_t leftSec;
-        #if DSP_MODEL == DSP_ILI9341 // 320x240
-            #ifdef AM_PM_STYLE
+    #if DSP_MODEL == DSP_ILI9341 // 320x240
+        #ifdef AM_PM_STYLE
         topSec = _top() - _timeheight + 20;
         leftSec = _linesleft + 8;
-            #else
+        #else
         topSec = _top() - _timeheight + 38;
         leftSec = _linesleft + 3;
-            #endif
-        #else // DSP_MODEL DSP_ILI9341  480x320
-            #ifdef AM_PM_STYLE
+        #endif
+    #else // DSP_MODEL DSP_ILI9341  480x320
+        #ifdef AM_PM_STYLE
         topSec = _top() - _timeheight + 30;
         leftSec = _linesleft + 8;
-            #else
+        #else
         topSec = _top() - _timeheight + 50;
         leftSec = _linesleft + 3;
-            #endif
         #endif
+    #endif
         gfx.setCursor(leftSec, topSec);
         gfx.print("88");
         gfx.setTextColor(config.theme.seconds, config.theme.background);
@@ -1157,27 +1121,27 @@ void ClockWidget::_printClock(bool force) {
     }
     gfx.setTextSize(Clock_GFXfontPtr == nullptr ? TIME_SIZE : 1);
     gfx.setFont(Clock_GFXfontPtr);
-        #ifndef DSP_OLED
-            #ifdef CLOCKFONT_MONO
+    #ifndef DSP_OLED
+        #ifdef CLOCKFONT_MONO
     gfx.setTextColor(dots ? config.theme.clock : config.theme.clockbg, config.theme.background);
-            #else
-    gfx.setTextColor(dots ? config.theme.clock : config.theme.background, config.theme.background);
-            #endif
-
         #else
+    gfx.setTextColor(dots ? config.theme.clock : config.theme.background, config.theme.background);
+        #endif
+
+    #else
     // if (clockInTitle) {
     // gfx.setTextColor(dots ? config.theme.meta : config.theme.metabg, config.theme.metabg);
     // } else {
     gfx.setTextColor(dots ? config.theme.clock : config.theme.background, config.theme.background);
-            // }
-        #endif
+        // }
+    #endif
     dots = !dots;
     gfx.setCursor(_left() + _dotsleft, _top());
     gfx.print(":");
     gfx.setFont();
     if (_fb->ready()) { _fb->display(); }
-        // Mai névnap letöltése - csak ha engedélyezve van.
-        #ifdef NAMEDAYS_FILE
+    // Mai névnap letöltése - csak ha engedélyezve van.
+    #ifdef NAMEDAYS_FILE
     if (config.store.nameday) {
         static uint32_t lastRotation = 0;
         if (millis() - lastRotation >= 4000) {
@@ -1190,109 +1154,63 @@ void ClockWidget::_printClock(bool force) {
             lastRotation = millis();
         }
     }
-        #endif // NAMEDAYS_FILE
+    #endif // NAMEDAYS_FILE
 }
-/*
-void ClockWidget::_formatDate() {
-    // "multi_language"
-    #if L10N_LANGUAGE == RU
-  sprintf(_tmp, "%2d %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
-    #elif L10N_LANGUAGE == EN
-  sprintf(_tmp, "%2d %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
-    #elif L10N_LANGUAGE == NL
-  sprintf(
-    _tmp, "%s %2d %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900
-  );
-    #elif L10N_LANGUAGE == HU
-  sprintf(
-    _tmp, "%d. %s %2d. %s", network.timeinfo.tm_year + 1900, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_mday,
-    LANG::dowf[network.timeinfo.tm_wday]
-  );
-    #elif L10N_LANGUAGE == PL
-  sprintf(
-    _tmp, "%s - %02d %s %04d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
-    network.timeinfo.tm_year + 1900
-  );
-    #elif L10N_LANGUAGE == GR
-  sprintf(_tmp, "%2d %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
-    #elif L10N_LANGUAGE == SK
-  sprintf(
-    _tmp, "%s %d. %s %2d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900
-  );
-    #elif L10N_LANGUAGE == UA
-  sprintf(
-    _tmp, "%s, %d %s %2d року", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
-    network.timeinfo.tm_year + 1900
-  );
-    #elif L10N_LANGUAGE == DE
-  sprintf(
-    _tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
-    network.timeinfo.tm_year + 1900
-  );
-    #elif L10N_LANGUAGE == ES
-  sprintf(
-    _tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon],
-    network.timeinfo.tm_year + 1900
-  );
-
-    #endif
-}
-*/
 
 void ClockWidget::_formatDate() {
 
-        #if defined(DSP_OLED) && (DSP_MODEL == DSP_SSD1322)
-            // ===== SSD1322: rövid, de NYELVHELYES dátum =====
-            #if L10N_LANGUAGE == HU
+    #if defined(DSP_OLED) && (DSP_MODEL == DSP_SSD1322)
+        // ===== SSD1322: rövid, de NYELVHELYES dátum =====
+        #if L10N_LANGUAGE == HU
     snprintf(_tmp, sizeof(_tmp), "%04d.%02d.%02d", network.timeinfo.tm_year + 1900, network.timeinfo.tm_mon + 1, network.timeinfo.tm_mday);
 
-            #elif L10N_LANGUAGE == EN
+        #elif L10N_LANGUAGE == EN
     snprintf(_tmp, sizeof(_tmp), "%02d/%02d/%04d", network.timeinfo.tm_mon + 1, network.timeinfo.tm_mday, network.timeinfo.tm_year + 1900);
 
-            #elif L10N_LANGUAGE == DE || L10N_LANGUAGE == PL || L10N_LANGUAGE == SK || L10N_LANGUAGE == RU || L10N_LANGUAGE == UA
+        #elif L10N_LANGUAGE == DE || L10N_LANGUAGE == PL || L10N_LANGUAGE == SK || L10N_LANGUAGE == RU || L10N_LANGUAGE == UA
     snprintf(_tmp, sizeof(_tmp), "%02d.%02d.%04d", network.timeinfo.tm_mday, network.timeinfo.tm_mon + 1, network.timeinfo.tm_year + 1900);
 
-            #elif L10N_LANGUAGE == NL
+        #elif L10N_LANGUAGE == NL
     snprintf(_tmp, sizeof(_tmp), "%02d-%02d-%04d", network.timeinfo.tm_mday, network.timeinfo.tm_mon + 1, network.timeinfo.tm_year + 1900);
 
-            #elif L10N_LANGUAGE == ES || L10N_LANGUAGE == GR
+        #elif L10N_LANGUAGE == ES || L10N_LANGUAGE == GR
     snprintf(_tmp, sizeof(_tmp), "%02d/%02d/%04d", network.timeinfo.tm_mday, network.timeinfo.tm_mon + 1, network.timeinfo.tm_year + 1900);
 
-            #else
+        #else
     // fallback
     snprintf(_tmp, sizeof(_tmp), "%04d-%02d-%02d", network.timeinfo.tm_year + 1900, network.timeinfo.tm_mon + 1, network.timeinfo.tm_mday);
-            #endif
+        #endif
 
     return;
-        #endif
+    #endif
 
-        // ===== MINDEN MÁS KIJELZŐ: meglévő hosszú, szöveges forma =====
+    // ===== MINDEN MÁS KIJELZŐ: meglévő hosszú, szöveges forma =====
 
-        #if L10N_LANGUAGE == RU
+    #if L10N_LANGUAGE == RU
     sprintf(_tmp, "%2d %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
 
-        #elif L10N_LANGUAGE == EN
+    #elif L10N_LANGUAGE == EN
     sprintf(_tmp, "%2d %s %d", network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
 
-        #elif L10N_LANGUAGE == NL
+    #elif L10N_LANGUAGE == NL
     sprintf(_tmp, "%s %2d %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
 
-        #elif L10N_LANGUAGE == HU
+    #elif L10N_LANGUAGE == HU
     sprintf(_tmp, "%d. %s %2d. %s", network.timeinfo.tm_year + 1900, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_mday, LANG::dowf[network.timeinfo.tm_wday]);
 
-        #elif L10N_LANGUAGE == PL
+    #elif L10N_LANGUAGE == PL
     sprintf(_tmp, "%s - %02d %s %04d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
 
-        #elif L10N_LANGUAGE == DE
+    #elif L10N_LANGUAGE == DE
     sprintf(_tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
 
-        #elif L10N_LANGUAGE == ES
+    #elif L10N_LANGUAGE == ES
     sprintf(_tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
-        #endif
+    #endif
 }
 
-        /*********************  A névnapok kiírása. *****************************/
-        #ifdef NAMEDAYS_FILE
+    /*********************  A névnapok kiírása. *****************************/
+    #ifdef NAMEDAYS_FILE
 void ClockWidget::getNamedayUpper(char* dest, size_t len) { // commongfx.h - ban van deklarálva.
     const char* nameday = getNameDay(network.timeinfo.tm_mon + 1, network.timeinfo.tm_mday);
     char        tmp[32];
@@ -1304,20 +1222,20 @@ void ClockWidget::getNamedayUpper(char* dest, size_t len) { // commongfx.h - ban
 void ClockWidget::_printNameday() {
     uint16_t nameday_top;
     memcpy_P(&_namedayConf, &namedayConf, sizeof(WidgetConfig));
-            #if DSP_MODEL == DSP_ILI9341
+        #if DSP_MODEL == DSP_ILI9341
     nameday_top = _namedayConf.top + 14;
-            #else
+        #else
     nameday_top = _namedayConf.top + 22;
-            #endif
+        #endif
     if (config.store.nameday) {
         // Rajzold le a nyelvfüggő "Névnap:" szót fehér színnel.
         dsp.setTextColor(config.theme.date, config.theme.background);
         dsp.setCursor(_namedayConf.left, _namedayConf.top); // egy sorral feljebb
-            #if NAMEDAYS_FILE == GR                         // Görög nyevnél túl hosszú, ezért 1- es méret.
+        #if NAMEDAYS_FILE == GR                             // Görög nyevnél túl hosszú, ezért 1- es méret.
         dsp.setTextSize(1);
-            #else
+        #else
         dsp.setTextSize(_namedayConf.textsize);
-            #endif
+        #endif
         if (!config.isScreensaver) {
             // Serial.printf("Widget.cpp->nameday_label: %s \n", nameday_label);
             // Serial.printf("Widget.cpp->utf8To(nameday_label, false): %s \n", utf8To(nameday_label, false));
@@ -1340,21 +1258,21 @@ void ClockWidget ::clearNameday() {
     int clearWidth = max(_oldnamedaywidth, _namedaywidth); // A régi és az új név közül a szélesebb szélessége.
     dsp.fillRect(namedayConf.left, namedayConf.top, clearWidth, (CHARHEIGHT * namedayConf.textsize * 2) + 5, config.theme.background);
 }
-        #endif // NAMEDAYS_FILE
+    #endif // NAMEDAYS_FILE
 
 void ClockWidget::_clearClock() {
-        #ifdef PSFBUFFER
+    #ifdef PSFBUFFER
     if (_fb->ready()) {
         _fb->clear();
     } else
-        #endif
-        #ifndef CLOCKFONT5x7
+    #endif
+    #ifndef CLOCKFONT5x7
         // dsp.fillRect(_left(), _top()-_timeheight, _clockwidth, _clockheight+1, 0x8410);
         dsp.fillRect(_left(), _top() - (_timeheight + 2), _clockwidth, _clockheight + 3, config.theme.background);
-        // Serial.println("Törlés");
-        #else
+    // Serial.println("Törlés");
+    #else
     dsp.fillRect(_left(), _top(), _clockwidth + 1, _clockheight + 1, config.theme.background);
-        #endif
+    #endif
 }
 
 void ClockWidget::draw(bool force) {
@@ -1368,46 +1286,21 @@ void ClockWidget::_draw() {
 }
 
 void ClockWidget::_reset() {
-        #ifdef PSFBUFFER
+    #ifdef PSFBUFFER
     if (_fb->ready()) {
         _fb->freeBuffer();
         _getTimeBounds();
         _begin();
     }
-        #endif
+    #endif
 }
 
 void ClockWidget::_clear() {
     _clearClock();
 }
-    #else  // #ifndef DSP_LCD
-
-void ClockWidget::_printClock(bool force) {
-    strftime(_timebuffer, sizeof(_timebuffer), "%H:%M", &network.timeinfo);
-    if (force) {
-        dsp.setCursor(dsp.width() - 5, 0);
-        dsp.print(_timebuffer);
-    }
-    dsp.setCursor(dsp.width() - 5 + 2, 0);
-    dsp.print((network.timeinfo.tm_sec % 2 == 0) ? ":" : " ");
-}
-
-void ClockWidget::_clearClock() {}
-
-void ClockWidget::draw() {
-    if (!_active) { return; }
-    _printClock(true);
-}
-void ClockWidget::_draw() {
-    if (!_active) { return; }
-    _printClock(true);
-}
-void ClockWidget::_reset() {}
-void ClockWidget::_clear() {}
-    #endif // #ifndef DSP_LCD
 
 /****************************************************************************************************
-                                                     BITRATE WIDGET
+                                         BITRATE WIDGET
  ****************************************************************************************************/
 void BitrateWidget::init(BitrateConfig bconf, uint16_t fgcolor, uint16_t bgcolor) {
     Widget::init(bconf.widget, fgcolor, bgcolor);
@@ -1435,13 +1328,8 @@ void BitrateWidget::setFormat(BitrateFormat format) {
 
 // TODO move to parent
 void BitrateWidget::_charSize(uint8_t textsize, uint8_t& width, uint16_t& height) {
-    #ifndef DSP_LCD
     width = textsize * CHARWIDTH;
     height = textsize * CHARHEIGHT;
-    #else
-    width = 1;
-    height = 1;
-    #endif
 }
 
 void BitrateWidget::_draw() { // Módosítás
@@ -1551,9 +1439,9 @@ void BitrateWidget::clearAll() {
 }
 
 /**********************************************************************************
-                                          PLAYLIST WIDGET
-    **********************************************************************************/
-    #if defined(PLAYLIST_SCROLL_MOVING_CURSOR) //&& (DSP_WIDTH == 480) && (DSP_HEIGHT == 320)
+                                    PLAYLIST WIDGET
+***********************************************************************************/
+    #if defined(PLAYLIST_SCROLL_MOVING_CURSOR)
 
         #define MAX_PL_PAGE_ITEMS 15
 static String   _plCache[MAX_PL_PAGE_ITEMS];
@@ -1650,9 +1538,8 @@ void PlayListWidget::drawPlaylist(uint16_t currentItem) {
 }
 
 void PlayListWidget::_printPLitem(uint8_t pos, const char* item) {
-        #ifndef DSP_LCD
     if (pos >= _plTtemsCount) return;
-    int16_t yPos = _plYStart + pos * _plItemHeight;
+    int16_t  yPos = _plYStart + pos * _plItemHeight;
     bool     isSelected = (pos == _plCurrentPos);
     uint16_t fgColor = isSelected ? config.theme.plcurrent : config.theme.playlist[0];
     uint16_t bgColor = config.theme.background;
@@ -1663,22 +1550,16 @@ void PlayListWidget::_printPLitem(uint8_t pos, const char* item) {
         dsp.setCursor(TFT_FRAMEWDT, yPos + 4);
         dsp.print(utf8To(item, true));
     }
-        #endif
 }
-    #else
+    #else  // #if defined(PLAYLIST_SCROLL_MOVING_CURSOR)
 void PlayListWidget::init(ScrollWidget* current) {
     Widget::init({0, 0, 0, WA_LEFT}, 0, 0);
     _current = current;
-        #ifndef DSP_LCD
     _plItemHeight = playlistConf.widget.textsize * (CHARHEIGHT - 1) + playlistConf.widget.textsize * 4;
     _plTtemsCount = round((float)dsp.height() / _plItemHeight);
     if (_plTtemsCount % 2 == 0) { _plTtemsCount++; }
     _plCurrentPos = _plTtemsCount / 2;
     _plYStart = (dsp.height() / 2 - _plItemHeight / 2) - _plItemHeight * (_plTtemsCount - 1) / 2 + playlistConf.widget.textsize * 2;
-        #else
-    _plTtemsCount = PLMITEMS;
-    _plCurrentPos = 1;
-        #endif
 }
 
 uint8_t PlayListWidget::_fillPlMenu(int from, uint8_t count) {
@@ -1718,7 +1599,7 @@ uint8_t PlayListWidget::_fillPlMenu(int from, uint8_t count) {
     playlist.close();
     return c;
 }
-        #ifndef DSP_LCD
+
 void PlayListWidget::drawPlaylist(uint16_t currentItem) {
     uint8_t lastPos = _fillPlMenu(currentItem - _plCurrentPos, _plTtemsCount);
     if (lastPos < _plTtemsCount) { dsp.fillRect(0, lastPos * _plItemHeight + _plYStart, dsp.width(), dsp.height() / 2, config.theme.background); }
@@ -1736,26 +1617,6 @@ void PlayListWidget::_printPLitem(uint8_t pos, const char* item) {
         dsp.print(utf8To(item, true));
     }
 }
-        #else
-void PlayListWidget::_printPLitem(uint8_t pos, const char* item) {
-    if (pos == _plCurrentPos) {
-        _current->setText(item);
-    } else {
-        dsp.setCursor(1, pos);
-        char tmp[dsp.width()] = {0};
-        strlcpy(tmp, utf8To(item, true), dsp.width());
-        dsp.print(tmp);
-    }
-}
-
-void PlayListWidget::drawPlaylist(uint16_t currentItem) {
-    dsp.clear();
-    _fillPlMenu(currentItem - _plCurrentPos, _plTtemsCount);
-    dsp.setCursor(0, 1);
-    dsp.write(uint8_t(126));
-}
-        #endif // DSP_LCD
-
-    #endif
+    #endif // #if defined(PLAYLIST_SCROLL_MOVING_CURSOR)
 
 #endif // #if DSP_MODEL!=DSP_DUMMY

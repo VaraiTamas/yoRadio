@@ -8,7 +8,6 @@
 // Polish chars: ąćęłńóśźż ĄĆĘŁŃÓŚŹŻ
 // Execution of special characters PL, SK, DE, RO, S = A. Jaroszuk
 
-#ifndef DSP_LCD
 char* utf8To(const char* str, bool uppercase) {
   int index = 0;
   static char strn[BUFLEN];
@@ -620,5 +619,5 @@ if (strn[index] == 0xC3)
 
 return strn;
 }
-#endif //#ifndef DSP_LCD
+
 #endif //#if L10N_LANGUAGE == PL

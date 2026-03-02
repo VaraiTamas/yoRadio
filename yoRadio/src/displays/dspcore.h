@@ -16,10 +16,6 @@
   #define PSFBUFFER
   #include "displayILI9341.h"
 
-#elif DSP_MODEL==DSP_CUSTOM
-  #define TIME_SIZE           0
-  #include "displayCustom.h"
-
 #elif DSP_MODEL==DSP_ST7796         // https://k210.org/images/content/uploads/yoradio/ST7796.jpg
   #define TIME_SIZE           70
   #define PSFBUFFER

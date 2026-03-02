@@ -100,5 +100,4 @@ const char prstSpace[]        PROGMEM = "Szóköz";
 const char prstCancel[]       PROGMEM = "Mégse";
 const char prstOk[]           PROGMEM = "OK";
 
-
 #endif

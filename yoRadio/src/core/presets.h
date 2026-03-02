@@ -1,5 +1,5 @@
 #include "options.h"
-#if DSP_MODEL == DSP_ILI9488
+
 #pragma once
 #include <Arduino.h>
 
@@ -38,5 +38,3 @@ void presets_clearHoldBar();
 bool presets_toastExpired();
 
 void sanitizePresets(uint8_t bank);
-#endif
-

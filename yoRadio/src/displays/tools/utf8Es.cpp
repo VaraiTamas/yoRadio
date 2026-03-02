@@ -5,7 +5,6 @@
 #include "../dspcore.h"
 #include "utf8To.h"
 
-#ifndef DSP_LCD
 char* utf8To(const char* str, bool uppercase)
 {
     static char out[BUFLEN];
@@ -61,5 +60,4 @@ char* utf8To(const char* str, bool uppercase)
     out[o] = 0;
     return out;
 }
-#endif
 #endif

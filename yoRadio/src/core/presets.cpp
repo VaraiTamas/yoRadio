@@ -1,5 +1,6 @@
 #include "options.h"
-#if DSP_MODEL == DSP_ILI9488
+//#if DSP_MODEL == DSP_ILI9488
+
     #include "presets.h"
 
     #include <Arduino.h>
@@ -12,6 +13,7 @@
     #include "../displays/dspcore.h"
     #include "../displays/tools/l10n.h"
     #include "../displays/tools/utf8To.h"
+    #if (DSP_WIDTH == 480) && (DSP_HEIGHT == 320)
     #define GFX (*s_presetsCanvas)
 
 static inline const char* uiText(const String& s, bool upper = false) {

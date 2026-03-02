@@ -80,13 +80,13 @@ bool TimeKeeper::loop0() { // core0 (display)
     static uint32_t _last1s = 0;
     static uint32_t _last2s = 0;
     static uint32_t _last5s = 0;
-   if(currentTime - _last05s >= 500){ // 0,5 sec
+    if (currentTime - _last05s >= 500) { // 0,5 sec
         _last05s = currentTime;
         pm.on_ticker();
     }
     if (currentTime - _last1s >= 1000) { // 1sec
         _last1s = currentTime;
-   
+
 // #ifndef DUMMYDISPLAY
 #if !defined(DUMMYDISPLAY) || defined(USE_NEXTION)
     #ifndef UPCLOCK_CORE1
@@ -118,7 +118,7 @@ bool TimeKeeper::loop1() { // core1 (player)
 #endif
     if (currentTime - _last1s >= 1000) { // 1sec
         _last1s = currentTime;
-       //   pm.on_ticker();
+        //   pm.on_ticker();
 // #ifndef DUMMYDISPLAY
 #if !defined(DUMMYDISPLAY) || defined(USE_NEXTION)
     #ifdef UPCLOCK_CORE1
@@ -232,14 +232,13 @@ void TimeKeeper::_upClock() {
 }
 
 void TimeKeeper::_upScreensaver() {
-#ifndef DSP_LCD
     if (!display.ready()) { return; }
     if (config.store.screensaverEnabled && display.mode() == PLAYER && (!player.isRunning() || config.store.volume == 0)) { // "PWR_AMP"
         config.screensaverTicks++;
         if (config.screensaverTicks > config.store.screensaverTimeout + SCREENSAVERSTARTUPDELAY) {
-    #if PWR_AMP != 255 // "PWR_AMP"
+#if PWR_AMP != 255 // "PWR_AMP"
             digitalWrite(PWR_AMP, LOW);
-    #endif
+#endif
             if (config.store.screensaverBlank) {
                 display.putRequest(NEWMODE, SCREENBLANK);
             } else {
@@ -259,7 +258,6 @@ void TimeKeeper::_upScreensaver() {
             config.screensaverPlayingTicks = SCREENSAVERSTARTUPDELAY;
         }
     }
-#endif
 }
 
 void TimeKeeper::_upRSSI() {

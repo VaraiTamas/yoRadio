@@ -31,7 +31,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 #define USE_BUILTIN_LED false /* The RGB LED does not turn on.. */
 
 /* Arduino OTA Support */
-// #define USE_OTA true                    /* Enable OTA updates from Arduino IDE */
+ #define USE_OTA true                    /* Enable OTA updates from Arduino IDE */
 // #define OTA_PASS "myotapassword12345"   /* OTA password for secure updates */
 
 /* HTTP Authentication */
@@ -93,9 +93,9 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define ENC2_INTERNALPULLUP	true
 
 /*----- CLOCK MODUL RTC DS3132 -----*/
- #define RTC_SCL			     7
- #define RTC_SDA			     8
- #define RTC_MODULE DS3231
+// #define RTC_SCL			     7
+// #define RTC_SDA			     8
+// #define RTC_MODULE DS3231
 
 /*----- REMOTE CONTROL INFRARED RECEIVER -----*/
 // #define IR_PIN 38
@@ -107,7 +107,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 /*----- by Maciej Bednarski -----*/
 /*---- Ezt aktíválva a lejátszási listában a cursor mozog le - fel -----*/
 /*---- Activating this will move the cursor up and down in the playlist -----*/
-#define PLAYLIST_SCROLL_MOVING_CURSOR
+//#define PLAYLIST_SCROLL_MOVING_CURSOR
 
 /*----- Színes kijelzőn szürkeárnyalatos képet jelenít meg. -----*/
 /*----- The color display displays a grayscale image -----*/
@@ -179,7 +179,7 @@ When music is not playing (stopped or volume is 0), the pin is set to LOW. This 
 /*----- by Karol Wysocki -----*/  
 /*----- Letíltja az encoder gomb másodlagos funkcióját. Csak két encoder esetén használd! -----*/
 /*----- Disables the secondary function of the encoder button. Use only if you have two encoders! -----*/
-#define ENCODERS_DEDICATED
+// #define ENCODERS_DEDICATED
 
 /* Sleep functions */
 // #define BTN_MODE ENC_BTNB
@@ -188,9 +188,9 @@ When music is not playing (stopped or volume is 0), the pin is set to LOW. This 
 
 /*----- by Zsolt Simon -----*/
 /*----- Tested on Synology NAS ----- */
-// #define USE_DLNA
-// #define dlnaHost "192.168.1.200"
-// #define dlnaIDX  21
+ #define USE_DLNA
+ #define dlnaHost "192.168.1.200"
+ #define dlnaIDX  21
 
 
 #endif // myoptions_h

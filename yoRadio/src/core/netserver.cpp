@@ -436,7 +436,7 @@ void NetServer::processQueue() {
         if (network.status == CONNECTED) {
           //act += F("\"group_system\",");
           APPEND_GROUP("group_system");
-          if (BRIGHTNESS_PIN != 255 || DSP_CAN_FLIPPED || DSP_MODEL == DSP_NOKIA5110 || dbgact) {
+          if (BRIGHTNESS_PIN != 255 || DSP_CAN_FLIPPED || dbgact) {
             APPEND_GROUP("group_display");
           }
 #ifdef USE_NEXTION
@@ -460,9 +460,6 @@ void NetServer::processQueue() {
           }
           if (TS_MODEL != TS_MODEL_UNDEFINED || dbgact) {
             APPEND_GROUP("group_touch");
-          }
-          if (DSP_MODEL == DSP_NOKIA5110) {
-            APPEND_GROUP("group_nokia");
           }
           APPEND_GROUP("group_timezone");
           if (SHOW_WEATHER || dbgact) {

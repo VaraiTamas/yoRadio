@@ -135,12 +135,13 @@ void TouchScreen::loop() {
     static uint32_t      touchLongPress;
     static tsDirection_e direct;
     static uint16_t      touchVol, touchStation;
-    static uint32_t      presetsLastActivity = 0;
-    static int           presetActionDone = 0; // 0=play,1=save,2=del
-    static int           presetHoldSlot = -1;
-    static int           favHold = -1;
-    static bool          favLongTriggered = false;
-
+    #if (DSP_MODEL != DSP_ILI9341)
+    static uint32_t presetsLastActivity = 0;
+    static int      presetActionDone = 0; // 0=play,1=save,2=del
+    static int      presetHoldSlot = -1;
+    static int      favHold = -1;
+    static bool     favLongTriggered = false;
+    #endif
     static bool lastStTouched = false;
 
     if (!_checklpdelay(20, _touchdelay)) { return; }
@@ -392,8 +393,8 @@ void TouchScreen::loop() {
 
             if (direct == TDS_REQUEST) {
                 uint32_t pressTicks = millis() - touchLongPress;
-                if (pressTicks < BTN_PRESS_TICKS * 2) { // (1000 ms stations)
-                    if (pressTicks > 50) {              // Érintési zajok kiszűrése 50ms alatt nem lesz STOP
+                if (pressTicks < BTN_PRESS_TICKS * 2) {            // (1000 ms stations)
+                    if (pressTicks > 50) {                         // Érintési zajok kiszűrése 50ms alatt nem lesz STOP
                         if (config.store.fadeEnabled) {            // Ha be van kapcsolva a FADE CONTROL
                             if (backlightPlugin.isFadeControl()) { // Első érintésre csak visszadja a fényt
                                 touchLongPress = millis();

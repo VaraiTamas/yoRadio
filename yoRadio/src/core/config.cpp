@@ -478,41 +478,29 @@ void Config::reset() {
 }
 void Config::enableScreensaver(bool val) {
     saveValue(&store.screensaverEnabled, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverTimeout(uint16_t val) {
     val = constrain(val, 5, 65520);
     saveValue(&store.screensaverTimeout, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverBlank(bool val) {
     saveValue(&store.screensaverBlank, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverPlayingEnabled(bool val) {
     saveValue(&store.screensaverPlayingEnabled, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverPlayingTimeout(uint16_t val) {
     val = constrain(val, 1, 1080);
     config.saveValue(&config.store.screensaverPlayingTimeout, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverPlayingBlank(bool val) {
     saveValue(&store.screensaverPlayingBlank, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setSntpOne(const char* val) {
     bool tzdone = false;

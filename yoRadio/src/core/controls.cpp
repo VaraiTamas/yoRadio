@@ -490,15 +490,9 @@ void onBtnClick(int id) {
             if (display.mode() == PLAYER) { player.toggle(); }
             if (display.mode() == SCREENSAVER || display.mode() == SCREENBLANK) {
                 display.putRequest(NEWMODE, PLAYER);
-#ifdef DSP_LCD
-                delay(200);
-#endif
             }
             if (display.mode() == STATIONS) {
                 display.putRequest(NEWMODE, PLAYER);
-#ifdef DSP_LCD
-                delay(200);
-#endif
                 display.putRequest(CLOSEPLAYLIST, display.currentPlItem);
                 // player.sendCommand({PR_PLAY, display.currentPlItem});
             }
