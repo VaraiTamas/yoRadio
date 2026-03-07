@@ -21,8 +21,8 @@
 // clang-format off
 /* SROLLS  */                            /* {{ left, top, fontsize, align }, buffsize, uppercase, width, scrolldelay, scrolldelta, scrolltime } */
 const ScrollConfig metaConf       PROGMEM = {{ TFT_FRAMEWDT, TFT_FRAMEWDT, 2, WA_LEFT }, 140, true, DSP_WIDTH/2+45, 5000, 2, 25 };
-const ScrollConfig title1Conf     PROGMEM = {{ 1, 18, 1, WA_LEFT }, 140, true, DSP_WIDTH/2+45, 5000, 2, 25 };
-const ScrollConfig title2Conf     PROGMEM = {{ 1, 28, 1, WA_LEFT }, 140, true, DSP_WIDTH/2+45, 5000, 2, 25 };
+const ScrollConfig title1Conf     PROGMEM = {{ 1, 18, 1, WA_LEFT }, 140, true, 173, 5000, 2, 25 };
+const ScrollConfig title2Conf     PROGMEM = {{ 1, 28, 1, WA_LEFT }, 140, true, 173, 5000, 2, 25 };
 const ScrollConfig playlistConf   PROGMEM = {{ TFT_FRAMEWDT, 30, 1, WA_LEFT }, 140, true, MAX_WIDTH, 500, 2, 25 };
 const ScrollConfig apTitleConf    PROGMEM = {{ TFT_FRAMEWDT+1, TFT_FRAMEWDT+1, 1, WA_CENTER }, 140, false, MAX_WIDTH-2, 0, 2, 25 };
 const ScrollConfig apSettConf     PROGMEM = {{ TFT_FRAMEWDT, 64-7, 1, WA_LEFT }, 140, false, MAX_WIDTH, 0, 2, 25 };
@@ -51,7 +51,7 @@ const WidgetConfig apPassConf     PROGMEM = { 0, 37, 1, WA_CENTER };
 const WidgetConfig apPass2Conf    PROGMEM = { 0, 45, 1, WA_CENTER };
 const WidgetConfig clockConf      PROGMEM = { 0, 22, 14, WA_RIGHT };  
 const WidgetConfig namedayConf    PROGMEM = { TFT_FRAMEWDT, 175, 2, WA_LEFT };  // Módosítás új sor "nameday"
-const WidgetConfig dateConf       PROGMEM = { 1, 28, 1, WA_RIGHT }; // Módosítás új sor "date"
+const WidgetConfig dateConf       PROGMEM = { 176, 28, 1, WA_RIGHT }; // Módosítás új sor "date"
 
 const WidgetConfig   bootWdtConf  PROGMEM = { 0, 64-8*2-5, 1, WA_CENTER };
 const ProgressConfig bootPrgConf  PROGMEM = { 90, 10, 4 };

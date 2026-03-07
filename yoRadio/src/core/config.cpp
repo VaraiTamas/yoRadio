@@ -13,15 +13,15 @@
 #include "rtcsupport.h"
 #include "../displays/tools/l10n.h"
 #ifdef USE_SD
-    #include "sdmanager.h"
+#    include "sdmanager.h"
 #endif
 #ifdef USE_NEXTION
-    #include "../displays/nextion.h"
+#    include "../displays/nextion.h"
 #endif
 #include <cstddef>
 
 #if DSP_MODEL == DSP_DUMMY
-    #define DUMMYDISPLAY
+#    define DUMMYDISPLAY
 #endif
 
 Config config;
@@ -92,11 +92,11 @@ void Config::init() {
     irindex = -1;
 #endif
 #if defined(SD_SPIPINS) || SD_HSPI
-    #if !defined(SD_SPIPINS)
+#    if !defined(SD_SPIPINS)
     SDSPI.begin();
-    #else
+#    else
     SDSPI.begin(SD_SPIPINS); // SCK, MISO, MOSI
-    #endif
+#    endif
 #endif
     eepromRead(EEPROM_START, store);
     BOOTLOG("---- EEPROM AFTER READ ----");
@@ -255,12 +255,12 @@ void Config::changeMode(int newmode) { // DLNA mod
     initPlaylistMode();
 
     if (pir) {
-    #ifdef USE_DLNA
+#    ifdef USE_DLNA
         uint16_t st = (getMode() == PM_SDCARD) ? store.lastSdStation : (store.playlistSource == PL_SRC_DLNA ? store.lastDlnaStation : store.lastStation);
-    #else
+#    else
         uint16_t st = (getMode() == PM_SDCARD) ? store.lastSdStation : store.lastStation;
         player.sendCommand({PR_PLAY, st});
-    #endif
+#    endif
     }
 
     netserver.resetQueue();
@@ -395,6 +395,9 @@ void Config::initPlaylistMode() {
             uint16_t cs = playlistLength();
             _lastStation = store.lastStation;
             if (_lastStation == 0 && cs > 0) { _lastStation = 1; }
+#if defined(ALWAYS_START_FROM_FIRST)
+            if (cs > 0) _lastStation = 1;
+#endif
         }
     }
 

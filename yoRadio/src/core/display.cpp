@@ -621,10 +621,14 @@ void Display::_title() {
         char tmpbuf[strlen(config.station.title) + 1];
         strlcpy(tmpbuf, config.station.title, sizeof(tmpbuf));
         char* stitle = split(tmpbuf, " - ");
+       //  Serial.printf("stitle: %s\n", stitle);
         if (stitle && _title2) {
             _title1->setText(tmpbuf);
+          //  Serial.printf("_title1: %s\n", tmpbuf);
             _title2->setText(stitle);
+          //  Serial.printf("_title2: %s\n", stitle);
         } else {
+           //  Serial.printf("else: \n");
             _title1->setText(config.station.title);
             if (_title2) { _title2->setText(""); }
         }

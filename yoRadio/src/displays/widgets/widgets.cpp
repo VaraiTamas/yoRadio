@@ -765,33 +765,6 @@ void NumWidget::init(WidgetConfig wconf, uint16_t buffsize, bool uppercase, uint
     _uppercase = uppercase;
     _textheight = TIME_SIZE /*wconf.textsize*/;
 }
-/*
-void NumWidget::setText(const char *txt) {
-  strlcpy(_text, txt, _buffsize);
-  _getBounds();
-  if (strcmp(_oldtext, _text) == 0) {
-    return;
-  }
-  uint16_t realth = _textheight;
-  #if defined(DSP_OLED) && DSP_MODEL != DSP_SSD1322
-  if (Clock_GFXfontPtr == nullptr) {
-    realth = _textheight * 8;  //CHARHEIGHT
-  }
-  #endif
-  if (_active)
-  #ifndef CLOCKFONT5x7
-    dsp.fillRect(_oldleft == 0 ? _realLeft() : min(_oldleft, _realLeft()), _config.top - _textheight + 1, max(_oldtextwidth, _textwidth), realth, _bgcolor);
-  #else
-    dsp.fillRect(_oldleft == 0 ? _realLeft() : min(_oldleft, _realLeft()), _config.top, max(_oldtextwidth, _textwidth), realth, _bgcolor);
-  #endif
-
-  _oldtextwidth = _textwidth;
-  _oldleft = _realLeft();
-  if (_active) {
-    _draw();
-  }
-}
-*/
 
 void NumWidget::setText(const char* txt) {
     strlcpy(_text, txt, _buffsize);
@@ -976,16 +949,17 @@ void ClockWidget::_drawShortDateSSD1322() {
     // ===== FIX: 5x7 FONT MÉRETEK =====
     constexpr uint8_t  TS = 1;
     constexpr uint16_t H = CHARHEIGHT * TS;
-    dsp.fillRect(0, dc.top, dsp.width(), H, config.theme.background);
+    uint16_t dateWidgetWidth = dsp.width() - dc.left;
+    dsp.fillRect(dc.left, dc.top, dateWidgetWidth , H, config.theme.background);
     dsp.setFont(); // 5x7
     dsp.setTextSize(TS);
-    dsp.setTextColor(config.theme.date, config.theme.background);
+    dsp.setTextColor(config.theme.date, config.theme.background); //0x8410
     // ===== SZÉLESSÉG SZÁMÍTÁS (5x7!) =====
     uint16_t w = strlen(_tmp) * CHARWIDTH * TS;
     uint16_t x;
     switch (dc.align) {
-        case WA_CENTER: x = (dsp.width() - w) / 2; break;
-        case WA_RIGHT: x = dsp.width() - w - dc.left; break;
+        case WA_CENTER: x = dsp.width()- w - (dateWidgetWidth - w) / 2; break;
+        case WA_RIGHT: x = dsp.width() - w ; break;
         default: x = dc.left; break;
     }
     // ===== RAJZOLÁS =====
@@ -1182,7 +1156,7 @@ void ClockWidget::_formatDate() {
         #endif
 
     return;
-    #endif
+  #else
 
     // ===== MINDEN MÁS KIJELZŐ: meglévő hosszú, szöveges forma =====
 
@@ -1207,6 +1181,8 @@ void ClockWidget::_formatDate() {
     #elif L10N_LANGUAGE == ES
     sprintf(_tmp, "%s, %02d. %s %d", LANG::dowf[network.timeinfo.tm_wday], network.timeinfo.tm_mday, LANG::mnths[network.timeinfo.tm_mon], network.timeinfo.tm_year + 1900);
     #endif
+
+      #endif
 }
 
     /*********************  A névnapok kiírása. *****************************/

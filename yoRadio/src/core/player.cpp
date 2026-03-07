@@ -365,7 +365,6 @@ void Player::_play(uint16_t stationId) {
       config.saveValue(&config.store.play_mode, static_cast<uint8_t>(PM_WEB));
     }
   }
-  //connproc = false;
   if (config.getMode() == PM_WEB) {
     isConnected = connecttohost(config.station.url);
   }

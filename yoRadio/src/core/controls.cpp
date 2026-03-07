@@ -14,59 +14,59 @@ long enc2OldPosition = 0;
 int  lpId = -1;
 
 #if DSP_MODEL == DSP_DUMMY
-    #define DUMMYDISPLAY
+#    define DUMMYDISPLAY
 #endif
 
 #define ISPUSHBUTTONS BTN_LEFT != 255 || BTN_CENTER != 255 || BTN_RIGHT != 255 || ENC_BTNB != 255 || BTN_UP != 255 || BTN_DOWN != 255 || ENC2_BTNB != 255 || BTN_MODE != 255
 #if ISPUSHBUTTONS
-    #include "../OneButton/OneButton.h"
+#    include "../OneButton/OneButton.h"
 OneButton         button[]{{BTN_LEFT, true, BTN_INTERNALPULLUP}, {BTN_CENTER, true, BTN_INTERNALPULLUP}, {BTN_RIGHT, true, BTN_INTERNALPULLUP},  {ENC_BTNB, true, ENC_INTERNALPULLUP},
                            {BTN_UP, true, BTN_INTERNALPULLUP},   {BTN_DOWN, true, BTN_INTERNALPULLUP},   {ENC2_BTNB, true, ENC2_INTERNALPULLUP}, {BTN_MODE, true, BTN_INTERNALPULLUP}};
 constexpr uint8_t nrOfButtons = sizeof(button) / sizeof(button[0]);
 #endif
 
 #if ENC_HALFQUARD == false
-    #define ENCODER_STEPS 4
+#    define ENCODER_STEPS 4
 #elif ENC_HALFQUARD == true
-    #define ENCODER_STEPS 2
+#    define ENCODER_STEPS 2
 #elif ENC_HALFQUARD == 255
-    #define ENCODER_STEPS 1
+#    define ENCODER_STEPS 1
 #endif
 #if ENC2_HALFQUARD == false
-    #define ENCODER2_STEPS 4
+#    define ENCODER2_STEPS 4
 #elif ENC2_HALFQUARD == true
-    #define ENCODER2_STEPS 2
+#    define ENCODER2_STEPS 2
 #elif ENC2_HALFQUARD == 255
-    #define ENCODER2_STEPS 1
+#    define ENCODER2_STEPS 1
 #endif
 
 #if (ENC_BTNL != 255 && ENC_BTNR != 255) || (ENC2_BTNL != 255 && ENC2_BTNR != 255)
-    #include "../yoEncoder/yoEncoder.h"
-    #if (ENC_BTNL != 255 && ENC_BTNR != 255)
+#    include "../yoEncoder/yoEncoder.h"
+#    if (ENC_BTNL != 255 && ENC_BTNR != 255)
 yoEncoder encoder = yoEncoder(ENC_BTNL, ENC_BTNR, ENCODER_STEPS, ENC_INTERNALPULLUP);
-    #endif
-    #if (ENC2_BTNL != 255 && ENC2_BTNR != 255)
+#    endif
+#    if (ENC2_BTNL != 255 && ENC2_BTNR != 255)
 yoEncoder encoder2 = yoEncoder(ENC2_BTNL, ENC2_BTNR, ENCODER2_STEPS, ENC2_INTERNALPULLUP);
-    #endif
+#    endif
 #endif
 
 #if (TS_MODEL != TS_MODEL_UNDEFINED) && (DSP_MODEL != DSP_DUMMY)
-    #include "touchscreen.h"
+#    include "touchscreen.h"
 TouchScreen touchscreen;
 #endif
 
 #if IR_PIN != 255
-    #include <assert.h>
+#    include <assert.h>
 
-    #include "../IRremoteESP8266/IRrecv.h"
-    #include "../IRremoteESP8266/IRremoteESP8266.h"
-    #include "../IRremoteESP8266/IRac.h"
-    #include "../IRremoteESP8266/IRtext.h"
-    #include "../IRremoteESP8266/IRutils.h"
+#    include "../IRremoteESP8266/IRrecv.h"
+#    include "../IRremoteESP8266/IRremoteESP8266.h"
+#    include "../IRremoteESP8266/IRac.h"
+#    include "../IRremoteESP8266/IRtext.h"
+#    include "../IRremoteESP8266/IRutils.h"
 uint8_t irVolRepeat = 0;
 // const uint16_t kCaptureBufferSize = 1024;
 const uint16_t kMinUnknownSize = 12;
-    #define LEGACY_TIMING_INFO false
+#    define LEGACY_TIMING_INFO false
 
 IRrecv         irrecv(IR_PIN, IR_BUFSIZE, IR_TIMEOUT, true);
 decode_results irResults;
@@ -119,9 +119,9 @@ void initControls() {
 #if IR_PIN != 255
     pinMode(IR_PIN, INPUT);
     assert(irutils::lowLevelSanityCheck() == 0);
-    #if DECODE_HASH
+#    if DECODE_HASH
     irrecv.setUnknownThreshold(kMinUnknownSize);
-    #endif // DECODE_HASH
+#    endif // DECODE_HASH
     irrecv.setTolerance(config.store.irtlp);
     irrecv.enableIRIn();
 #endif // IR_PIN!=255
@@ -157,42 +157,87 @@ void loopControls() {
 #endif
 }
 
-#if ENC_BTNL!=255 || ENC2_BTNL!=255
-void encodersLoop(yoEncoder *enc, bool first){
-  if (network.status != CONNECTED && network.status!=SDREADY) return;
-  if(display.mode()==LOST) return;
-  int8_t encoderDelta = enc->encoderChanged();
-  if (encoderDelta!=0)
-  {
-    uint8_t encBtnState = digitalRead(first?ENC_BTNB:ENC2_BTNB);
-#   if defined(DUMMYDISPLAY) && !defined(USE_NEXTION)
-    first = first?(first && encBtnState):(!encBtnState);
-    if(first){
-      int nv = config.store.volume+encoderDelta;
-      if(nv<0) nv=0;
-      if(nv>254) nv=254;
-      player.setVol((uint8_t)nv);  
-    }else{
-      if(encoderDelta > 0) player.next(); else player.prev();
-    }
-#   else
-    if(first){
-      controlsEvent(encoderDelta > 0, encoderDelta);
-    }else{
-      if (encBtnState == HIGH && display.mode() == PLAYER) {
-        if(config.store.skipPlaylistUpDown){
-          if(encoderDelta > 0) player.next(); else player.prev();
-          return;
+#if ENC_BTNL != 255 || ENC2_BTNL != 255
+void encodersLoop(yoEncoder* enc, bool first) {
+    if (network.status != CONNECTED && network.status != SDREADY) { return; }
+    if (display.mode() == LOST) { return; }
+    int8_t delta = enc->encoderChanged();
+    if (delta == 0) { return; }
+#    if defined(DUMMYDISPLAY) && !defined(USE_NEXTION)
+    // ===== Dummy display =====
+    uint8_t btnState = digitalRead(first ? ENC_BTNB : ENC2_BTNB);
+    bool    volumeMode = first ? btnState : !btnState;
+    if (volumeMode) {
+        int nv = config.store.volume + delta;
+        if (nv < 0) { nv = 0; }
+        if (nv > 254) { nv = 254; }
+        player.setVol((uint8_t)nv);
+    } else {
+        if (delta > 0) {
+            player.next();
+        } else {
+            player.prev();
         }
-        display.putRequest(NEWMODE, STATIONS);
-        while(display.mode() != STATIONS) {delay(10);}
-      }
-      controlsEvent(encoderDelta > 0, encoderDelta);
     }
-#   endif
-  }
+#    else
+#        if defined(ENCODERS_INDEPENDENT)
+    // ==========================================================
+    //                TWO INDEPENDENT ENCODERS
+    // ==========================================================
+    if (first) {
+        // ----- Encoder 1 → Volume -----
+        if (display.mode() != VOL) { display.putRequest(NEWMODE, VOL); }
+        int nv = config.store.volume + delta * config.store.volsteps;
+        if (nv < 0) { nv = 0; }
+        if (nv > 100) { nv = 100; }
+        player.setVol((uint8_t)nv);
+        config.screensaverTicks = 0;
+    } else {
+        // ----- Encoder 2 → Stations -----
+        // If not already in STATIONS → switch and exit (no blocking!)
+        if (display.mode() != STATIONS) {
+            display.putRequest(NEWMODE, STATIONS);
+            return;
+        }
+        // Ignore acceleration — use direction only
+        int      step = (delta > 0) ? 1 : -1;
+        int      p = display.currentPlItem + step;
+        uint16_t cs = config.playlistLength();
+        if (p < 1)
+            p = cs;
+        else if (p > cs)
+            p = 1;
+        display.currentPlItem = p;
+        display.resetQueue();
+        display.putRequest(DRAWPLAYLIST, p);
+        config.screensaverTicks = 0;
+    }
+#        else
+    // ==========================================================
+    //                  ORIGINAL STANDARD LOGIC
+    // ==========================================================
+    if (first) {
+        controlsEvent(delta > 0, delta);
+    } else {
+        uint8_t btnState = digitalRead(first ? ENC_BTNB : ENC2_BTNB);
+        if (btnState == HIGH && display.mode() == PLAYER) {
+            if (config.store.skipPlaylistUpDown) {
+                if (delta > 0) {
+                    player.next();
+                } else {
+                    player.prev();
+                }
+                return;
+            }
+            display.putRequest(NEWMODE, STATIONS);
+            return; // removed blocking wait
+        }
+        controlsEvent(delta > 0, delta);
+    }
+#        endif
+#    endif
 }
-#endif
+#endif // ENC_BTNL!=255 || ENC2_BTNL!=255
 
 #if ENC_BTNL != 255
 void encoder1Loop() {
@@ -366,7 +411,7 @@ void onBtnLongPressStart(int id) {
 #if defined(DUMMYDISPLAY) && !defined(USE_NEXTION)
             break;
 #endif
-#if !defined(ENCODERS_DEDICATED)
+#if !defined(ENCODERS_INDEPENDENT)
             // legacy: toggle PLAYER <-> STATIONS
             display.putRequest(NEWMODE, display.mode() == PLAYER ? STATIONS : PLAYER);
 #endif
@@ -376,7 +421,7 @@ void onBtnLongPressStart(int id) {
 #if defined(DUMMYDISPLAY) && !defined(USE_NEXTION)
             break;
 #endif
-#if !defined(ENCODERS_DEDICATED)
+#if !defined(ENCODERS_INDEPENDENT)
             // legacy: toggle PLAYER <-> VOLUME
             display.putRequest(NEWMODE, display.mode() == PLAYER ? VOL : PLAYER);
 #endif
@@ -488,13 +533,10 @@ void onBtnClick(int id) {
                 display.putRequest(NEWMODE, PLAYER);
             }
             if (display.mode() == PLAYER) { player.toggle(); }
-            if (display.mode() == SCREENSAVER || display.mode() == SCREENBLANK) {
-                display.putRequest(NEWMODE, PLAYER);
-            }
+            if (display.mode() == SCREENSAVER || display.mode() == SCREENBLANK) { display.putRequest(NEWMODE, PLAYER); }
             if (display.mode() == STATIONS) {
                 display.putRequest(NEWMODE, PLAYER);
-                display.putRequest(CLOSEPLAYLIST, display.currentPlItem);
-                // player.sendCommand({PR_PLAY, display.currentPlItem});
+                if (config.lastStation() != display.currentPlItem) { display.putRequest(CLOSEPLAYLIST, display.currentPlItem); }
             }
             if (network.status == SOFT_AP || display.mode() == LOST) {
 #ifdef USE_SD
