@@ -48,7 +48,9 @@ Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd 
 
 Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA, DE nyelveken.   
 A myoptions.h fájlban az alábbi paranccsal állíthatod be.   
+```
 #define L10N_LANGUAGE HU
+```
 
 A program az Adafruit_GFX librarit használja, ahol egy 5x7 pixel méretű fontot skáláz fel a kért méret függvényében. Ez a font a glcdfont.c fájlban van megrajzolva.    
 A fájlok helye:   
@@ -89,19 +91,37 @@ A névnapok tárolása az alábbi fájlokban történik.
 
 Ha más nyelven szeretnéd használni vedd fel velem a kapcsolatot.
 
-Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort,    
+Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort, 
+```   
 // #define NAMEDAYS_FILE HU   
+```
 vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
 ## PCB nyomtatott aramkor:
 - A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, és egyéb információ a [PCB](PCB) mappában található.   
-- Építési javaslatok [PCB_2025.06.14. oldalon láthatóak.](PCB/BCP_2025_06_14/PCB.md) 
+- Építési javaslatok [PCB_2025.12.21. oldalon láthatóak.](PCB/PCB_2025_12_21/readme.md) 
 
 ## 3D nyomtatasi tervek
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
 - https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
 
 ## Version history:
+### v0.8.6
+   - Új beállítás a myoptions.h fájlban. Letíltja az encoder gomb másodlagos funkcióját. *(by Karol Wysocki)*
+      - Első gomb csak hangerő
+      - Második gomb csak csatornalista
+
+   Csak két encoder esetén használd !!!
+   ```
+   #define ENCODERS_INDEPENDENT
+   ```
+   - Új beállítás a myoptions.h fájlban. Definiálásával a rádió indulásakor mindig a csatornalista első eleme lesz az aktuális.  *(by Karol Wysocki)*
+   ```
+   #define ALWAYS_START_FROM_FIRST
+   ```
+   - DSP_SSD1322 OLED kijelzőnél a Title2 sor eltűnik hiba javítása.
+   - Ha a lejátszási listára kapcsolunk és nem változtatunk csatornát a lejátszás újraindul. Ez a hiba lett javítva.
+
 ### v0.8.5
    - FADE CONTROL szolgáltatás hozzáadva a WEB UI -hoz. Lehetővé teszi egy beállított fényerő, lépésenként elérését, adott idő elteltével. OLED esetén csak kontraszt csökkentést hajt végre, így kímélhető a kijelző.  
    Teljes data/www mappa feltöltése szükséges!!! (by Zsolt Simon) 
