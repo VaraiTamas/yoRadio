@@ -4,7 +4,8 @@
 - **SMD alkatrészek mérete:** 1206
 - Kapcsolási rajz PDF formátumban letölthető: [wiring_diagram_2025_dec_21.pdf](../../PCB/PCB_2025_12_21/wiring_diagram_2025_dec_21.pdf) 
 - A `GPIO_1`, `GPIO_2`, `GPIO_42`, `GPIO_17` kivezetések nem használt PIN-ek, kivétel ha capacitive touch -ot használsz.  
-  Ez esetben a `GPIO_17 - INT` és csak GT911 esetén a `GPIO_42 - RST` touch.
+  Ez esetben a `GPIO_17 - INT` és 10kΩ felhúzóellenállás használata szükséges!  
+  GT911 esetén a `GPIO_42 - RST` touch.
 - **R1-R2** az I2C busz SCL és SCA felhúzóellenállásai. 2.2kΩ (Capacitive touch és RTC modul DS3132 használja.)
 - Az **R3–R6** ellenállások a nem használt pinek felhúzóellenállásai. 
   Csak szükség esetén kell beforrasztani őket. 10kΩ
