@@ -100,6 +100,8 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 ## PCB nyomtatott aramkor:
 - A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, és egyéb információ a [PCB](PCB) mappában található.   
 - Építési javaslatok [PCB_2025.12.21. oldalon láthatóak.](PCB/PCB_2025_12_21/readme.md) 
+- Tápegységre javaslat [PCB_2025.12.21. oldalon látható.](PCB/Power_supply_with_IR_sensor/readme.md)   
+Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
 
 ## 3D nyomtatasi tervek
 - https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
