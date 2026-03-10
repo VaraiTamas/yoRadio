@@ -97,15 +97,21 @@ Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort,
 ```
 vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
-## PCB nyomtatott aramkor:
+## PCB - nyomtatott aramkor:
 - A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, és egyéb információ a [PCB](PCB) mappában található.   
 - Építési javaslatok [PCB_2025.12.21. oldalon láthatóak.](PCB/PCB_2025_12_21/readme.md) 
-- Tápegységre javaslat [PCB_2025.12.21. oldalon látható.](PCB/Power_supply_with_IR_sensor/readme.md)   
+- Tápegységre javaslat [PCB_2025.12.21. oldalon látható.](PCB/Power_supply_with_IR_sensor/readme.md) 
+- Ahol a PCB -k készülnek JLCPCB --> [jlcpcb.com](https://jlcpcb.com/?from=AMOSWLDYVIS)  
+
 Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
 
-## 3D nyomtatasi tervek
-- https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
-- https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
+## 3D nyomtatasi tervek és a hozzájuk illeszkedő kijelzők
+- IPS 4.0 Inch, SPI, ILI9488 Factory TFT LCD 480*320, 14 Pin Electronic Board  
+(SPI resistive touch XPT2046) https://www.aliexpress.com/item/1005006287831546.html
+   - 3D nyomtatási terv --> https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
+- IPS 3.5 Inch, SPI, ILI9488 14 pin Full View Angle 480*320 
+(I2C capacitive touch FT6236) https://www.aliexpress.com/item/1005007789737257.html    
+   - 3D nyomtatási terv --> https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
 
 ## Version history:
 ### v0.8.6

@@ -35,7 +35,8 @@ Ez azt jelenti, hogy egy adott egyenáramú feszültséget másik egyenáramú f
 
 Az ilyen modult akkor érdemes használni, ha például egy mikrokontroller vagy más érzékeny elektronika tápjáról szeretnél leválasztott, stabil 5 V-ot, vagy elektromos zaj/csatlakozási problémák miatt fontos az izoláció. Ebben az esetben a **POWER_OUT** kivezetésen keresztül lehetőség nyílik egy USB transmitter megtáplálására így annak hangjában nem lesz hallható az elektrónika által okozott nagyfrekvenciás zaj. 
 
-### Ez a PCB verzió legyártható a [jlcpcb.com](https://jlcpcb.com/) oldalon a [power_supply_with_ir_gerber_20260103.zip](../../PCB/Power_supply_with_IR_sensor/power_supply_with_ir_gerber_20260103.zip)   fájl feltöltésével.     
+### Ez a PCB verzió legyártható 2 EURO / 5 darab áráért a [jlcpcb.com](https://jlcpcb.com/?from=AMOSWLDYVIS) oldalon a [power_supply_with_ir_gerber_20260103.zip](../../PCB/Power_supply_with_IR_sensor/power_supply_with_ir_gerber_20260103.zip)   fájl feltöltésével.  
+   
 
-## Itt meghívhatsz egy kávéra!!!     
+### Ha támogatni akarod a munkámat itt meghívhatsz egy kávéra!!!     
 https://buymeacoffee.com/vtom

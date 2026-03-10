@@ -98,12 +98,12 @@ Ajánlás: csak az 5V_ESP32 ágat zárd
   https://github.com/e2002/yoradio/wiki/How-to-flash
 
 
-### Ez a PCB verzió legyártható a [jlcpcb.com](https://jlcpcb.com/) oldalon a [yoradio_gerber.zip](../../PCB/PCB_2025_06_14/yoradio_gerber.zip)   fájl feltöltésével.     
+### Ez a PCB verzió legyártható 2 EURO / 5 darab áráért a [jlcpcb.com](https://jlcpcb.com/?from=AMOSWLDYVIS) oldalon a [yoradio_gerber.zip](../../PCB/PCB_2025_06_14/yoradio_gerber.zip)   fájl feltöltésével.     
 
 ![PCB front](2D_top_99x90mm.jpg)<br><br>
 ![PCB back](2D_bottom_99x90mm.jpg)<br><br>
 ![3D top](3D_top.jpg)<br><br>
 
 
-## Itt meghívhatsz egy kávéra!!!     
+### Ha támogatni akarod a munkámat itt meghívhatsz egy kávéra!!!     
 https://buymeacoffee.com/vtom

@@ -122,11 +122,11 @@ Az ilyen modult akkor érdemes használni, ha például egy mikrokontroller vagy
   https://github.com/e2002/yoradio/wiki/How-to-flash
 
 
-### Ez a PCB verzió legyártható a [jlcpcb.com](https://jlcpcb.com/) oldalon a [yoradio_gerber.zip](../../PCB/PCB_2025_12_21/yoradio_gerber.zip)   fájl feltöltésével.     
+### Ez a PCB verzió legyártható 2 EURO / 5 darab áráért a [jlcpcb.com](https://jlcpcb.com/?from=AMOSWLDYVIS) oldalon a [yoradio_gerber.zip](../../PCB/PCB_2025_12_21/yoradio_gerber.zip)   fájl feltöltésével.     
 
 ![PCB front](2D_top_98x100mm.jpg)<br><br>
 ![PCB back](2D_bottom_98x100mm.jpg)<br><br>
 ![3D top](3D_top.jpg)<br><br>
 
-## Itt meghívhatsz egy kávéra!!!     
+### Ha támogatni akarod a munkámat itt meghívhatsz egy kávéra!!!     
 https://buymeacoffee.com/vtom
