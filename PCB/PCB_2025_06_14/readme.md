@@ -105,5 +105,5 @@ Ajánlás: csak az 5V_ESP32 ágat zárd
 ![3D top](3D_top.jpg)<br><br>
 
 
-### Ha támogatni akarod a munkámat itt meghívhatsz egy kávéra!!!     
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
 https://buymeacoffee.com/vtom

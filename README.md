@@ -243,5 +243,5 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
    - Két formátumú kivezérlésmérő   
 
 
-## Itt meghívhatsz egy kávéra!!!     
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
 https://buymeacoffee.com/vtom
