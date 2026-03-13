@@ -312,6 +312,7 @@ void Display::_showDialog(const char* title) {
 }
 
 void Display::_swichMode(displayMode_e newmode) {
+    Serial.printf("Display::_swichMode: %d\n", newmode);
     #ifdef USE_NEXTION
     // nextion.swichMode(newmode);
     nextion.putRequest({NEWMODE, newmode});
@@ -368,7 +369,12 @@ void Display::_swichMode(displayMode_e newmode) {
     }
     if (newmode == LOST) { _showDialog(LANG::const_DlgLost); }
     if (newmode == UPDATING) { _showDialog(LANG::const_DlgUpdate); }
-    if (newmode == SLEEPING) { _showDialog("SLEEPING"); }
+    if (newmode == SLEEPING) {
+         _showDialog("SLEEPING"); 
+         delay(2000);
+         dsp.clearDsp();
+         config.doSleepW();
+    }
     if (newmode == SDCHANGE) { _showDialog(LANG::const_waitForSD); }
     if (newmode == INFO || newmode == SETTINGS || newmode == TIMEZONE || newmode == WIFI) { _showDialog(LANG::const_DlgNextion); }
     if (newmode == NUMBERS) { _showDialog(""); }
@@ -697,7 +703,7 @@ void Display::invert() {
 void Display::setContrast() {}
 
 bool Display::deepsleep() {
-    #if defined(LCD_I2C) || defined(DSP_OLED) || BRIGHTNESS_PIN != 255
+    #if defined(DSP_OLED) || BRIGHTNESS_PIN != 255
     dsp.sleep();
     return true;
     #endif
@@ -705,7 +711,7 @@ bool Display::deepsleep() {
 }
 
 void Display::wakeup() {
-    #if defined(LCD_I2C) || defined(DSP_OLED) || BRIGHTNESS_PIN != 255
+    #if defined(DSP_OLED) || BRIGHTNESS_PIN != 255
     dsp.wake();
     #endif
 }

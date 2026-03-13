@@ -17,7 +17,7 @@
 CommandHandler cmd;
 
 bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
-     Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %d \n", command, value, cid);
+    // Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %d \n", command, value, cid);
     if (strEquals(command, "start")) {
         // Serial.printf("commandhandler.cpp--> START \n");
         player.sendCommand({PR_PLAY, config.lastStation()});
@@ -348,15 +348,15 @@ bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
     }
 
 #if IR_PIN != 255
-    if (strEquals(command, "irbtn")) {
+    if (strEquals(command, "irbtn")) { // Gombok 0 - 16 --> command: irbtn, value: 0
         config.setIrBtn(atoi(value));
         return true;
     }
-    if (strEquals(command, "chkid")) {
+    if (strEquals(command, "chkid")) {  // A három IR bank 0 - 1 - 2 --> command: chkid, value: 1
         config.irchck = static_cast<uint8_t>(atoi(value));
         return true;
     }
-    if (strEquals(command, "irclr")) {
+    if (strEquals(command, "irclr")) {  // Bank törlés. --> command: irclr, value: 2
         config.ircodes.irVals[config.irindex][static_cast<uint8_t>(atoi(value))] = 0;
         return true;
     }

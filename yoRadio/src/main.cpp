@@ -11,22 +11,24 @@
 #include "core/netserver.h"
 #include "core/controls.h"
 // #include "core/mqtt.h"
+#include "driver/rtc_io.h"
+
 #include "core/optionschecker.h"
 #include "core/timekeeper.h"
 #ifdef USE_NEXTION
-    #include "displays/nextion.h"
+#    include "displays/nextion.h"
 #endif
 #include "core/audiohandlers.h" //"audio_change"
 #ifdef USE_DLNA                 // DLNA mod
-    #include "network/dlna_service.h"
+#    include "network/dlna_service.h"
 #endif
 #if USE_OTA
-    #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-        #include <NetworkUdp.h>
-    #else
-        #include <WiFiUdp.h>
-    #endif
-    #include <ArduinoOTA.h>
+#    if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+#        include <NetworkUdp.h>
+#    else
+#        include <WiFiUdp.h>
+#    endif
+#    include <ArduinoOTA.h>
 #endif
 
 #if DSP_HSPI || TS_HSPI || VS_HSPI
@@ -38,9 +40,9 @@ extern __attribute__((weak)) void yoradio_on_setup();
 #if USE_OTA
 void setupOTA() {
     if (strlen(config.store.mdnsname) > 0) ArduinoOTA.setHostname(config.store.mdnsname);
-    #ifdef OTA_PASS
+#    ifdef OTA_PASS
     ArduinoOTA.setPassword(OTA_PASS);
-    #endif
+#    endif
     ArduinoOTA
         .onStart([]() {
             player.sendCommand({PR_STOP, 0});
@@ -70,7 +72,43 @@ void setupOTA() {
 }
 #endif
 
+#include "IRremoteESP8266/IRrecv.h"
+#include "IRremoteESP8266/IRutils.h"
+
+extern IRrecv         irrecv;
+extern decode_results irResults;
+
 void setup() {
+#if IR_PIN != 255    
+    /*----- IR POWER ON filtering which measures the length of the LOW signal in pulse units and
+    only allows the device to continue running if the value is above IR_WAKE_MIN_PULSES.
+    It goes back to sleep if the value is lower. */
+    Serial.println(esp_sleep_get_wakeup_cause());
+    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
+        // Set GPIO mode.
+        rtc_gpio_deinit((gpio_num_t)IR_PIN);
+        pinMode(IR_PIN, INPUT);
+        uint32_t      pulseCount = 0;
+        unsigned long startCheck = millis();
+        while (millis() - startCheck < IR_WAKE_CHECK_TIME) {
+            if (digitalRead(IR_PIN) == LOW) {
+                pulseCount++;
+                delayMicroseconds(100);
+            }
+        }
+        Serial.begin(115200);
+        Serial.print("IR impulses counted in 200ms: ");
+        Serial.println(pulseCount);
+        if (pulseCount < IR_WAKE_MIN_PULSES) { config.doSleepW(); }
+        irrecv.disableIRIn();
+        irResults.value = 0;
+        irResults.command = 0;
+        irResults.decode_type = UNKNOWN;
+        irResults.repeat = false;
+        delay(100);
+        irrecv.enableIRIn();
+    }
+#endif // IR_PIN!=255
     Serial.begin(115200);
 #if (BRIGHTNESS_PIN != 255) // backlight plugin
     Serial.printf("Exists? %p\n", &backlightPlugin);
@@ -110,16 +148,7 @@ void setup() {
 #if CLOCK_TTS_ENABLED
     clock_tts_setup(); // Módosítás: plussz sor. "clock_tts"
 #endif
-    if (psramFound()) {
-        Serial.println("✅ PSRAM elérhető!");
-    } else {
-        Serial.println("❌ PSRAM nem található!");
-    }
     Audio::audio_info_callback = my_audio_info; // "audio_change" audiohandlers.h ban kezelve.
-    Serial.printf("Total heap : %lu\n", ESP.getHeapSize());
-    Serial.printf("Free heap  : %lu\n", ESP.getFreeHeap());
-    Serial.printf("Total PSRAM: %lu\n", ESP.getPsramSize());
-    Serial.printf("Free PSRAM : %lu\n", ESP.getFreePsram());
     pm.on_end_setup();
 }
 

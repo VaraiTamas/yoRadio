@@ -13,6 +13,9 @@ long encOldPosition = 0;
 long enc2OldPosition = 0;
 int  lpId = -1;
 
+uint32_t wakeCheckUntil = 0;
+bool     waitingForWakeIr = false;
+
 #if DSP_MODEL == DSP_DUMMY
 #    define DUMMYDISPLAY
 #endif
@@ -86,7 +89,14 @@ void IRAM_ATTR readEncoder2ISR() {
 #endif
 
 void initControls() {
+    Serial.printf("Wake cause: %d\n", esp_sleep_get_wakeup_cause());
+    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
 
+        Serial.println("Wake from IR");
+
+        waitingForWakeIr = true;
+        wakeCheckUntil = millis() + 600;
+    }
 #if ENC_BTNL != 255
     encoder.begin();
     encoder.setup(readEncoderISR);
@@ -273,6 +283,13 @@ void irNumber(uint8_t num) {
     display.putRequest(NEXTSTATION, s);
 }
 
+bool isIrPowerCode(uint64_t code) {
+    for (int i = 0; i < 3; i++) {
+        if (config.ircodes.irVals[IR_POWER][i] == code) { return true; }
+    }
+    return false;
+}
+
 void irLoop() {
     if (irrecv.decode(&irResults)) {
         if (irResults.value < 256) return;
@@ -283,28 +300,32 @@ void irLoop() {
             netserver.irToWs(typeToString(irResults.decode_type, irResults.repeat).c_str(), irResults.value);
             return;
         }
-        if (!irResults.repeat /* && irResults.command!=0*/) { irVolRepeat = 0; }
-        switch (irVolRepeat) {
-            case 1: {
-                controlsEvent(display.mode() == STATIONS ? false : true);
-                break;
+        // if (!irResults.repeat /* && irResults.command!=0*/) { irVolRepeat = 0; }
+        if (irResults.repeat) {
+            switch (irVolRepeat) {
+                case 1: controlsEvent(display.mode() == STATIONS ? false : true); break;
+
+                case 2: controlsEvent(display.mode() == STATIONS ? true : false); break;
             }
-            case 2: {
-                controlsEvent(display.mode() == STATIONS ? true : false);
-                break;
-            }
+        } else {
+            irVolRepeat = 0;
         }
-        for (int target = 0; target < 17; target++) {
+        for (int target = 0; target < 19; target++) {
             for (int j = 0; j < 3; j++) {
                 if (config.ircodes.irVals[target][j] == irResults.value) {
-                    if (network.status != CONNECTED && network.status != SDREADY && target != IR_AST) return;
-                    if (target != IR_AST && display.mode() == LOST) return;
+                    if (network.status != CONNECTED && network.status != SDREADY && target != IR_MODE) return;
+                    if (target != IR_MODE && display.mode() == LOST) return;
                     if (display.mode() == SCREENSAVER || display.mode() == SCREENBLANK) {
                         display.putRequest(NEWMODE, PLAYER);
                         return;
                     }
                     switch (target) {
-                        case IR_PLAY: {
+                        case IR_POWER: {
+                            Serial.println("IR POWER -> sleep");
+                            display.putRequest(NEWMODE, SLEEPING);
+                            break;
+                        }
+                        case IR_PLAY_STOP: {
                             irBlink();
                             if (display.mode() == NUMBERS) {
                                 display.putRequest(NEWMODE, PLAYER);
@@ -315,31 +336,50 @@ void irLoop() {
                             onBtnClick(1);
                             break;
                         }
+                        case IR_BACK: {
+                            display.putRequest(NEWMODE, PLAYER);
+                            break;
+                        }
                         case IR_PREV: {
-                            player.prev();
+                            if (display.mode() == STATIONS) {
+                                controlsEvent(true);
+                                break;
+                            } else {
+                                player.prev();
+                            }
                             break;
                         }
                         case IR_NEXT: {
-                            player.next();
+                            if (display.mode() == STATIONS) {
+                                controlsEvent(false);
+                                break;
+                            } else {
+                                player.next();
+                            }
                             break;
                         }
-                        case IR_UP: {
-                            controlsEvent(display.mode() == STATIONS ? false : true);
-                            irVolRepeat = 1;
-                            break;
-                        }
-                        case IR_DOWN: {
-                            controlsEvent(display.mode() == STATIONS ? true : false);
-                            irVolRepeat = 2;
-                            break;
-                        }
-                        case IR_HASH: {
+                        case IR_LIST: {
                             if (display.mode() == NUMBERS) {
                                 display.putRequest(NEWMODE, PLAYER);
                                 display.numOfNextStation = 0;
                                 break;
                             }
                             display.putRequest(NEWMODE, display.mode() == PLAYER ? STATIONS : PLAYER);
+                            break;
+                        }
+                        case IR_VOLUME_DOWN: {
+                            controlsEvent(display.mode() == STATIONS ? true : false);
+                            irVolRepeat = 2;
+                            break;
+                        }
+                        case IR_VOLUME_UP: {
+                            controlsEvent(display.mode() == STATIONS ? false : true);
+                            irVolRepeat = 1;
+                            break;
+                        }
+                        case IR_MODE: {
+                            // ESP.restart();
+                            onBtnClick(EVT_BTNMODE);
                             break;
                         }
                         case IR_0: {
@@ -382,17 +422,13 @@ void irLoop() {
                             irNumber(9);
                             break;
                         }
-                        case IR_AST: {
-                            // ESP.restart();
-                            onBtnClick(EVT_BTNMODE);
-                            break;
-                        }
+
                     } /* switch (target) */
-                    target = 17;
+                    target = 19;
                     break;
                 } /* if(config.ircodes.irVals[target][j]==irResults.value) */
             } /* for(int j=0; j<3; j++) */
-        } /* for(int target=0; target<16; target++) */
+        } /* for(int target=0; target<19; target++) */
     } /* if (irrecv.decode(&irResults)) */
 }
 #endif // if IR_PIN!=255
@@ -444,10 +480,7 @@ void onBtnLongPressStop(int id) {
             lpId = -1;
             break;
         }
-        case EVT_BTNMODE: {
-            config.doSleepW();
-            break;
-        }
+        case EVT_BTNMODE:
         default: break;
     }
 }

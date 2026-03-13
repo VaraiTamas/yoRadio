@@ -12,6 +12,7 @@
 #include "telnet.h"
 #include "rtcsupport.h"
 #include "../displays/tools/l10n.h"
+#include "driver/rtc_io.h"
 #ifdef USE_SD
 #    include "sdmanager.h"
 #endif
@@ -99,12 +100,7 @@ void Config::init() {
 #    endif
 #endif
     eepromRead(EEPROM_START, store);
-    BOOTLOG("---- EEPROM AFTER READ ----");
-    BOOTLOG("fadeEnabled   : %d", store.fadeEnabled);
-    BOOTLOG("fadeStartDelay: %d", store.fadeStartDelay);
-    BOOTLOG("fadeTarget    : %d", store.fadeTarget);
-    BOOTLOG("fadeStep      : %d", store.fadeStep);
-    BOOTLOG("--------------------------");
+
 #ifdef USE_DLNA
     if (store.lastPlayedSource == PL_SRC_DLNA) {
         store.playlistSource = PL_SRC_DLNA;
@@ -112,7 +108,7 @@ void Config::init() {
         store.playlistSource = PL_SRC_WEB;
     }
 #endif
-    bootInfo(); // https://github.com/e2002/yoradio/pull/149
+    bootInfo();
     if (store.config_set != 4263) { setDefaults(); }
     if (store.version > CONFIG_VERSION) {
         saveValue(&store.version, (uint16_t)CONFIG_VERSION, true, true);
@@ -1150,23 +1146,41 @@ void Config::doSleep() {
 #ifdef USE_NEXTION
     nextion.sleep();
 #endif
-#if !defined(ARDUINO_ESP32C3_DEV)
-    if (WAKE_PIN != 255) { esp_sleep_enable_ext0_wakeup((gpio_num_t)WAKE_PIN, LOW); }
-    esp_sleep_enable_timer_wakeup(config.sleepfor * 60 * 1000000ULL);
+    uint64_t mask = 0;
+    if (WAKE_PIN1 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN1);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN1);
+        mask |= (1ULL << WAKE_PIN1);
+    }
+    if (WAKE_PIN2 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN2);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN2);
+        mask |= (1ULL << WAKE_PIN2);
+    }
+    if (mask != 0) { esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW); }
+    esp_sleep_enable_timer_wakeup(config.sleepfor * 60ULL * 1000000ULL);
     esp_deep_sleep_start();
-#endif
 }
 
 void Config::doSleepW() {
-    if (BRIGHTNESS_PIN != 255) { analogWrite(BRIGHTNESS_PIN, 0); }
     display.deepsleep();
 #ifdef USE_NEXTION
     nextion.sleep();
 #endif
-#if !defined(ARDUINO_ESP32C3_DEV)
-    if (WAKE_PIN != 255) { esp_sleep_enable_ext0_wakeup((gpio_num_t)WAKE_PIN, LOW); }
+    uint64_t mask = 0;
+    if (WAKE_PIN1 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN1);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN1);
+        mask |= (1ULL << WAKE_PIN1);
+    }
+    if (WAKE_PIN2 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN2);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN2);
+        mask |= (1ULL << WAKE_PIN2);
+    }
+    delay(200);
+    if (mask != 0) { esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW); }
     esp_deep_sleep_start();
-#endif
 }
 
 void Config::sleepForAfter(uint16_t sf, uint16_t sa) {
@@ -1176,6 +1190,25 @@ void Config::sleepForAfter(uint16_t sf, uint16_t sa) {
     } else {
         doSleep();
     }
+}
+
+/*----- number to formated string -----*/
+const char* fmtThousands(uint32_t v) {
+    static char buf[16];
+    char        tmp[16];
+    sprintf(tmp, "%lu", v);
+
+    int len = strlen(tmp);
+    int pos = len % 3;
+    int j = 0;
+
+    for (int i = 0; i < len; i++) {
+        if (i && (i % 3) == pos) buf[j++] = ' ';
+        buf[j++] = tmp[i];
+    }
+    buf[j] = 0;
+
+    return buf;
 }
 
 void Config::bootInfo() {
@@ -1207,9 +1240,23 @@ void Config::bootInfo() {
             ENC2_INTERNALPULLUP ? "true" : "false");
     BOOTLOG("ir:\t\t%d", IR_PIN);
     if (SDC_CS != 255) { BOOTLOG("SD:\t\t%d", SDC_CS); }
-    BOOTLOG("------------------------------------------------");
+
     BOOTLOG("------------------------------------------------");
     BOOTLOG("CONFIG:\tsizeof(store)=%u B | EEPROM_START=%u | EEPROM_END=%u | EEPROM_SIZE=%u", (unsigned)sizeof(config.store), (unsigned)EEPROM_START, (unsigned)(EEPROM_START + sizeof(config.store)),
             (unsigned)EEPROM_SIZE);
     BOOTLOG("------------------------------------------------");
+    BOOTLOG("------------- EEPROM AFTER READ ----------------");
+    BOOTLOG("fadeEnabled   : %s", store.fadeEnabled ? "true" : "false");
+    BOOTLOG("fadeStartDelay: %4s", fmtThousands(store.fadeStartDelay));
+    BOOTLOG("fadeTarget    : %4s", fmtThousands(store.fadeTarget));
+    BOOTLOG("fadeStep      : %4s", fmtThousands(store.fadeStep));
+    BOOTLOG("------------------------------------------------");
+    BOOTLOG("----------------- HEAP AND PSRAM ---------------");
+    BOOTLOG("Total heap : %10s byte", fmtThousands(ESP.getHeapSize()));
+    BOOTLOG("Free heap  : %10s byte", fmtThousands(ESP.getFreeHeap()));
+    BOOTLOG(psramFound() ? "✅ PSRAM found!" : "❌ PSRAM not found!");
+    BOOTLOG("Total PSRAM: %10s byte", fmtThousands(ESP.getPsramSize()));
+    BOOTLOG("Free PSRAM : %10s byte", fmtThousands(ESP.getFreePsram()));
+    BOOTLOG("------------------------------------------------");
 }
+

@@ -113,7 +113,25 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
 (I2C capacitive touch FT6236) https://www.aliexpress.com/item/1005007789737257.html    
    - 3D nyomtatási terv --> https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
 
-## Version history:
+## Version history:  
+### v0.8.7  
+- Teljesen átdolgozott távirányító-vezérlés, a tanításnál egyértelmű jelölésekkel.  
+   A WEB UI- on frissíteni kell az alábbi fájlokat:   
+   ```
+      - ir.css.gz    
+      - ir.js.gz  
+      - irrecord.html.gz   
+      - style.css.gz
+   ```          
+   Új gombok:  
+      - POWER – deep sleep módba helyezi az ESP kontrollert / felébreszti  
+      - LIST – közvetlenül a lejátszási listát nyitja meg   
+      - BACK – visszalép a player képernyőre  
+      Ajánlott távirányító https://www.aliexpress.com/item/1005010439257796.html    
+- A WAKE_PIN helyett mostantól két pin állítható be az ébresztéshez: WAKE_PIN1 és WAKE_PIN2 , így távirányítóval és egy másik gombbal is felébreszthető az eszköz.   
+   - Ébresztéshez csak RTC GPIO használható (GPIO0 – GPIO21).   
+   - Aki eddig az IR_PIN 38 -at használta, annak át kell állnia például GPIO2-re. A PCB -n ez átkötéssel jár!
+
 ### v0.8.6
    - Új beállítás a myoptions.h fájlban. Letíltja az encoder gomb másodlagos funkcióját. *(by Karol Wysocki)*
       - Első gomb csak hangerő
