@@ -33,16 +33,14 @@ kijelzőhöz készült és csak az audioI2S DAC eszközzel működik megfelelőe
 // #define TS_CS    3
 ```
 - Nem támogatja az ESP32-t PSRAM memória nélkül.   
-- Az Arduino-ESP32 Core 3.3.0 vagy újabb verziójú Espressif Arduino keretrendszerre van szükség.  
-- A partíció sémánál válaszd "8M with spiffs (3MB APP/1.5MB SPIFFS)" 
-- A memória szerkezete és a vele való munka teljesen megváltozott, az összes puffer és sok változó átkerült a PSRAM-ba. 
-- Nagyon fontos, hogy a data mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!  
+- Az Arduino-ESP32 Core 3.3.3 vagy újabb verziójú Espressif Arduino keretrendszerre van szükség.  
+- A partíció sémánál válaszd "Custom" A program a saját partitions.csv fájllal rendelkezik a gyökér könyvtárban, így ez kerül beolvasásra.
+- Nagyon fontos, hogy a "yoRadio/data/data" mappa feltöltése után töröld a böngésző előzményeit és a web megnyitása után nyomd meg a Ctrl+Shift+R gombokat a web felület valódi frissítéséhez (Google chrome)!!!  Másik módszer F12 gomb megnyomása után a megnyíló fejlesztői ablakban a "Network" fülre kattíntva megjelenik a "Disable cache" opció. Ezt bepipálva majd Ctrl+Shift+R billentyű valódi frissítést hajt végre.
 - Ha az IR (infrared) beállítása nem működik, [ olvasd el ezt!](PCB/IR/ir_power_filter.md)
 - Ha nagy bitrátájú sztrimek lejátszásakor szakadozást tapasztalsz akkor [olvasd el ezt!](Lib_tools/LIB_TOOLS.md)
 
 Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd őket a könyvtárkezelővel vagy PlatformIO esetén használd a mellékelt platformio.ini fájlt.
 - Adafruit GFX Library  1.12.3  https://github.com/adafruit/Adafruit-GFX-Library.git
-- XPT2046_Touchscreen   1.4     https://github.com/PaulStoffregen/XPT2046_Touchscreen.git
 - RTCLib                2.1.4   https://github.com/adafruit/RTClib.git
 - Adafruit_ILI9341      1.6.2   https://github.com/adafruit/Adafruit_ILI9341.git   (szükség esetén)
 
@@ -50,7 +48,9 @@ Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd 
 
 Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA, DE nyelveken.   
 A myoptions.h fájlban az alábbi paranccsal állíthatod be.   
+```
 #define L10N_LANGUAGE HU
+```
 
 A program az Adafruit_GFX librarit használja, ahol egy 5x7 pixel méretű fontot skáláz fel a kért méret függvényében. Ez a font a glcdfont.c fájlban van megrajzolva.    
 A fájlok helye:   
@@ -91,18 +91,86 @@ A névnapok tárolása az alábbi fájlokban történik.
 
 Ha más nyelven szeretnéd használni vedd fel velem a kapcsolatot.
 
-Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort,    
+Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort, 
+```   
 // #define NAMEDAYS_FILE HU   
+```
 vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 
-## PCB nyomtatott aramkor:
+## PCB - nyomtatott aramkor:
 - A PCB gyártáshoz szükséges gerber fájl, kapcsolási rajz, és egyéb információ a [PCB](PCB) mappában található.   
-- Építési javaslatok [PCB_2025.06.14. oldalon láthatóak.](PCB/BCP_2025_06_14/PCB.md) 
+- Építési javaslatok [PCB_2025.12.21. oldalon láthatóak.](PCB/PCB_2025_12_21/readme.md) 
+- Tápegységre javaslat [PCB_2025.12.21. oldalon látható.](PCB/Power_supply_with_IR_sensor/readme.md) 
+- Ahol a PCB -k készülnek JLCPCB --> [jlcpcb.com](https://jlcpcb.com/?from=AMOSWLDYVIS)  
 
-## 3D nyomtatasi tervek
-- https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
+Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
 
-## Version history:
+## 3D nyomtatasi tervek és a hozzájuk illeszkedő kijelzők
+- IPS 4.0 Inch, SPI, ILI9488 Factory TFT LCD 480*320, 14 Pin Electronic Board  
+(SPI resistive touch XPT2046) https://www.aliexpress.com/item/1005006287831546.html
+   - 3D nyomtatási terv --> https://www.printables.com/model/1489380-yoradio-case-for-ips-40-inch-ili9488-tft-lcd-48032
+- IPS 3.5 Inch, SPI, ILI9488 14 pin Full View Angle 480*320 
+(I2C capacitive touch FT6236) https://www.aliexpress.com/item/1005007789737257.html    
+   - 3D nyomtatási terv --> https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
+
+## Version history:  
+### v0.8.7  
+- Teljesen átdolgozott távirányító-vezérlés, a tanításnál egyértelmű jelölésekkel.  
+   A WEB UI- on frissíteni kell az alábbi fájlokat:   
+   ```
+      - ir.css.gz    
+      - ir.js.gz  
+      - irrecord.html.gz   
+      - style.css.gz
+   ```          
+   Új gombok:  
+      - POWER – deep sleep módba helyezi az ESP kontrollert / felébreszti  
+      - LIST – közvetlenül a lejátszási listát nyitja meg   
+      - BACK – visszalép a player képernyőre  
+      Ajánlott távirányító https://www.aliexpress.com/item/1005010439257796.html    
+- A WAKE_PIN helyett mostantól két pin állítható be az ébresztéshez: WAKE_PIN1 és WAKE_PIN2 , így távirányítóval és egy másik gombbal is felébreszthető az eszköz.   
+   - Ébresztéshez csak RTC GPIO használható (GPIO0 – GPIO21).   
+   - Aki eddig az IR_PIN 38 -at használta, annak át kell állnia például GPIO2-re. A PCB -n ez átkötéssel jár!
+
+### v0.8.6
+   - Új beállítás a myoptions.h fájlban. Letíltja az encoder gomb másodlagos funkcióját. *(by Karol Wysocki)*
+      - Első gomb csak hangerő
+      - Második gomb csak csatornalista
+
+   Csak két encoder esetén használd !!!
+   ```
+   #define ENCODERS_INDEPENDENT
+   ```
+   - Új beállítás a myoptions.h fájlban. Definiálásával a rádió indulásakor mindig a csatornalista első eleme lesz az aktuális.  *(by Karol Wysocki)*
+   ```
+   #define ALWAYS_START_FROM_FIRST
+   ```
+   - DSP_SSD1322 OLED kijelzőnél a Title2 sor eltűnik hiba javítása.
+   - Ha a lejátszási listára kapcsolunk és nem változtatunk csatornát a lejátszás újraindul. Ez a hiba lett javítva.
+
+### v0.8.5
+   - FADE CONTROL szolgáltatás hozzáadva a WEB UI -hoz. Lehetővé teszi egy beállított fényerő, lépésenként elérését, adott idő elteltével. OLED esetén csak kontraszt csökkentést hajt végre, így kímélhető a kijelző.  
+   Teljes data/www mappa feltöltése szükséges!!! (by Zsolt Simon) 
+   - Indításnál több időt kap a WiFi a hálózatok keresésére, így elkerüli a korai AP üzemű indítást.  
+   (by Tomasz Bugno)
+### v0.8.4
+   - FT6X36 kapacitív driver hozzáadva.
+   - mytheme.h fájl kiegészült az aktuális csatornaszám kijelzésének színével.
+   ```
+   #define COLOR_CH  165, 162, 132
+   ```
+   - A myoptions.h fájl kiegészült. A lejátszási listában a cursor mozog LE - FEL. (by Maciej Bednarski)
+   ```
+   #define PLAYLIST_SCROLL_MOVING_CURSOR
+   ```
+   - A myoptions.h fájl kiegészült. Rádió módban, ha elfogy az adatbuffer automatikusan STOP és PLAY (by Andrzej Jaroszuk)
+   ```
+   #define ENABLE_STALL_WATCHDOG
+   ```
+   - A myoptions.h fájl kiegészült. Ezzel a bejegyzéssel a képernyő színei szürkeárnyalatosak lesznek.
+   ```
+   #define THEME_GRAY
+   ```
 ### v0.8.3
    - SSD1322 OLED kijelző hozzáadva.
    - Az aktuális lejátszási listaszám megjelenítése a kijelzőn.
@@ -192,3 +260,6 @@ vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
 ### v0.5.0
    - Két formátumú kivezérlésmérő   
 
+
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
+https://buymeacoffee.com/vtom

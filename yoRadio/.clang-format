@@ -8,7 +8,7 @@ SpaceBeforeAssignmentOperators: true # Legyen szóköz az értékadás előtt é
 SpaceInEmptyParentheses: false    # Ne legyen szóköz az üres zárójelekben ()
 SpacesInParentheses: false        # Ne legyen szóköz a zárójeleken belül
 UseTab: Never                     # Soha ne használjon tabulátort, csak szóközt
-IndentPPDirectives: BeforeHash    # Preprocesszor direktívák (#include) igazítása a # előtt
+IndentPPDirectives: AfterHash    # Preprocesszor direktívák (#include) igazítása a # előtt
 IndentCaseLabels: true            # case címkék behúzása switch-ben
 IncludeBlocks: Merge              # Include blokkok közül kiveszi az üres sorokat
 SortIncludes: false               # Az incloude -kat nem rendezi névsorba

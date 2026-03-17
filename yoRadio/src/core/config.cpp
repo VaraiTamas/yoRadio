@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include "config.h"
 #include "display.h"
+#include "../SSD1322/SSD1322.h"
 #include "player.h"
 #include "network.h"
 #include "netserver.h"
@@ -11,16 +12,17 @@
 #include "telnet.h"
 #include "rtcsupport.h"
 #include "../displays/tools/l10n.h"
+#include "driver/rtc_io.h"
 #ifdef USE_SD
-    #include "sdmanager.h"
+#    include "sdmanager.h"
 #endif
 #ifdef USE_NEXTION
-    #include "../displays/nextion.h"
+#    include "../displays/nextion.h"
 #endif
 #include <cstddef>
 
 #if DSP_MODEL == DSP_DUMMY
-    #define DUMMYDISPLAY
+#    define DUMMYDISPLAY
 #endif
 
 Config config;
@@ -91,13 +93,14 @@ void Config::init() {
     irindex = -1;
 #endif
 #if defined(SD_SPIPINS) || SD_HSPI
-    #if !defined(SD_SPIPINS)
+#    if !defined(SD_SPIPINS)
     SDSPI.begin();
-    #else
+#    else
     SDSPI.begin(SD_SPIPINS); // SCK, MISO, MOSI
-    #endif
+#    endif
 #endif
     eepromRead(EEPROM_START, store);
+
 #ifdef USE_DLNA
     if (store.lastPlayedSource == PL_SRC_DLNA) {
         store.playlistSource = PL_SRC_DLNA;
@@ -105,8 +108,8 @@ void Config::init() {
         store.playlistSource = PL_SRC_WEB;
     }
 #endif
-    bootInfo(); // https://github.com/e2002/yoradio/pull/149
-    if (store.config_set != 4262) { setDefaults(); }
+    bootInfo();
+    if (store.config_set != 4263) { setDefaults(); }
     if (store.version > CONFIG_VERSION) {
         saveValue(&store.version, (uint16_t)CONFIG_VERSION, true, true);
     } else {
@@ -174,6 +177,13 @@ void Config::_setupVersion() {
             saveValue(&store.timeSyncInterval, (uint16_t)60);    // min
             saveValue(&store.timeSyncIntervalRTC, (uint16_t)24); // hours
             saveValue(&store.weatherSyncInterval, (uint16_t)30); // min
+            break;
+        case 8:
+            saveValue(&store.fadeEnabled, (uint8_t)FADE_ENABLED);
+            saveValue(&store.fadeStartDelay, (uint16_t)FADE_START_DELAY);
+            saveValue(&store.fadeTarget, (uint8_t)FADE_TARGET);
+            saveValue(&config.store.fadeStep, (uint8_t)FADE_STEP);
+            break;
         default: break;
     }
     currentVersion++;
@@ -241,12 +251,12 @@ void Config::changeMode(int newmode) { // DLNA mod
     initPlaylistMode();
 
     if (pir) {
-    #ifdef USE_DLNA
+#    ifdef USE_DLNA
         uint16_t st = (getMode() == PM_SDCARD) ? store.lastSdStation : (store.playlistSource == PL_SRC_DLNA ? store.lastDlnaStation : store.lastStation);
-    #else
+#    else
         uint16_t st = (getMode() == PM_SDCARD) ? store.lastSdStation : store.lastStation;
         player.sendCommand({PR_PLAY, st});
-    #endif
+#    endif
     }
 
     netserver.resetQueue();
@@ -381,6 +391,9 @@ void Config::initPlaylistMode() {
             uint16_t cs = playlistLength();
             _lastStation = store.lastStation;
             if (_lastStation == 0 && cs > 0) { _lastStation = 1; }
+#if defined(ALWAYS_START_FROM_FIRST)
+            if (cs > 0) _lastStation = 1;
+#endif
         }
     }
 
@@ -464,41 +477,29 @@ void Config::reset() {
 }
 void Config::enableScreensaver(bool val) {
     saveValue(&store.screensaverEnabled, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverTimeout(uint16_t val) {
     val = constrain(val, 5, 65520);
     saveValue(&store.screensaverTimeout, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverBlank(bool val) {
     saveValue(&store.screensaverBlank, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverPlayingEnabled(bool val) {
     saveValue(&store.screensaverPlayingEnabled, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverPlayingTimeout(uint16_t val) {
     val = constrain(val, 1, 1080);
     config.saveValue(&config.store.screensaverPlayingTimeout, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setScreensaverPlayingBlank(bool val) {
     saveValue(&store.screensaverPlayingBlank, val);
-#ifndef DSP_LCD
     display.putRequest(NEWMODE, PLAYER);
-#endif
 }
 void Config::setSntpOne(const char* val) {
     bool tzdone = false;
@@ -535,6 +536,7 @@ void Config::setIrBtn(int val) {
 }
 #endif
 void Config::resetSystem(const char* val, uint8_t clientId) {
+    BOOTLOG("***************** RESET SYSTEM *****************");
     if (strcmp(val, "system") == 0) {
         saveValue(&store.smartstart, (uint8_t)2, false);
         saveValue(&store.audioinfo, false, false);
@@ -568,6 +570,10 @@ void Config::resetSystem(const char* val, uint8_t clientId) {
         saveValue(&store.screensaverPlayingEnabled, false);
         saveValue(&store.screensaverPlayingTimeout, (uint16_t)5);
         saveValue(&store.screensaverPlayingBlank, false);
+        saveValue(&store.fadeEnabled, (uint8_t)FADE_ENABLED, true);
+        saveValue(&store.fadeStartDelay, (uint16_t)FADE_START_DELAY, true);
+        saveValue(&store.fadeTarget, (uint8_t)FADE_TARGET, true);
+        saveValue(&store.fadeStep, (uint8_t)FADE_STEP, true);
         display.putRequest(NEWMODE, CLEAR);
         display.putRequest(NEWMODE, PLAYER);
         netserver.requestOnChange(GETSCREEN, clientId);
@@ -614,7 +620,8 @@ void Config::resetSystem(const char* val, uint8_t clientId) {
 }
 
 void Config::setDefaults() {
-    store.config_set = 4262;
+    BOOTLOG("***************** SET DEFAULT *****************");
+    store.config_set = 4263;
     store.version = CONFIG_VERSION;
     store.volume = 12;
     store.balance = 0;
@@ -629,7 +636,6 @@ void Config::setDefaults() {
     store.tzHour = 3;
     store.tzMin = 0;
     store.timezoneOffset = 0;
-
     store.vumeter = false;
     store.softapdelay = 0;
     store.flipscreen = false;
@@ -640,8 +646,8 @@ void Config::setDefaults() {
     store.dspon = true;
     store.brightness = 100;
     store.contrast = 55;
-    strlcpy(store.sntp1, "pool.ntp.org", 35);
-    strlcpy(store.sntp2, "1.ru.pool.ntp.org", 35);
+    strlcpy(store.sntp1, "hu.pool.ntp.org", 35);
+    strlcpy(store.sntp2, "time.google.com", 35);
     store.showweather = false;
     strlcpy(store.weatherlat, "46.3873", 10);
     strlcpy(store.weatherlon, "18.1513", 10);
@@ -680,9 +686,13 @@ void Config::setDefaults() {
     store.timeSyncInterval = 60;    // min
     store.timeSyncIntervalRTC = 24; // hour
     store.weatherSyncInterval = 30; // min
-#ifdef USE_DLNA                     // DLNA mod
+    store.fadeEnabled = FADE_ENABLED;
+    store.fadeStartDelay = FADE_START_DELAY;
+    store.fadeTarget = FADE_TARGET;
+    store.fadeStep = FADE_STEP;
+    // DLNA mod
     store.playlistSource = PL_SRC_WEB;
-#endif
+
     eepromWrite(EEPROM_START, store);
 }
 
@@ -1085,15 +1095,13 @@ bool Config::initNetwork() {
 }
 
 void Config::setBrightness(bool dosave) {
-#if BRIGHTNESS_PIN != 255
     if (!store.dspon && dosave) { display.wakeup(); }
-    analogWrite(BRIGHTNESS_PIN, map(store.brightness, 0, 100, 0, 255));
+    display.setBrightnessPercent(store.brightness);
     if (!store.dspon) { store.dspon = true; }
     if (dosave) {
         saveValue(&store.brightness, store.brightness, false, true);
         saveValue(&store.dspon, store.dspon, true, true);
     }
-#endif
 #ifdef USE_NEXTION
     nextion.wake();
     char cmd[15];
@@ -1138,23 +1146,41 @@ void Config::doSleep() {
 #ifdef USE_NEXTION
     nextion.sleep();
 #endif
-#if !defined(ARDUINO_ESP32C3_DEV)
-    if (WAKE_PIN != 255) { esp_sleep_enable_ext0_wakeup((gpio_num_t)WAKE_PIN, LOW); }
-    esp_sleep_enable_timer_wakeup(config.sleepfor * 60 * 1000000ULL);
+    uint64_t mask = 0;
+    if (WAKE_PIN1 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN1);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN1);
+        mask |= (1ULL << WAKE_PIN1);
+    }
+    if (WAKE_PIN2 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN2);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN2);
+        mask |= (1ULL << WAKE_PIN2);
+    }
+    if (mask != 0) { esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW); }
+    esp_sleep_enable_timer_wakeup(config.sleepfor * 60ULL * 1000000ULL);
     esp_deep_sleep_start();
-#endif
 }
 
 void Config::doSleepW() {
-    if (BRIGHTNESS_PIN != 255) { analogWrite(BRIGHTNESS_PIN, 0); }
     display.deepsleep();
 #ifdef USE_NEXTION
     nextion.sleep();
 #endif
-#if !defined(ARDUINO_ESP32C3_DEV)
-    if (WAKE_PIN != 255) { esp_sleep_enable_ext0_wakeup((gpio_num_t)WAKE_PIN, LOW); }
+    uint64_t mask = 0;
+    if (WAKE_PIN1 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN1);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN1);
+        mask |= (1ULL << WAKE_PIN1);
+    }
+    if (WAKE_PIN2 != 255) {
+        rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN2);
+        rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN2);
+        mask |= (1ULL << WAKE_PIN2);
+    }
+    delay(200);
+    if (mask != 0) { esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW); }
     esp_deep_sleep_start();
-#endif
 }
 
 void Config::sleepForAfter(uint16_t sf, uint16_t sa) {
@@ -1166,9 +1192,28 @@ void Config::sleepForAfter(uint16_t sf, uint16_t sa) {
     }
 }
 
+/*----- number to formated string -----*/
+const char* fmtThousands(uint32_t v) {
+    static char buf[16];
+    char        tmp[16];
+    sprintf(tmp, "%lu", v);
+
+    int len = strlen(tmp);
+    int pos = len % 3;
+    int j = 0;
+
+    for (int i = 0; i < len; i++) {
+        if (i && (i % 3) == pos) buf[j++] = ' ';
+        buf[j++] = tmp[i];
+    }
+    buf[j] = 0;
+
+    return buf;
+}
+
 void Config::bootInfo() {
     BOOTLOG("************************************************");
-    BOOTLOG("*               ёPadio v%s                *", YOVERSION);
+    BOOTLOG("*           yoPadio V-Tom v%s                  *", YOVERSION);
     BOOTLOG("************************************************");
     BOOTLOG("------------------------------------------------");
     BOOTLOG("arduino:\t%d", ARDUINO);
@@ -1195,9 +1240,23 @@ void Config::bootInfo() {
             ENC2_INTERNALPULLUP ? "true" : "false");
     BOOTLOG("ir:\t\t%d", IR_PIN);
     if (SDC_CS != 255) { BOOTLOG("SD:\t\t%d", SDC_CS); }
-    BOOTLOG("------------------------------------------------");
+
     BOOTLOG("------------------------------------------------");
     BOOTLOG("CONFIG:\tsizeof(store)=%u B | EEPROM_START=%u | EEPROM_END=%u | EEPROM_SIZE=%u", (unsigned)sizeof(config.store), (unsigned)EEPROM_START, (unsigned)(EEPROM_START + sizeof(config.store)),
             (unsigned)EEPROM_SIZE);
     BOOTLOG("------------------------------------------------");
+    BOOTLOG("------------- EEPROM AFTER READ ----------------");
+    BOOTLOG("fadeEnabled   : %s", store.fadeEnabled ? "true" : "false");
+    BOOTLOG("fadeStartDelay: %4s", fmtThousands(store.fadeStartDelay));
+    BOOTLOG("fadeTarget    : %4s", fmtThousands(store.fadeTarget));
+    BOOTLOG("fadeStep      : %4s", fmtThousands(store.fadeStep));
+    BOOTLOG("------------------------------------------------");
+    BOOTLOG("----------------- HEAP AND PSRAM ---------------");
+    BOOTLOG("Total heap : %10s byte", fmtThousands(ESP.getHeapSize()));
+    BOOTLOG("Free heap  : %10s byte", fmtThousands(ESP.getFreeHeap()));
+    BOOTLOG(psramFound() ? "✅ PSRAM found!" : "❌ PSRAM not found!");
+    BOOTLOG("Total PSRAM: %10s byte", fmtThousands(ESP.getPsramSize()));
+    BOOTLOG("Free PSRAM : %10s byte", fmtThousands(ESP.getFreePsram()));
+    BOOTLOG("------------------------------------------------");
 }
+

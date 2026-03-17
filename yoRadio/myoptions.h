@@ -62,7 +62,10 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define TS_CS    3
 
 /*----- Touch I2C -----*/
-// #define TS_MODEL TS_MODEL_FT6X36 
+// #define TS_MODEL TS_MODEL_FT6X36
+// #define TS_SCL      7
+// #define TS_SDA      8
+// #define TS_INT     17 
 
 /*----- Touch corrections -----*/
 // #define X_TOUCH_MIRRORING
@@ -95,16 +98,13 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 // #define RTC_MODULE DS3231
 
 /*----- REMOTE CONTROL INFRARED RECEIVER -----*/
-#define IR_PIN 38
+/*----- Alvásból ébresztéshez a GPIO 2 -őt kell használni, mert a GPIO 38 nem RTC pin. A PCB-n át kell kötni! -----*/
+/*----- To wake from sleep, you must use GPIO 2, because GPIO 38 is not an RTC pin. It must be connected via the PCB! -----*/
+ #define IR_PIN 2  //38
 
-/*----- DS CARD -----*/
+/*----- SD CARD -----*/
 // #define SDC_CS     18
-#define SDSPISPEED 4000000 /* 4MHz - Slower speed to prevent display flicker on shared SPI bus */
-
-/*----- by Maciej Bednarski -----*/
-/*---- Ezt aktíválva a lejátszási listában a cursor mozog le - fel -----*/
-/*---- Activating this will move the cursor up and down in the playlist -----*/
-#define PLAYLIST_SCROLL_MOVING_CURSOR
+// #define SDSPISPEED 4000000 /* 4MHz - Slower speed to prevent display flicker on shared SPI bus */
 
 /*----- Színes kijelzőn szürkeárnyalatos képet jelenít meg. -----*/
 /*----- The color display displays a grayscale image -----*/
@@ -152,7 +152,7 @@ If there is a // sign at the beginning of the line, the basic VU meter is workin
 #define VU_PEAK
 
 /*----- Az állomások listájából való választásnál nem kell megnyomni a rotary encoder gombját, kilépéskor autómatikusan
-átvált a csatorna. (Zsigmond Becskeházi által)
+átvált a csatorna. (by Zsigmond Becskeházi)
  When selecting from the station list, you do not need to press the rotary encoder button, the channel will automatically
 change when you exit. (By Zsigmond Becskehazi) -----*/
 #define DIRECT_CHANNEL_CHANGE
@@ -161,6 +161,11 @@ change when you exit. (By Zsigmond Becskehazi) -----*/
 /*----- How long to return to the main screen from the station list. (seconds) -----*/
 #define STATIONS_LIST_RETURN_TIME 3
 
+/*----- by Maciej Bednarski -----*/
+/*---- Ezt aktíválva a lejátszási listában a cursor mozog le - fel -----*/
+/*---- Activating this will move the cursor up and down in the playlist -----*/
+#define PLAYLIST_SCROLL_MOVING_CURSOR
+
 /*----- Az itt beállított pin vezérelheti egy audio erősítő tápellátását. Zenelejátszás közben a pin HIGH (magas) állapotban van ami meghúzza az
 erősítő tápellátását kapcsoló relét. Amikor nincs zenelejátszás (STOP vagy a hangerő 0), a pin LOW (alacsony) állapotban van.
 Ez a változás akkor történik, amikor a képernyővédő "while not playing" üzemmódban bekapcsol.
@@ -168,11 +173,33 @@ This pin controls the amplifier's power supply. When music is playing, the pin i
 When music is not playing (stopped or volume is 0), the pin is set to LOW. This change occurs when the screensaver is running. -----*/
 // #define PWR_AMP 2
 
-// #define WAKE_PIN	42
-
 /*----- by Andrzej Jaroszuk -----*/    
 /*----- Megállítja a lejátszást internet rádió módban, ha a lejátszási puffer elfogy. Utána  újraindítja a lejátszást. -----*/
 /*----- Stops playback in internet radio mode when the playback buffer runs out. Then restarts playback. -----*/
 #define ENABLE_STALL_WATCHDOG
+
+/*----- by Karol Wysocki -----*/  
+/*----- Letíltja az encoder gomb másodlagos funkcióját. Csak két encoder esetén használd! -----*/
+/*----- Disables the secondary function of the encoder button. Use only if you have two encoders! -----*/
+//#define ENCODERS_INDEPENDENT
+
+/*----- Ha ez definiálva van a rádió indításakor, mindig az első csatorna lesz beállítva. -----*/
+/*----- If this is defined at radio startup, the first channel will always be set. -----*/
+//#define ALWAYS_START_FROM_FIRST
+
+/*----- Sleep functions -----*/
+/*----- A WAKE_PIN helyett mostantól két pin állítható be az ébresztéshez: WAKE_PIN1 és WAKE_PIN2 -----*
+/*----- Így távirányítóval és egy másik gombbal is felébreszthető az eszköz. -----*/
+/*----- Instead of WAKE_PIN, you can now set two pins for wake-up: WAKE_PIN1 and WAKE_PIN2 -----*/
+/*----- This way, you can wake up the device with a remote control and another button. -----*/
+ // #define BTN_MODE ENC_BTNB
+ // #define WAKE_PIN1 IR_PIN
+ // #define WAKE_PIN2 ENC2_BTNB
+
+/*----- by Zsolt Simon -----*/
+/*----- Tested on Synology NAS ----- */
+// #define USE_DLNA
+// #define dlnaHost "192.168.1.200"
+// #define dlnaIDX  21
 
 #endif // myoptions_h

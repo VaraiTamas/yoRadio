@@ -42,6 +42,7 @@ void dlna_status_setDone(const DlnaJob& j, bool ok, int err, const char* msg) {
   g_dlnaStatus.msg[sizeof(g_dlnaStatus.msg)-1] = 0;
 }
 
+/*
 static bool write_playlist_atomic(const char* tmpPath, const char* finalPath, const String& content) {
   // mutex: egy időben ne olvassa/írja más
   xSemaphoreTake(g_spiffsMux, portMAX_DELAY);
@@ -85,6 +86,7 @@ static bool append_playlist_atomic(const char* tmpPath, const char* finalPath, c
   return ok;
 }
 
+*/
 // WDT/yield helper hosszú ciklusokba
 static inline void worker_yield() {
   //esp_task_wdt_reset();
@@ -108,7 +110,7 @@ static void dlna_worker_task(void* ) {
     dlna_status_setBusy(j, "working");
 
     bool ok = false;
-    int err = 0;
+   // int err = 0;
 
     // !!! FONTOS: itt semmilyen AsyncWebServerRequest nincs, csak paraméterek
     if (j.type == DJ_BUILD) {

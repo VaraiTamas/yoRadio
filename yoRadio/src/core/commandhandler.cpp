@@ -8,6 +8,7 @@
 #include "controls.h"
 #include "telnet.h"
 #include "../displays/dspcore.h"
+#include "../plugins/backlight/backlight.h"
 
 #if DSP_MODEL == DSP_DUMMY
     #define DUMMYDISPLAY
@@ -92,6 +93,7 @@ bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
         config.setBrightness(true);
         return true;
     }
+
     if (strEquals(command, "clearspiffs")) {
         config.spiffsCleanup();
         config.saveValue(&config.store.play_mode, static_cast<uint8_t>(PM_WEB));
@@ -166,6 +168,12 @@ bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
         if (!config.store.dspon) { netserver.requestOnChange(DSPON, 0); }
         config.store.brightness = static_cast<uint8_t>(atoi(value));
         config.setBrightness(true);
+        if (BRIGHTNESS_PIN != 255 && config.store.fadeEnabled) { // WEB UI backlight plugin
+            if (backlightPlugin.isDimmed() || backlightPlugin.isFading())
+                backlightPlugin.wake();
+            else
+                backlightPlugin.activity();
+        }
         return true;
     }
     if (strEquals(command, "screenon")) {
@@ -201,6 +209,28 @@ bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
         config.setScreensaverPlayingBlank(static_cast<bool>(atoi(value)));
         return true;
     }
+    /***** AUTO FADE *****/
+    if (cmd.strEquals(command, "fadeenabled")) {
+        config.saveValue(&config.store.fadeEnabled, static_cast<uint8_t>(atoi(value)), true, false);
+        return true;
+    }
+    if (cmd.strEquals(command, "fadestartdelay")) {
+        config.saveValue(&config.store.fadeStartDelay, static_cast<uint16_t>(atoi(value)), true, false);
+        return true;
+    }
+    if (cmd.strEquals(command, "fadetarget")) {
+        uint8_t target = atoi(value);
+        if (target > 100) target = 100;
+        config.saveValue(&config.store.fadeTarget, target, true, false);
+        return true;
+    }
+    if (cmd.strEquals(command, "fadestep")) {
+        uint8_t step = atoi(value);
+        if (step > 100) step = 100;
+        config.saveValue(&config.store.fadeStep, step, true, false);
+        return true;
+    }
+    /*********************/
     if (strEquals(command, "abuff")) {
         config.saveValue(&config.store.abuff, static_cast<uint16_t>(atoi(value)));
         return true;
@@ -318,15 +348,15 @@ bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
     }
 
 #if IR_PIN != 255
-    if (strEquals(command, "irbtn")) {
+    if (strEquals(command, "irbtn")) { // Gombok 0 - 16 --> command: irbtn, value: 0
         config.setIrBtn(atoi(value));
         return true;
     }
-    if (strEquals(command, "chkid")) {
+    if (strEquals(command, "chkid")) {  // A három IR bank 0 - 1 - 2 --> command: chkid, value: 1
         config.irchck = static_cast<uint8_t>(atoi(value));
         return true;
     }
-    if (strEquals(command, "irclr")) {
+    if (strEquals(command, "irclr")) {  // Bank törlés. --> command: irclr, value: 2
         config.ircodes.irVals[config.irindex][static_cast<uint8_t>(atoi(value))] = 0;
         return true;
     }

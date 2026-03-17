@@ -8,6 +8,7 @@
     #include "player.h"
     #include "presets.h"
     #include "../displays/dspcore.h" // DspCore + extern dsp
+    #include "../plugins/backlight/backlight.h"
 
     #ifndef TS_X_MIN
         #define TS_X_MIN 400
@@ -29,7 +30,7 @@
         #ifdef TS_SPIPINS
 SPIClass TSSPI(HSPI);
         #endif
-        #include <XPT2046_Touchscreen.h>
+        #include "../Touch/XPT2046/XPT2046_Touchscreen.h"
 XPT2046_Touchscreen ts(TS_CS);
 typedef TS_Point    TSPoint;
     #elif TS_MODEL == TS_MODEL_GT911
@@ -134,12 +135,13 @@ void TouchScreen::loop() {
     static uint32_t      touchLongPress;
     static tsDirection_e direct;
     static uint16_t      touchVol, touchStation;
-    static uint32_t      presetsLastActivity = 0;
-    static int           presetActionDone = 0; // 0=play,1=save,2=del
-    static int           presetHoldSlot = -1;
-    static int           favHold = -1;
-    static bool          favLongTriggered = false;
-
+    #if (DSP_MODEL != DSP_ILI9341)
+    static uint32_t presetsLastActivity = 0;
+    static int      presetActionDone = 0; // 0=play,1=save,2=del
+    static int      presetHoldSlot = -1;
+    static int      favHold = -1;
+    static bool     favLongTriggered = false;
+    #endif
     static bool lastStTouched = false;
 
     if (!_checklpdelay(20, _touchdelay)) { return; }
@@ -165,10 +167,7 @@ void TouchScreen::loop() {
 
     // Auto-exit presets screen after 15s of no touch activity
     if (display.mode() == PRESETS) {
-        if (presets_toastExpired()) {
-            // presets_drawScreen();  // ⬅ KÉNYSZER REDRAW
-            return;
-        }
+        if (presets_toastExpired()) { return; }
         if (presetsLastActivity == 0) { presetsLastActivity = millis(); }
         if (stTouched) {
             presetsLastActivity = millis();
@@ -394,8 +393,15 @@ void TouchScreen::loop() {
 
             if (direct == TDS_REQUEST) {
                 uint32_t pressTicks = millis() - touchLongPress;
-                if (pressTicks < BTN_PRESS_TICKS * 2) {
-                    if (pressTicks > 200) { // Érintési zajok kiszűrése 200ms alatt nem lesz STOP
+                if (pressTicks < BTN_PRESS_TICKS * 2) {            // (1000 ms stations)
+                    if (pressTicks > 50) {                         // Érintési zajok kiszűrése 50ms alatt nem lesz STOP
+                        if (config.store.fadeEnabled) {            // Ha be van kapcsolva a FADE CONTROL
+                            if (backlightPlugin.isFadeControl()) { // Első érintésre csak visszadja a fényt
+                                touchLongPress = millis();
+                                return;
+                            }
+                        }
+                        // Serial.println("touchscreen.cpp--> NORMAL CLICK");
                         onBtnClick(EVT_BTNCENTER);
                     }
                 } else {

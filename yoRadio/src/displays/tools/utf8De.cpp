@@ -13,8 +13,6 @@
 //  HU + DE egyben
 // ======================================================================
 
-#ifndef DSP_LCD
-
 char* utf8To(const char* str, bool uppercase)
 {
     static char out[BUFLEN];
@@ -106,23 +104,6 @@ char* utf8To(const char* str, bool uppercase)
 
     return out;
 }
-
-#else
-// ======================================================================
-//  NON-LCD BRANCH → UTF-8 passthrough (HU + DE működik változatlanul)
-// ======================================================================
-char* utf8To(const char* str, bool uppercase)
-{
-    static char out[BUFLEN];
-    strlcpy(out, str, BUFLEN);
-
-    if (uppercase)
-        for (char* p = out; *p; p++)
-            *p = toupper(*p);
-
-    return out;
-}
-#endif
 
 #endif // UTF8TO_COMMON_H
 

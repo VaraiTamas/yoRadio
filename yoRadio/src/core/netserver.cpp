@@ -1,4 +1,5 @@
 //v0.9.693 Módosítva "nameday"
+// clang-format off
 #include "options.h"
 #include "Arduino.h"
 #include <SPIFFS.h>
@@ -311,6 +312,9 @@ bool NetServer::begin(bool quiet) {
   //  MDNS.begin(config.store.mdnsname);
   websocket.onEvent(onWsEvent);
   webserver.addHandler(&websocket);
+  websocket.enable(true);            // mód
+//websocket.setPingInterval(5000);     // 5 mp-enként ping
+//websocket.setPongTimeout(3000);      // 3 mp-en belül válasz kell
 #ifdef USE_DLNA  //DLNA mod
   dlna_worker_start();
 #endif
@@ -432,7 +436,7 @@ void NetServer::processQueue() {
         if (network.status == CONNECTED) {
           //act += F("\"group_system\",");
           APPEND_GROUP("group_system");
-          if (BRIGHTNESS_PIN != 255 || DSP_CAN_FLIPPED || DSP_MODEL == DSP_NOKIA5110 || dbgact) {
+          if (BRIGHTNESS_PIN != 255 || DSP_CAN_FLIPPED || dbgact) {
             APPEND_GROUP("group_display");
           }
 #ifdef USE_NEXTION
@@ -456,9 +460,6 @@ void NetServer::processQueue() {
           }
           if (TS_MODEL != TS_MODEL_UNDEFINED || dbgact) {
             APPEND_GROUP("group_touch");
-          }
-          if (DSP_MODEL == DSP_NOKIA5110) {
-            APPEND_GROUP("group_nokia");
           }
           APPEND_GROUP("group_timezone");
           if (SHOW_WEATHER || dbgact) {
@@ -519,15 +520,34 @@ void NetServer::processQueue() {
         Serial.printf("netserver-> config.store.nameday %d \n", config.store.nameday);
         break;
       case GETSCREEN:
-        sprintf(
-          wsBuf,
-          "{\"flip\":%d,\"inv\":%d,\"nump\":%d,\"tsf\":%d,\"tsd\":%d,\"dspon\":%d,\"br\":%d,\"con\":%d,\"scre\":%d,\"scrt\":%d,\"scrb\":%d,\"scrpe\":%d,"
-          "\"scrpt\":%d,\"scrpb\":%d}",
-          config.store.flipscreen, config.store.invertdisplay, config.store.numplaylist, config.store.fliptouch, config.store.dbgtouch, config.store.dspon,
-          config.store.brightness, config.store.contrast, config.store.screensaverEnabled, config.store.screensaverTimeout, config.store.screensaverBlank,
-          config.store.screensaverPlayingEnabled, config.store.screensaverPlayingTimeout, config.store.screensaverPlayingBlank
-        );
-        break;
+  sprintf(
+    wsBuf,
+    "{\"flip\":%d,\"inv\":%d,\"nump\":%d,\"tsf\":%d,\"tsd\":%d,\"dspon\":%d,"
+    "\"br\":%d,\"con\":%d,"
+    "\"scre\":%d,\"scrt\":%d,\"scrb\":%d,"
+    "\"scrpe\":%d,\"scrpt\":%d,\"scrpb\":%d,"
+    "\"fadeenabled\":%d,\"fadestartdelay\":%d,\"fadetarget\":%d,\"fadestep\":%d"
+    "}",
+    config.store.flipscreen,
+    config.store.invertdisplay,
+    config.store.numplaylist,
+    config.store.fliptouch,
+    config.store.dbgtouch,
+    config.store.dspon,
+    config.store.brightness,
+    config.store.contrast,
+    config.store.screensaverEnabled,
+    config.store.screensaverTimeout,
+    config.store.screensaverBlank,
+    config.store.screensaverPlayingEnabled,
+    config.store.screensaverPlayingTimeout,
+    config.store.screensaverPlayingBlank,
+    config.store.fadeEnabled,
+    config.store.fadeStartDelay,
+    config.store.fadeTarget,
+    config.store.fadeStep
+  );
+  break;
       case GETTIMEZONE:
         sprintf(
           wsBuf, "{\"tzh\":%d,\"tzm\":%d,\"sntp1\":\"%s\",\"sntp2\":\"%s\", \"timeint\":%d,\"timeintrtc\":%d}", config.store.tzHour, config.store.tzMin,
@@ -670,7 +690,28 @@ void NetServer::loop() {
       break;
     default: break;
   }
-  //processQueue();
+  static uint32_t lastPing = 0;
+
+if (millis() - lastPing > 5000) {  // 5 mp
+    lastPing = millis();
+
+    if (websocket.count() > 0) {
+        websocket.textAll("{\"ping\":1}");
+    }
+}
+static uint32_t lastWsActivity = 0;
+
+// ha van kliens, frissítjük az aktivitást
+if (websocket.count() > 0) {
+    lastWsActivity = millis();
+}
+
+// ha 15 mp óta nincs aktivitás → zárjuk
+if (millis() - lastWsActivity > 15000 && websocket.count() > 0) {
+    Serial.println("[WS] Force reconnect");
+    websocket.closeAll();
+}
+
 }
 
 #if IR_PIN != 255

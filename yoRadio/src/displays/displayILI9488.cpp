@@ -1,4 +1,3 @@
-//v0.9.720
 #include "../core/options.h"
 #if DSP_MODEL==DSP_ILI9488 || DSP_MODEL==DSP_ILI9486
 #include "dspcore.h"
