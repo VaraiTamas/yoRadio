@@ -79,37 +79,13 @@ extern IRrecv         irrecv;
 extern decode_results irResults;
 
 void setup() {
-#if IR_PIN != 255    
-    /*----- IR POWER ON filtering which measures the length of the LOW signal in pulse units and
-    only allows the device to continue running if the value is above IR_WAKE_MIN_PULSES.
-    It goes back to sleep if the value is lower. */
-    Serial.println(esp_sleep_get_wakeup_cause());
-    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
-        // Set GPIO mode.
-        rtc_gpio_deinit((gpio_num_t)IR_PIN);
-        pinMode(IR_PIN, INPUT);
-        uint32_t      pulseCount = 0;
-        unsigned long startCheck = millis();
-        while (millis() - startCheck < IR_WAKE_CHECK_TIME) {
-            if (digitalRead(IR_PIN) == LOW) {
-                pulseCount++;
-                delayMicroseconds(100);
-            }
-        }
-        Serial.begin(115200);
-        Serial.print("IR impulses counted in 200ms: ");
-        Serial.println(pulseCount);
-        if (pulseCount < IR_WAKE_MIN_PULSES) { config.doSleepW(); }
-        irrecv.disableIRIn();
-        irResults.value = 0;
-        irResults.command = 0;
-        irResults.decode_type = UNKNOWN;
-        irResults.repeat = false;
-        delay(100);
-        irrecv.enableIRIn();
-    }
-#endif // IR_PIN!=255
     Serial.begin(115200);
+    EEPROM.begin(EEPROM_SIZE);
+#if IR_PIN != 255
+    irQueue = xQueueCreate(4, sizeof(IRCommand));
+    config.eepromRead(EEPROM_START_IR, config.ircodes);
+    irWakeup();
+#endif
 #if (BRIGHTNESS_PIN != 255) // backlight plugin
     Serial.printf("Exists? %p\n", &backlightPlugin);
     backlightPluginInit();
@@ -149,6 +125,8 @@ void setup() {
     clock_tts_setup(); // Módosítás: plussz sor. "clock_tts"
 #endif
     Audio::audio_info_callback = my_audio_info; // "audio_change" audiohandlers.h ban kezelve.
+    pinMode(POWER_LED, OUTPUT);
+    if (POWER_LED != 255) { digitalWrite(POWER_LED, HIGH); }
     pm.on_end_setup();
 }
 

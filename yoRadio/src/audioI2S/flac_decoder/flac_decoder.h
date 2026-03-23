@@ -215,6 +215,8 @@ private:
     bool            m_f_lastMetaDataBlock = false;
     bool            m_f_flacNewMetadataBlockPicture = false;
     bool            m_valid = false;
+    bool            m_continued_page = false;
+    bool            m_f_first_flac_frame = false;
     uint8_t         m_flacPageNr = 0;
     ps_ptr<int64_t> m_samplesBuffer[2];
     uint16_t        m_maxBlocksize = FLAC_MAX_BLOCKSIZE;

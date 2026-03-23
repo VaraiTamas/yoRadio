@@ -11,13 +11,13 @@
 #include "../plugins/backlight/backlight.h"
 
 #if DSP_MODEL == DSP_DUMMY
-    #define DUMMYDISPLAY
+#    define DUMMYDISPLAY
 #endif
 
 CommandHandler cmd;
 
 bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
-    // Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %d \n", command, value, cid);
+    //Serial.printf("commandhandler.cpp--> command: %s, value: %s, cId: %d \n", command, value, cid);
     if (strEquals(command, "start")) {
         // Serial.printf("commandhandler.cpp--> START \n");
         player.sendCommand({PR_PLAY, config.lastStation()});
@@ -348,16 +348,22 @@ bool CommandHandler::exec(const char* command, const char* value, uint8_t cid) {
     }
 
 #if IR_PIN != 255
-    if (strEquals(command, "irbtn")) { // Gombok 0 - 16 --> command: irbtn, value: 0
+    if (strEquals(command, "irbtn")) { // Gombok  value: 0-18 
         config.setIrBtn(atoi(value));
         return true;
     }
-    if (strEquals(command, "chkid")) {  // A három IR bank 0 - 1 - 2 --> command: chkid, value: 1
-        config.irchck = static_cast<uint8_t>(atoi(value));
+    if (strEquals(command, "chkid")) { // A három IR bank chkid, value: 0, 1 vagy 2
+        IRCommand ircmd = {};
+        ircmd.irBankId = static_cast<uint8_t>(atoi(value));
+        ircmd.hasBank = true;
+        ircmd.hasBtnId = false; // Nem szükséges az index átadása, mert a tanulás során már beállításra kerül a config.irBtnId változó.
+        xQueueSend(irQueue, &ircmd, 0);
+        Serial.printf("commandhandler.cpp--> xQueueSend chkid: %d\n", ircmd.irBankId);
         return true;
     }
-    if (strEquals(command, "irclr")) {  // Bank törlés. --> command: irclr, value: 2
-        config.ircodes.irVals[config.irindex][static_cast<uint8_t>(atoi(value))] = 0;
+    if (strEquals(command, "irclr")) { // Bank törlés. --> command: irclr
+        config.ircodes.irVals[config.irBtnId][static_cast<uint8_t>(atoi(value))] = 0;
+        Serial.printf("commandhandler.cpp--> Bank törlés--> config.irBtnId: %d, chkid: %d\n", config.irBtnId, static_cast<uint8_t>(atoi(value)));
         return true;
     }
 #endif

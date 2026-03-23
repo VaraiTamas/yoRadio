@@ -720,14 +720,15 @@ void NetServer::irToWs(const char *protocol, uint64_t irvalue) {
   sprintf(wsBuf, "{\"ircode\": %llu, \"protocol\": \"%s\"}", irvalue, protocol);
   websocket.textAll(wsBuf);
 }
+
 void NetServer::irValsToWs() {
   if (!irRecordEnable) {
     return;
   }
   wsBuf[0] = '\0';
   sprintf(
-    wsBuf, "{\"irvals\": [%llu, %llu, %llu]}", config.ircodes.irVals[config.irindex][0], config.ircodes.irVals[config.irindex][1],
-    config.ircodes.irVals[config.irindex][2]
+    wsBuf, "{\"irvals\": [%llu, %llu, %llu]}", config.ircodes.irVals[config.irBtnId][0], config.ircodes.irVals[config.irBtnId][1],
+    config.ircodes.irVals[config.irBtnId][2]
   );
   websocket.textAll(wsBuf);
 }
