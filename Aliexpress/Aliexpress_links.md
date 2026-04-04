@@ -37,7 +37,7 @@ https://www.aliexpress.com/item/1005005407437987.html
 https://www.aliexpress.com/item/1005008621695365.html
 
 - 10PCS Single Row Pin Female Header Socket Pitch 2.54mm 22p Pin Connector  
-https://www.aliexpress.com/item/1005007563546219.html
+https://www.aliexpress.com/item/1005003335405213.html
 
 - 230 PCS 2/3/4/5p 2.54mm Male and Female Pin Terminal Kit Housing Pin Header JST XH-2.54 4Value Connectors Adaptor 
 https://www.aliexpress.com/item/1005009454589816.html 
