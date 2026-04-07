@@ -1,12 +1,14 @@
 // Módosítva. "vol_step"
 #include "Arduino.h"
 #include "options.h"
-#include "controls.h"
 #include "config.h"
+#include "controls.h"
+
 #include "player.h"
 #include "display.h"
 #include "network.h"
 #include "netserver.h"
+#include "driver/rtc_io.h"
 #include "../pluginsManager/pluginsManager.h"
 
 long encOldPosition = 0;
@@ -283,8 +285,68 @@ void irNumber(uint8_t num) {
     display.putRequest(NEXTSTATION, s);
 }
 
-bool isIrPowerCode(uint64_t code) {
+void irBackspace() {
+    uint16_t s = display.numOfNextStation;
+    if (s == 0) {
+        display.putRequest(NEWMODE, PLAYER);
+        return;
+    }
+    s = s / 10;
+    display.numOfNextStation = s;
+    display.putRequest(NEWMODE, NUMBERS);
+    if (s > 0) {
+        display.putRequest(NEXTSTATION, s);
+    } else {
+        display.putRequest(NEXTSTATION, 0);
+    }
+}
+/*----- IR wake-up, SETUP() hívja, ha nem POWER kód, akkor visszaaltat. -----*/
+void irWakeup() {
+    auto wake = esp_sleep_get_wakeup_cause();
+    if (wake == ESP_SLEEP_WAKEUP_EXT1) {
+        uint64_t mask = esp_sleep_get_ext1_wakeup_status();
+        if (mask & (1ULL << IR_PIN)) {
+            Serial.println("IR wake → waiting for POWER code");
+            rtc_gpio_deinit((gpio_num_t)IR_PIN); // RTC to GPIO
+            pinMode(IR_PIN, INPUT);
+            irrecv.enableIRIn();
+            bool          valid = false;
+            unsigned long start = millis();
+            unsigned long timeout = 800; // alap ablak
+            while (millis() - start < timeout) {
+                if (irrecv.decode(&irResults)) {
+                    uint32_t code = irResults.value;
+                    // repeat → csak idő hosszabbítás
+                    if (code == 0xFFFFFFFF) {
+                        timeout = 800;
+                        irrecv.resume();
+                        continue;
+                    }
+                    // csak valódi kódokat vizsgálunk
+                    if (isIrPowerCode(code)) {
+                        Serial.printf("POWER: 0x%lX\n", code);
+                        valid = true;
+                        break;
+                    } else {
+                        Serial.printf("Not POWER: 0x%lX\n", code);
+                    }
+                }
+            }
+            if (!valid) {
+                Serial.println("No POWER → sleep again");
+                Serial.flush();
+                delay(20);
+                config.doSleepW();
+            }
+            Serial.println("POWER → starting up");
+        }
+    }
+}
+
+/*----- Összehasonlít a 3 tárolt POWER kóddal -----*/
+bool isIrPowerCode(uint32_t code) {
     for (int i = 0; i < 3; i++) {
+        Serial.printf("Stored[%d]: 0x%08lX\n", i, (uint32_t)config.ircodes.irVals[IR_POWER][i]);
         if (config.ircodes.irVals[IR_POWER][i] == code) { return true; }
     }
     return false;
@@ -292,11 +354,24 @@ bool isIrPowerCode(uint64_t code) {
 
 void irLoop() {
     if (irrecv.decode(&irResults)) {
-        if (irResults.value < 256) return;
+        if (irResults.value < 256) { return; }
         if (netserver.irRecordEnable) {
+            IRCommand ircmd;
+            while (xQueueReceive(irQueue, &ircmd, 0)) {
+                if (ircmd.hasBtnId) {
+                    config.irBtnId = ircmd.irBtnId;
+                    Serial.printf("controls.cpp--> irLoop--> xQueueReceive: update config.irBtnId: %d \n", config.irBtnId);
+                }
+                if (ircmd.hasBank) {
+                    config.irBankId = ircmd.irBankId;
+                    Serial.printf("controls.cpp--> irLoop--> xQueueReceive: update config.irBankId: %d \n", config.irBankId);
+                }
+            }
             Serial.print(resultToHumanReadableBasic(&irResults));
-            Serial.println("--------------------------");
-            config.ircodes.irVals[config.irindex][config.irchck] = irResults.value;
+            Serial.println("-------------------------------");
+            config.ircodes.irVals[config.irBtnId][config.irBankId] = irResults.value;
+            // Serial.printf("irLoop run on core: %d\n", xPortGetCoreID());
+            Serial.printf("controls.cpp-->irLoop--> irResults.value: %08llX, config.irBtnId: %d, config.irBankId: %d\n\n", irResults.value, config.irBtnId, config.irBankId);
             netserver.irToWs(typeToString(irResults.decode_type, irResults.repeat).c_str(), irResults.value);
             return;
         }
@@ -312,6 +387,7 @@ void irLoop() {
         }
         for (int target = 0; target < 19; target++) {
             for (int j = 0; j < 3; j++) {
+                // Serial.printf("Comparing with target %d, slot %d: 0x%08lX == 0x%08lX\n", target, j, (uint32_t)config.ircodes.irVals[target][j], (uint32_t)irResults.value);
                 if (config.ircodes.irVals[target][j] == irResults.value) {
                     if (network.status != CONNECTED && network.status != SDREADY && target != IR_MODE) return;
                     if (target != IR_MODE && display.mode() == LOST) return;
@@ -337,7 +413,8 @@ void irLoop() {
                             break;
                         }
                         case IR_BACK: {
-                            display.putRequest(NEWMODE, PLAYER);
+                            if (display.mode() == STATIONS) display.putRequest(NEWMODE, PLAYER);
+                            if (display.mode() == NUMBERS) irBackspace();
                             break;
                         }
                         case IR_PREV: {
@@ -378,7 +455,6 @@ void irLoop() {
                             break;
                         }
                         case IR_MODE: {
-                            // ESP.restart();
                             onBtnClick(EVT_BTNMODE);
                             break;
                         }

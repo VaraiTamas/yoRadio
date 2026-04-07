@@ -31,7 +31,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 #define USE_BUILTIN_LED false /* The RGB LED does not turn on.. */
 
 /* Arduino OTA Support */
-// #define USE_OTA true                    /* Enable OTA updates from Arduino IDE */
+ #define USE_OTA true                    /* Enable OTA updates from Arduino IDE */
 // #define OTA_PASS "myotapassword12345"   /* OTA password for secure updates */
 
 /* HTTP Authentication */
@@ -100,7 +100,7 @@ Supported languages: HU, PL, NL, GR, DE (UA Local/namedays/namedays_UA.h is not 
 /*----- REMOTE CONTROL INFRARED RECEIVER -----*/
 /*----- Alvásból ébresztéshez a GPIO 2 -őt kell használni, mert a GPIO 38 nem RTC pin. A PCB-n át kell kötni! -----*/
 /*----- To wake from sleep, you must use GPIO 2, because GPIO 38 is not an RTC pin. It must be connected via the PCB! -----*/
- #define IR_PIN 2  //38
+// #define IR_PIN 2  //38
 
 /*----- SD CARD -----*/
 // #define SDC_CS     18
@@ -181,25 +181,27 @@ When music is not playing (stopped or volume is 0), the pin is set to LOW. This 
 /*----- by Karol Wysocki -----*/  
 /*----- Letíltja az encoder gomb másodlagos funkcióját. Csak két encoder esetén használd! -----*/
 /*----- Disables the secondary function of the encoder button. Use only if you have two encoders! -----*/
-//#define ENCODERS_INDEPENDENT
+#define ENCODERS_INDEPENDENT
 
 /*----- Ha ez definiálva van a rádió indításakor, mindig az első csatorna lesz beállítva. -----*/
 /*----- If this is defined at radio startup, the first channel will always be set. -----*/
 //#define ALWAYS_START_FROM_FIRST
 
 /*----- Sleep functions -----*/
-/*----- A WAKE_PIN helyett mostantól két pin állítható be az ébresztéshez: WAKE_PIN1 és WAKE_PIN2 -----*
+/*----- A WAKE_PIN helyett mostantól két pin állítható be az ébresztéshez: WAKE_PIN1 és WAKE_PIN2 -----*/
 /*----- Így távirányítóval és egy másik gombbal is felébreszthető az eszköz. -----*/
 /*----- Instead of WAKE_PIN, you can now set two pins for wake-up: WAKE_PIN1 and WAKE_PIN2 -----*/
 /*----- This way, you can wake up the device with a remote control and another button. -----*/
- // #define BTN_MODE ENC_BTNB
- // #define WAKE_PIN1 IR_PIN
- // #define WAKE_PIN2 ENC2_BTNB
+// #define BTN_MODE ENC_BTNB
+//  #define WAKE_PIN1 IR_PIN
+// #define WAKE_PIN2 ENC2_BTNB
 
 /*----- by Zsolt Simon -----*/
 /*----- Tested on Synology NAS ----- */
 // #define USE_DLNA
 // #define dlnaHost "192.168.1.200"
 // #define dlnaIDX  21
+
+//#define POWER_LED 38      // Button LED pin (will be turned on when player is on)
 
 #endif // myoptions_h

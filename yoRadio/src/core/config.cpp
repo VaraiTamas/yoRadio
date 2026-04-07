@@ -26,6 +26,9 @@
 #endif
 
 Config config;
+#if IR_PIN != 255
+QueueHandle_t irQueue = nullptr;
+#endif
 
 void u8fix(char* src) { // Ha az utolsó tőbbájtos karakter (ékezetes) utolsó bájtja hiányzik akkor az elejét levágja.
     char last = src[strlen(src) - 1];
@@ -54,7 +57,7 @@ bool Config::_isFSempty() {
 }
 
 void Config::init() {
-    EEPROM.begin(EEPROM_SIZE);
+    // EEPROM.begin(EEPROM_SIZE);
     sdResumePos = 0;
     /*----- I2C init -----*/
 #if (RTC_MODULE == DS3231) || (TS_MODEL == TS_MODEL_FT6X36) || (TS_MODEL == TS_MODEL_GT911)
@@ -90,7 +93,7 @@ void Config::init() {
 #endif
     emptyFS = true;
 #if IR_PIN != 255
-    irindex = -1;
+    irBtnId = -1;
 #endif
 #if defined(SD_SPIPINS) || SD_HSPI
 #    if !defined(SD_SPIPINS)
@@ -408,10 +411,6 @@ void Config::_initHW() {
     loadTheme();
 #if IR_PIN != 255
     eepromRead(EEPROM_START_IR, ircodes);
-    if (ircodes.ir_set != 4224) {
-        ircodes.ir_set = 4224;
-        memset(ircodes.irVals, 0, sizeof(ircodes.irVals));
-    }
 #endif
 #if BRIGHTNESS_PIN != 255
     pinMode(BRIGHTNESS_PIN, OUTPUT);
@@ -528,13 +527,25 @@ void Config::setWeatherKey(const char* val) {
 
 #if IR_PIN != 255
 void Config::setIrBtn(int val) {
-    irindex = val;
-    netserver.irRecordEnable = (irindex >= 0);
-    irchck = 0;
-    netserver.irValsToWs();
-    if (irindex < 0) { saveIR(); }
+    irBtnId = val;
+    netserver.irRecordEnable = (irBtnId >= 0);
+    irBankId = 0;
+    netserver.irValsToWs(); // kiküldi a három mentett gombot a webszervernek
+    IRCommand ircmd;
+    if (val >= 0) {
+        ircmd.irBtnId = val;   // a gombhoz tartozó index, -1 a mentéséshez
+        ircmd.hasBtnId = true; // mentés engedélyezése
+        ircmd.irBankId = 0;    // 0, 1, 2
+        ircmd.hasBank = true;  // mentés engedélyezése
+        xQueueSend(irQueue, &ircmd, 0);
+        Serial.printf("config.cpp--> setIrBtn--> xQueueSend\n");
+    } else {
+        saveIR();
+        Serial.println("config.cpp--> setIrBtn--> val: -1 (save)");
+    }
 }
 #endif
+
 void Config::resetSystem(const char* val, uint8_t clientId) {
     BOOTLOG("***************** RESET SYSTEM *****************");
     if (strcmp(val, "system") == 0) {
@@ -717,6 +728,7 @@ void Config::setSnuffle(bool sn) {
 #if IR_PIN != 255
 void Config::saveIR() {
     eepromWrite(EEPROM_START_IR, ircodes);
+    Serial.println("IR codes saved to EEPROM");
 }
 #endif
 
@@ -1147,16 +1159,20 @@ void Config::doSleep() {
     nextion.sleep();
 #endif
     uint64_t mask = 0;
-    if (WAKE_PIN1 != 255) {
+#if WAKE_PIN1 >= 0 && WAKE_PIN1 < 64
+    if (rtc_gpio_is_valid_gpio((gpio_num_t)WAKE_PIN1)) {
         rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN1);
         rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN1);
         mask |= (1ULL << WAKE_PIN1);
     }
-    if (WAKE_PIN2 != 255) {
+#endif
+#if WAKE_PIN2 >= 0 && WAKE_PIN2 < 64
+    if (rtc_gpio_is_valid_gpio((gpio_num_t)WAKE_PIN2)) {
         rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN2);
         rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN2);
         mask |= (1ULL << WAKE_PIN2);
     }
+#endif
     if (mask != 0) { esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW); }
     esp_sleep_enable_timer_wakeup(config.sleepfor * 60ULL * 1000000ULL);
     esp_deep_sleep_start();
@@ -1168,16 +1184,20 @@ void Config::doSleepW() {
     nextion.sleep();
 #endif
     uint64_t mask = 0;
-    if (WAKE_PIN1 != 255) {
+#if WAKE_PIN1 >= 0 && WAKE_PIN1 < 64
+    if (rtc_gpio_is_valid_gpio((gpio_num_t)WAKE_PIN1)) {
         rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN1);
         rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN1);
         mask |= (1ULL << WAKE_PIN1);
     }
-    if (WAKE_PIN2 != 255) {
+#endif
+#if WAKE_PIN2 >= 0 && WAKE_PIN2 < 64
+    if (rtc_gpio_is_valid_gpio((gpio_num_t)WAKE_PIN2)) {
         rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN2);
         rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN2);
         mask |= (1ULL << WAKE_PIN2);
     }
+#endif
     delay(200);
     if (mask != 0) { esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW); }
     esp_deep_sleep_start();
@@ -1259,4 +1279,3 @@ void Config::bootInfo() {
     BOOTLOG("Free PSRAM : %10s byte", fmtThousands(ESP.getFreePsram()));
     BOOTLOG("------------------------------------------------");
 }
-

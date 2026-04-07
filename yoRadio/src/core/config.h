@@ -12,7 +12,7 @@
 #define EEPROM_START_IR 0
 #define EEPROM_START_2  10
 #ifndef BUFLEN
-    #define BUFLEN 170
+#    define BUFLEN 170
 #endif
 #define PLAYLIST_PATH "/data/playlist.csv"
 #define SSIDS_PATH    "/data/wifi.csv"
@@ -22,15 +22,15 @@
 #define PLAYLIST_SD_PATH "/data/playlistsd.csv"
 #define INDEX_SD_PATH    "/data/indexsd.dat"
 #ifdef USE_DLNA                                          // DLNA mod
-    #define PLAYLIST_DLNA_PATH "/data/playlist_dlna.csv" // DLNA mod
-    #define INDEX_DLNA_PATH    "/data/indexdlna.dat"     // DLNA mod
+#    define PLAYLIST_DLNA_PATH "/data/playlist_dlna.csv" // DLNA mod
+#    define INDEX_DLNA_PATH    "/data/indexdlna.dat"     // DLNA mod
 
-    #define REAL_PLAYL (config.getMode() == PM_SDCARD ? PLAYLIST_SD_PATH : config.store.playlistSource == PL_SRC_DLNA ? PLAYLIST_DLNA_PATH : PLAYLIST_PATH)
+#    define REAL_PLAYL (config.getMode() == PM_SDCARD ? PLAYLIST_SD_PATH : config.store.playlistSource == PL_SRC_DLNA ? PLAYLIST_DLNA_PATH : PLAYLIST_PATH)
 
-    #define REAL_INDEX (config.getMode() == PM_SDCARD ? INDEX_SD_PATH : config.store.playlistSource == PL_SRC_DLNA ? INDEX_DLNA_PATH : INDEX_PATH)
+#    define REAL_INDEX (config.getMode() == PM_SDCARD ? INDEX_SD_PATH : config.store.playlistSource == PL_SRC_DLNA ? INDEX_DLNA_PATH : INDEX_PATH)
 #else
-    #define REAL_PLAYL (config.getMode() == PM_WEB ? PLAYLIST_PATH : PLAYLIST_SD_PATH)
-    #define REAL_INDEX (config.getMode() == PM_WEB ? INDEX_PATH : INDEX_SD_PATH)
+#    define REAL_PLAYL (config.getMode() == PM_WEB ? PLAYLIST_PATH : PLAYLIST_SD_PATH)
+#    define REAL_INDEX (config.getMode() == PM_WEB ? INDEX_PATH : INDEX_SD_PATH)
 #endif
 
 #define MAX_PLAY_MODE     1
@@ -38,7 +38,7 @@
 #define MDNS_LENGTH       24
 
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-    #define ESP_ARDUINO_3 1
+#    define ESP_ARDUINO_3 1
 #endif
 
 #define CONFIG_VERSION 8
@@ -48,9 +48,11 @@ enum playMode_e : uint8_t { // DLNA mod
     PM_SDCARD = 1,
 };
 
+#if IR_PIN != 255
+extern QueueHandle_t irQueue;
+#endif
 
 enum PlaylistSource : uint8_t { PL_SRC_WEB = 0, PL_SRC_DLNA = 1 };
-
 
 void u8fix(char* src);
 
@@ -168,17 +170,22 @@ struct config_t {
     uint16_t fadeStartDelay;
     uint8_t  fadeTarget;
     uint8_t  fadeStep;
- // DLNA mod
+    // DLNA mod
     uint8_t playlistSource;
     void    indexDLNAPlaylist();
     uint8_t lastPlayedSource;
-
 };
 
 #if IR_PIN != 255
+struct IRCommand {
+    int irBtnId;
+    int irBankId;
+    bool hasBtnId;
+    bool hasBank;
+};
+
 struct ircodes_t {
-    unsigned int ir_set; // must be 4224
-    uint64_t     irVals[20][3];
+    uint64_t irVals[20][3];
 };
 #endif
 
@@ -217,8 +224,8 @@ class Config {
     station_t station;
     theme_t   theme;
 #if IR_PIN != 255
-    int       irindex;
-    uint8_t   irchck;
+    int       irBtnId;
+    uint8_t   irBankId;
     ircodes_t ircodes;
 #endif
     BitrateFormat configFmt = BF_UNKNOWN;

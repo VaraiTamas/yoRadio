@@ -30,7 +30,9 @@ void onBtnLongPressStop(int id);
 void setIRTolerance(uint8_t tl);
 void setEncAcceleration(uint16_t acc);
 void flipTS();
-
+void irWakeup();
+bool isIrPowerCode(uint32_t code) ;
+void irBackspace();
 extern __attribute__((weak)) void ctrls_on_loop();
 
 #endif

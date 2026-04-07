@@ -50,9 +50,7 @@ struct ID3Hdr_t { // used only in readID3header()
     bool                  byteOrderMark = {};
     ps_ptr<char>          iBuff;
 
-    void reset() {
-        *this = ID3Hdr_t{};
-    }
+    void reset() { *this = ID3Hdr_t{}; }
 };
 
 struct pwsHLS_t { // used in processWebStreamHLS()
@@ -115,24 +113,18 @@ struct m4aHdr_t { // used in read_M4A_Header
     uint8_t  aac_profile;
     uint32_t stsz_num_entries;
     uint32_t stsz_table_pos;
+    uint32_t ilst_already_consumed;
     bool     progressive; // Progressive (moov before mdat)
     bool     version_flags;
     bool     mdat_seen;
 };
 
 struct plCh_t { // used in playChunk
-    int32_t   validSamples;
-    int32_t   samples48K = 0;
     uint32_t  count = 0;
     size_t    i2s_bytesConsumed;
     uint16_t  samples;
     int16_t*  sample[2];
-    int32_t*  sample1;
-    int16_t*  s16;
-    int32_t*  s32;
-    int       sampleSize;
     esp_err_t err;
-    int       i;
 };
 
 struct lVar_t { // used in loop
@@ -175,16 +167,8 @@ typedef struct _cat { // used in calculateAudioTime
     uint32_t brCounter{};
     bool     firstCall{};
 
-    void reset() {
-        *this = _cat{};
-    }
+    void reset() { *this = _cat{}; }
 } cat_t;
-
-struct cVUl_t { // used in computeVUlevel
-    uint8_t sampleArray[2][4][8] = {0};
-    uint8_t cnt0 = 0, cnt1 = 0, cnt2 = 0, cnt3 = 0, cnt4 = 0;
-    bool    f_vu = false;
-};
 
 struct ifCh_t { // used in IIR_filterChain0, 1, 2
     // s16
@@ -228,6 +212,7 @@ struct pwst_t { // used in processWebStream
     bool     f_skipCRLF = false;
     uint32_t availableBytes;
     bool     f_clientIsConnected;
+    uint32_t writeSpace = 0;
     uint16_t readedBytes;
 };
 
@@ -350,6 +335,90 @@ struct sdet_t { // used in streamDetection
 struct fnsy_t { // used in findNextSync
     int      nextSync = 0;
     uint32_t swnf = 0;
+};
+
+struct audioItems_t {
+    float    gain_ls_db = 0.0;   // lowshelf
+    float    gain_peq_db = 0.0;  // peakingEQ
+    float    gain_hs_db = 0.0;   // highshelf
+    float    pre_gain = 0.0;     // correction factor for level adjustment
+    float    coeffs[3][5] = {0};
+    float    state_biquad[3][4] = {0};
+    uint8_t  volume = 0;
+    uint8_t  volume_steps = 21;
+    float    cur_volume = 0.0f;
+    float    limiter[2] = {0};
+    float    balance = 0.0f; // -16.0 dB left ... 0 ... -16 db right
+    bool     mute = false;
+};
+
+#define DMA_DESC_NUM  16  // number of I2S DMA buffer
+#define DMA_FRAME_NUM 192 // number of frames in one DMA buffer
+struct i2s_items_t {
+    uint16_t DESC_NUM = DMA_DESC_NUM;
+    uint16_t FRAME_NUM = DMA_FRAME_NUM;
+    uint8_t  i2s_num = 0;
+    uint32_t sampleRate = 48000;
+    bool     commFMT = false;
+};
+
+struct vu_items_t {
+    const uint16_t  DELAY_BUFFER_SIZE = DMA_DESC_NUM * DMA_FRAME_NUM; // Runtime in I2S-DMA
+    ps_ptr<int32_t> delay_l;
+    ps_ptr<int32_t> delay_r;
+    uint16_t        delay_line_index = 0;
+    float           left = 0;  // average value of samples, left channel
+    float           right = 0; // average value of samples, right channel
+    uint8_t         left_peak = 0;
+    uint8_t         right_peak = 0;
+    uint16_t        left_hold = 0;
+    uint16_t        right_hold = 0;
+};
+
+#define FFT_BANDS 6
+#define FFT_SIZE  256
+struct fft_items_t {
+    const uint16_t SIZE = FFT_SIZE;
+    const uint16_t BANDS = FFT_BANDS;
+    ps_ptr<float>  buffer; // FFT input (real)
+    ps_ptr<float>  window; // FFT window
+    uint16_t       buffer_index = 0;
+    uint16_t       pos = 0;
+    bool           initialized = false;          // FFT state
+    float          spec_smooth[FFT_BANDS] = {0}; // smoothing
+    uint32_t       last_ms = 0;                  // timing (10 Hz)
+    float          gain = 1.0f;                  // AGC in process()
+    bool           lr_switch = false;            // start/stop
+    ps_ptr<float>  work;                         // FFT work buffer (complex interleaved)
+    uint8_t        spectrum[FFT_BANDS] = {0};    // output
+};
+
+struct Biquad {
+    int64_t z1 = 0;
+    int64_t z2 = 0;
+};
+
+struct BiquadCoeffs {
+    int64_t b0;
+    int64_t b1;
+    int64_t b2;
+    int64_t a1;
+    int64_t a2;
+};
+
+struct resampler_t {
+    static constexpr size_t MAX_IN_FRAMES = 4608;
+    static constexpr size_t MAX_OUT_FRAMES = 10500;
+    uint64_t                phase = 0;
+    uint64_t                phaseStep = 0;
+    Biquad                  lpLeft;
+    Biquad                  lpRight;
+    uint32_t                outFrames = 0;
+    BiquadCoeffs            g_lpCoeffs;
+    // Condition for continuous interpolation between frames
+    int32_t lastL = 0;  // Last left sample from previous frame
+    int32_t lastR = 0;  // Last right sample from previous frame
+    bool hasLast = false;  // First frame has no “last”
 };
 
 } // namespace audiolib

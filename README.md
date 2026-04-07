@@ -114,6 +114,10 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
    - 3D nyomtatási terv --> https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
 
 ## Version history:  
+### v0.8.8
+- Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.5h (2026. marc 18.) frissítés.
+- Távirányító deep sleep módból ébresztés más távirányítókra is felébredt ezért mostantól a POWER gombot kétszer kell megnyomni az ébresztéshez.
+- A távirányító BACK gombjával mostantól a csatornaszám beírásakor lehet visszatörölni egy karaktert, ha elrontottuk.
 ### v0.8.7  
 - Teljesen átdolgozott távirányító-vezérlés, a tanításnál egyértelmű jelölésekkel.  
    A WEB UI- on frissíteni kell az alábbi fájlokat:   
