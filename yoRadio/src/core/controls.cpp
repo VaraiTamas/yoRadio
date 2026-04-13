@@ -382,6 +382,8 @@ void irLoop() {
 
                 case 2: controlsEvent(display.mode() == STATIONS ? true : false); break;
             }
+            irrecv.resume(); // ← add (MB)
+            return;          // ← add (MB)
         } else {
             irVolRepeat = 0;
         }
