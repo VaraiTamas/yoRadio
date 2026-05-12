@@ -72,7 +72,7 @@ Más verziókkal nem kompatibilisek, és hibát vagy instabilitást okozhatnak.
 3. **Készíts biztonsági másolatot** az eredeti fájlokról:
 - `libesp_netif.a`
 - `liblwip.a`
-4. Másold be a **javított** `.a` fájlokat ESP32S3 core a [Lib_tools\esp32s3_IDF_5_5_2_core_3_3_7.zip](esp32s3_IDF5_5_2_core3_3_7.zip)  fájlból
+4. Másold be a **javított** `.a` fájlokat ESP32S3 core a [Lib_tools\esp32s3_IDF_5_5_2_core_3_3_7.zip](esp32s3_IDF_5_5_2_core_3_3_7.zip)  fájlból
 5. Indítsd újra az Arduino IDE-t.
 6. Fordítsd újra a projektet.
 
