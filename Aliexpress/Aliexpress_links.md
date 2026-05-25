@@ -21,16 +21,18 @@ https://www.aliexpress.com/item/1005007789737257.html
 - Interface I2S PCM5102A DAC Decoder GY-PCM5102 I2S Player Module For Raspberry Pi pHAT Format Board Digital PCM5102 Audio Board
 https://www.aliexpress.com/item/1005006104038963.html
 
-## Forgás jeladó / Rotary Encoder
+## Kapcsolók / Switches
+- 16mm- es nyomó kapcsoló (ON - OFF) 110 - 220V (LED 3.3V), világító jelzőfénnyel / 16mm Push Button Switch (ON - OFF) 110 - 220V (LED 3.3V), with indicator light  
+https://www.aliexpress.com/item/1005009195056493.html
 
+
+## Forgás jeladó / Rotary Encoder
 - EC11 Rotary Encoder Module with Knob Cap, 5V Push Button Switch for Arduino KY-040, 360° Rotation Sensor Development Board
 https://www.aliexpress.com/item/1005009722549311.html
 
 ## Infra vevő szenzor / IR sensor
 - VS1838B IR sensor     
 https://www.aliexpress.com/item/1005005407437987.html
-
-
 
 ## Csatlakozók / Connectors
 - 4PCS RCA Female Socket Lotus Connector Chassis Panel Mount Adapter Audio Terminal Plug 3.5mm AV Plug Gold Plated
@@ -69,8 +71,6 @@ https://www.aliexpress.com/item/1005008473117765.html
 - 48 x 15 mm-es 4Pcs Speaker Spikes Stand Feets Audio Active Speakers Repair Parts Accessories DIY For Home Theater Sound System
 https://www.aliexpress.com/item/1005006345065523.html
 
-- 16mm Metal Illuminated Black Push Button Switch Led Light 5v Momentary Latching Waterproof Power Flat Head
-https://www.aliexpress.com/item/1005009195056493.html
 
 ## USB Bluetooth Transmiter
 - KN330 3 in 1 Bluetooth 5.0 Transmitter Receiver USB EDR Adapter Dongle 3.5mm AUX RCA for TV PC Headphones Home Stereo Car HIFI  
