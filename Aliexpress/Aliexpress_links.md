@@ -14,7 +14,11 @@ https://www.aliexpress.com/item/1005006287831546.html
 
 - IPS CTP 3.5 Inch SPI Red ILI9488 14 pin Full View Angle 480*320   
 (I2C capacitive touch FT6236)   
-https://www.aliexpress.com/item/1005007789737257.html   
+https://www.aliexpress.com/item/1005007789737257.html 
+
+- 3.5 Inch IPS LCD Display Module 480x320 Capacitive Touch Screen ST7796 TFT SPI LCD Module     
+(I2C capacitive touch FT6236)     
+https://www.aliexpress.com/item/1005008145696005.html
 
 ## Digital/Analog Converter (DAC)
 
@@ -62,8 +66,8 @@ https://www.aliexpress.com/item/10000159007917.html
 - 4PCS Audio Isolation Feet 40*10mm Plastic Amplifier Feet Speaker Pad CD DAC Speakers Shock Absorption Feet Pad
 https://www.aliexpress.com/item/1005007017368257.html
 
-- CPQ For TAA 125V/15A 250V/10A 12mm Thread Screw Cap Panel Mounted Fuse Holders 5 Pieces 2025
-https://www.aliexpress.com/item/1005009550935137.html
+- 5x20 MM Automobile Fuse Holder Socket Insurance Tube Socket 10A 250V AC 15A 125V AC For 5*20mm Panel
+https://www.aliexpress.com/item/1005004872430120.html
 
 - 25 x 13mm Black aluminum knob encoder sound card potentiometer inner hole 6mm knob volume power amplifier adjustment metal cap
 https://www.aliexpress.com/item/1005008473117765.html
