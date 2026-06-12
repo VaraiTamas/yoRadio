@@ -14,23 +14,29 @@ https://www.aliexpress.com/item/1005006287831546.html
 
 - IPS CTP 3.5 Inch SPI Red ILI9488 14 pin Full View Angle 480*320   
 (I2C capacitive touch FT6236)   
-https://www.aliexpress.com/item/1005007789737257.html   
+https://www.aliexpress.com/item/1005007789737257.html 
+
+- 3.5 Inch IPS LCD Display Module 480x320 Capacitive Touch Screen ST7796 TFT SPI LCD Module     
+(I2C capacitive touch FT6236)     
+https://www.aliexpress.com/item/1005008145696005.html
 
 ## Digital/Analog Converter (DAC)
 
 - Interface I2S PCM5102A DAC Decoder GY-PCM5102 I2S Player Module For Raspberry Pi pHAT Format Board Digital PCM5102 Audio Board
 https://www.aliexpress.com/item/1005006104038963.html
 
-## Forgás jeladó / Rotary Encoder
+## Kapcsolók / Switches
+- 16mm- es nyomó kapcsoló (ON - OFF) 110 - 220V (LED 3.3V), világító jelzőfénnyel / 16mm Push Button Switch (ON - OFF) 110 - 220V (LED 3.3V), with indicator light  
+https://www.aliexpress.com/item/1005009195056493.html
 
+
+## Forgás jeladó / Rotary Encoder
 - EC11 Rotary Encoder Module with Knob Cap, 5V Push Button Switch for Arduino KY-040, 360° Rotation Sensor Development Board
 https://www.aliexpress.com/item/1005009722549311.html
 
 ## Infra vevő szenzor / IR sensor
 - VS1838B IR sensor     
 https://www.aliexpress.com/item/1005005407437987.html
-
-
 
 ## Csatlakozók / Connectors
 - 4PCS RCA Female Socket Lotus Connector Chassis Panel Mount Adapter Audio Terminal Plug 3.5mm AV Plug Gold Plated
@@ -60,8 +66,8 @@ https://www.aliexpress.com/item/10000159007917.html
 - 4PCS Audio Isolation Feet 40*10mm Plastic Amplifier Feet Speaker Pad CD DAC Speakers Shock Absorption Feet Pad
 https://www.aliexpress.com/item/1005007017368257.html
 
-- CPQ For TAA 125V/15A 250V/10A 12mm Thread Screw Cap Panel Mounted Fuse Holders 5 Pieces 2025
-https://www.aliexpress.com/item/1005009550935137.html
+- 5x20 MM Automobile Fuse Holder Socket Insurance Tube Socket 10A 250V AC 15A 125V AC For 5*20mm Panel
+https://www.aliexpress.com/item/1005004872430120.html
 
 - 25 x 13mm Black aluminum knob encoder sound card potentiometer inner hole 6mm knob volume power amplifier adjustment metal cap
 https://www.aliexpress.com/item/1005008473117765.html
@@ -69,8 +75,6 @@ https://www.aliexpress.com/item/1005008473117765.html
 - 48 x 15 mm-es 4Pcs Speaker Spikes Stand Feets Audio Active Speakers Repair Parts Accessories DIY For Home Theater Sound System
 https://www.aliexpress.com/item/1005006345065523.html
 
-- 16mm Metal Illuminated Black Push Button Switch Led Light 5v Momentary Latching Waterproof Power Flat Head
-https://www.aliexpress.com/item/1005009195056493.html
 
 ## USB Bluetooth Transmiter
 - KN330 3 in 1 Bluetooth 5.0 Transmitter Receiver USB EDR Adapter Dongle 3.5mm AUX RCA for TV PC Headphones Home Stereo Car HIFI  

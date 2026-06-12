@@ -1,4 +1,4 @@
-# Nyomtatott áramkör – verzió: 2025.06.14
+# Nyomtatott áramkör – verzió: 2025.06.14 (elavult)
 
 - **PCB mérete:** 99 × 90 mm
 - **SMD alkatrészek mérete:** 1206
@@ -96,9 +96,7 @@ Ajánlás: csak az 5V_ESP32 ágat zárd
 
 - Flash-elési útmutató:  
   https://github.com/e2002/yoradio/wiki/How-to-flash
-
-
-### Ez a PCB verzió legyártható 2 EURO / 5 darab áráért a [jlcpcb.com](https://jlcpcb.com/?from=AMOSWLDYVIS) oldalon a [yoradio_gerber.zip](../../PCB/PCB_2025_06_14/yoradio_gerber.zip)   fájl feltöltésével.     
+   
 
 ![PCB front](2D_top_99x90mm.jpg)<br><br>
 ![PCB back](2D_bottom_99x90mm.jpg)<br><br>
