@@ -27,5 +27,9 @@ Van ID, de nincs név vagy URL program automatikusan:
 
 - Nem engedi, hogy „láthatatlan” preset maradjon
 
+---
+
 ### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
-https://buymeacoffee.com/vtom
+<a href="https://buymeacoffee.com/vtom">
+    <img src="../images/buymeacoffee.png" width="200">
+</a>

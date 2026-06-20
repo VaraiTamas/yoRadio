@@ -48,7 +48,7 @@ Ez a konfiguráció néhány további könyvtártól függ. Kérlek, telepítsd 
 
 Aprogram beépített nyelveket és területi beállításokat tartalmaz HU, PL, GR, EN, RU, NL, SK, UA, DE nyelveken.   
 A myoptions.h fájlban az alábbi paranccsal állíthatod be.   
-```
+```cpp
 #define L10N_LANGUAGE HU
 ```
 
@@ -92,7 +92,7 @@ A névnapok tárolása az alábbi fájlokban történik.
 Ha más nyelven szeretnéd használni vedd fel velem a kapcsolatot.
 
 Ha nem szeretnéd megjeleníteni, akkor kommenteld ki a sort, 
-```   
+```cpp   
 // #define NAMEDAYS_FILE HU   
 ```
 vagy a WEB-es felületen kikapcsolható options/tools-> Namedays gombbal.
@@ -114,6 +114,11 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
    - 3D nyomtatási terv --> https://www.printables.com/model/1621877-yoradio-case-for-ips-ctp-35-inch-spi-red-ili9488-f
 
 ## Version history:  
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
+<a href="https://buymeacoffee.com/vtom">
+    <img src="images/buymeacoffee.png" width="200">
+</a>  
+
 ### v0.8.8
 - Az audioI2S audio könyvtár a Schreibfaul1 által fejlesztett V3.4.5h (2026. marc 18.) frissítés.
 - Távirányító deep sleep módból ébresztés más távirányítókra is felébredt ezért mostantól a POWER gombot kétszer kell megnyomni az ébresztéshez.
@@ -142,11 +147,11 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
       - Második gomb csak csatornalista
 
    Csak két encoder esetén használd !!!
-   ```
+   ```cpp   
    #define ENCODERS_INDEPENDENT
    ```
    - Új beállítás a myoptions.h fájlban. Definiálásával a rádió indulásakor mindig a csatornalista első eleme lesz az aktuális.  *(by Karol Wysocki)*
-   ```
+   ```cpp
    #define ALWAYS_START_FROM_FIRST
    ```
    - DSP_SSD1322 OLED kijelzőnél a Title2 sor eltűnik hiba javítása.
@@ -160,19 +165,19 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
 ### v0.8.4
    - FT6X36 kapacitív driver hozzáadva.
    - mytheme.h fájl kiegészült az aktuális csatornaszám kijelzésének színével.
-   ```
+   ```cpp
    #define COLOR_CH  165, 162, 132
    ```
    - A myoptions.h fájl kiegészült. A lejátszási listában a cursor mozog LE - FEL. (by Maciej Bednarski)
-   ```
+   ```cpp
    #define PLAYLIST_SCROLL_MOVING_CURSOR
    ```
    - A myoptions.h fájl kiegészült. Rádió módban, ha elfogy az adatbuffer automatikusan STOP és PLAY (by Andrzej Jaroszuk)
-   ```
+   ```cpp
    #define ENABLE_STALL_WATCHDOG
    ```
    - A myoptions.h fájl kiegészült. Ezzel a bejegyzéssel a képernyő színei szürkeárnyalatosak lesznek.
-   ```
+   ```cpp
    #define THEME_GRAY
    ```
 ### v0.8.3
@@ -184,7 +189,7 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
       https://github.com/crankyoldgit/IRremoteESP8266
 ### v0.8.1
    - Bekerült két új beállítás a myoptions.h fájlba. A touch képernyőn szükség szerint lehetőség van tükrözni az X vagy Y coordinátákat. 
-   ```
+   ```cpp
    #define X_TOUCH_MIRRORING
    #define Y_TOUCH_MIRRORING
    ```
@@ -266,4 +271,6 @@ Ezek a PCB lapok az alábbi 3D nyomtatási tervekhez igazodnak.
 
 
 ### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
-https://buymeacoffee.com/vtom
+<a href="https://buymeacoffee.com/vtom">
+    <img src="images/buymeacoffee.png" width="200">
+</a>

@@ -86,3 +86,7 @@ Más verziókkal nem kompatibilisek, és hibát vagy instabilitást okozhatnak.
 
 ---
 
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
+<a href="https://buymeacoffee.com/vtom">
+    <img src="../images/buymeacoffee.png" width="200">
+</a>

@@ -161,4 +161,11 @@ C:\Users\<név>\.platformio\packages\framework-arduinoespressif32-libs\esp32s3\l
 ```
 ### 8️⃣ Projekt újrafordítása Arduino alatt
 
-Fordítsd újra a projektet (pl. YoRadio).
+Fordítsd újra a projektet (pl. YoRadio).    
+
+---
+
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
+<a href="https://buymeacoffee.com/vtom">
+    <img src="../images/buymeacoffee.png" width="200">
+</a>

@@ -30,5 +30,9 @@ A `myoptions.h` fájlban lehet engedélyezni az alábbi sor beírásával, ahol 
 #define PWR_AMP 2 
 ```
 
-## Itt meghívhatsz egy kávéra!!!     
-https://buymeacoffee.com/vtom
+---
+
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
+<a href="https://buymeacoffee.com/vtom">
+    <img src="../images/buymeacoffee.png" width="200">
+</a>

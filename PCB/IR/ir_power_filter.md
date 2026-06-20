@@ -7,3 +7,9 @@ Az infravörös led tápjára párhuzamosan kell kötni egy 10μF elektrolit és
 A távirányító programozásával kapcsolatban itt olvashatsz. https://github.com/e2002/yoradio/blob/main/Controls.md#ir-receiver
 
 
+---
+
+### Ha támogatni szeretnéd a munkámat itt meghívhatsz egy kávéra!!!     
+<a href="https://buymeacoffee.com/vtom">
+    <img src="../../images/buymeacoffee.png" width="200">
+</a>
