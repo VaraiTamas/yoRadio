@@ -1,7 +1,7 @@
 # Hozzávalók / accessories
 ## ESP32 S3 N16R8
 - ESP32 S3 Development Board 2.4G Wifi Bluetooth Module Dual-Core Processor ESP32-S3 N16R8 44Pin Type-C ESP32-S3
-https://www.aliexpress.com/item/1005009170360406.html
+https://www.aliexpress.com/item/1005008682657771.html
 
 ## WiFi Antenna
 - 2.4GHz 3dBi WiFi 2.4g Antenna Aerial RP-SMA Male wireless router+ 17cm PCI U.FL IPX to RP SMA Male Pigtail Cable ESP8266 ESP32
@@ -38,18 +38,22 @@ https://www.aliexpress.com/item/1005009722549311.html
 - VS1838B IR sensor     
 https://www.aliexpress.com/item/1005005407437987.html
 
+## DS3231 RTC modul / DS3231 RTC module (optional)
+- DS3231 RTC Module I2C Real Time Clock Module with Battery Backup  
+https://www.aliexpress.com/item/1005009130739084.html   
+
 ## Csatlakozók / Connectors
 - 4PCS RCA Female Socket Lotus Connector Chassis Panel Mount Adapter Audio Terminal Plug 3.5mm AV Plug Gold Plated
 https://www.aliexpress.com/item/1005008621695365.html
 
 - 10PCS Single Row Pin Female Header Socket Pitch 2.54mm 22p Pin Connector  
-https://www.aliexpress.com/item/1005003335405213.html
+https://www.aliexpress.com/item/4001198421663.html
 
 - 230 PCS 2/3/4/5p 2.54mm Male and Female Pin Terminal Kit Housing Pin Header JST XH-2.54 4Value Connectors Adaptor 
 https://www.aliexpress.com/item/1005009454589816.html 
 
-- 1~10pcs 2 Pin 4 Pin USB 2.0 Female Power Jack 2P 4P USB 2.0 Charging Port Connector Data Interface with Cable USB Charger Socket
-https://www.aliexpress.com/item/1005005673022752.html
+- 2 Pin USB 2.0 Female Power Charging Port Connector    
+https://www.aliexpress.com/item/1005005967878696.html
 
 - PJ-392A 3/4 Pin 3.5mm Audio Jack Socket 3/4 Pole Stereo Solder Panel Mount 3.5 mm Headphone Female Socket Connector With Nut
 https://www.aliexpress.com/item/1005003621329893.html
@@ -59,8 +63,8 @@ https://www.aliexpress.com/item/1005003621329893.html
 https://www.aliexpress.com/item/1005010439257796.html   
 
 ## Tápegységek / Power supplies
-- 5 Volt 1-10Pcs AC-DC 3.3V/5V/12V Precision Buck Converter AC220v toDC 3.3V/5V/12V DC step down Transformer power supply module 1A 12W
-https://www.aliexpress.com/item/10000159007917.html
+- 5 Volt AC-DC Precision Buck Converter AC 220v to DC 5V 2A   
+https://www.aliexpress.com/item/1005002905706297.html
 
 ## Dobozolás    
 - 4PCS Audio Isolation Feet 40*10mm Plastic Amplifier Feet Speaker Pad CD DAC Speakers Shock Absorption Feet Pad
@@ -80,7 +84,7 @@ https://www.aliexpress.com/item/1005006345065523.html
 - KN330 3 in 1 Bluetooth 5.0 Transmitter Receiver USB EDR Adapter Dongle 3.5mm AUX RCA for TV PC Headphones Home Stereo Car HIFI  
 https://www.aliexpress.com/item/1005009252961710.html
 
-## Optocoupler Isolation Relay Module Board
+## Optocoupler Isolation Relay Module Board (optional)
 - 3.3V 1 Channel Relay Module High And Low Level Trigger Dual Optocoupler Isolation Relay Module Board
 https://www.aliexpress.com/item/1005005514531757.html
 
